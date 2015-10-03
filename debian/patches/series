@@ -1,3 +1,2 @@
 use-system-lz4.patch
-fix-minus-signs-manpage.patch
 fix-del-backspace-key.patch
