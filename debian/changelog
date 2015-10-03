@@ -1,3 +1,11 @@
+terminology (0.9.1-0.1) UNRELEASED; urgency=medium
+
+  * fix-minus-signs-manpage.patch: drop patch, fixed upstream
+  * use-system-lz4.patch: defuzz
+  * fix-del-backspace-key.patch: defuzz
+
+ -- Ross Vandegrift <ross@kallisti.us>  Sat, 03 Oct 2015 18:52:06 -0400
+
 terminology (0.7.0-1) unstable; urgency=medium
 
   * New upstream release
