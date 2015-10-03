@@ -1,0 +1,7 @@
+#!/usr/bin/make -f
+%:
+	dh $@ --parallel --with autoreconf
+
+override_dh_auto_configure:
+	rm -rf src/bin/lz4
+	dh_auto_configure -- --disable-silent-rules
