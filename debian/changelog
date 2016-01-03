@@ -4,6 +4,7 @@ terminology (0.9.1-0.1) UNRELEASED; urgency=medium
   * use-system-lz4.patch: defuzz
   * fix-del-backspace-key.patch: defuzz
   * Provide x-terminal-emulator alternative (Closes: #774111)
+  * debian/copyright: remove unused ltmain.sh paragraph
 
  -- Ross Vandegrift <ross@kallisti.us>  Sat, 03 Oct 2015 18:52:06 -0400
 
