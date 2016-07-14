@@ -3,6 +3,9 @@
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 include /usr/share/dpkg/buildflags.mk
 
+export XDG_RUNTIME_DIR=/tmp
+export HOME=/tmp
+
 %:
 	dh $@ --parallel --with autoreconf
 
