@@ -18,9 +18,9 @@ Build-Depends: debhelper (>= 9),
                libelementary-dev (>= 1.8.5),
                liblz4-dev
 Standards-Version: 3.9.6
-Homepage: http://enlightenment.org/p.php?p=about/terminology
-Vcs-Git: http://github.com/bofh80/debian-terminology
-Vcs-Browser: http://github.com/bofh80/debian-terminology
+Homepage: https://www.enlightenment.org/p.php?p=about/terminology
+Vcs-Git: https://github.com/bofh80/debian-terminology.git
+Vcs-Browser: https://github.com/bofh80/debian-terminology
 
 Package: terminology
 Architecture: any
