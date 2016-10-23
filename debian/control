@@ -17,7 +17,7 @@ Build-Depends: debhelper (>= 9),
                libevas-dev (>= 1.8.6),
                libelementary-dev (>= 1.8.5),
                liblz4-dev
-Standards-Version: 3.9.6
+Standards-Version: 3.9.8
 Homepage: http://enlightenment.org/p.php?p=about/terminology
 Vcs-Git: https://github.com/bofh80/debian-terminology
 Vcs-Browser: https://github.com/bofh80/debian-terminology
