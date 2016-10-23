@@ -19,8 +19,8 @@ Build-Depends: debhelper (>= 9),
                liblz4-dev
 Standards-Version: 3.9.6
 Homepage: http://enlightenment.org/p.php?p=about/terminology
-Vcs-Git: http://github.com/bofh80/debian-terminology
-Vcs-Browser: http://github.com/bofh80/debian-terminology
+Vcs-Git: https://github.com/bofh80/debian-terminology
+Vcs-Browser: https://github.com/bofh80/debian-terminology
 
 Package: terminology
 Architecture: any
