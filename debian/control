@@ -25,7 +25,7 @@ Vcs-Browser: http://github.com/bofh80/debian-terminology
 Package: terminology
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, terminology-data (= ${source:Version}), libevas1-engines-x
-Suggests: libelementary-bin
+Suggests: libelementary-bin, libemotion-players
 Provides: x-terminal-emulator
 Description: Enlightenment efl based terminal emulator
  It emulates a slightly extended vt100 with some extensions and bling
