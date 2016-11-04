@@ -1,5 +1,6 @@
-terminology (0.9.1-1) UNRELEASED; urgency=medium
+terminology (0.9.1-1) experimental; urgency=medium
 
+  [ Ross Vandegrift ]
   * fix-minus-signs-manpage.patch: drop patch, fixed upstream
   * use-system-lz4.patch: defuzz
   * fix-del-backspace-key.patch: defuzz
@@ -7,7 +8,16 @@ terminology (0.9.1-1) UNRELEASED; urgency=medium
   * debian/copyright: remove unused ltmain.sh paragraph
   * Add gbp.conf and notes on usage in README.source
   
- -- Ross Vandegrift <ross@kallisti.us>  Sun, 27 Mar 2016 11:42:16 -0400
+  [ Nicolas Braud-Santoni ]
+  * debian/control:
+    - Normalize links and use HTTPS
+    - Set Uploaders and Maintainer.
+      Replacing the absentee maintainer with the Pkg-e team
+  * debian/rules:
+    - Use build-time hardening
+    - Environment fixup
+
+ -- Nicolas Braud-Santoni <nicolas@braud-santoni.eu>  Fri, 04 Nov 2016 16:45:49 +0100
 
 terminology (0.7.0-1) unstable; urgency=medium
 

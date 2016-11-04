@@ -1,7 +1,9 @@
 Source: terminology
 Section: x11
 Priority: optional
-Maintainer: Anthony F McInerney <afm404@gmail.com>
+Maintainer: Debian Pkg-e Team <pkg-e-devel@lists.alioth.debian.org>
+Uploaders: Nicolas Braud-Santoni <nicolas@braud-santoni.eu>,
+           Ross Vandegrift <ross@kallisti.us>
 Build-Depends: debhelper (>= 9),
                dh-autoreconf,
                libecore-dev (>= 1.8.6),
@@ -18,9 +20,9 @@ Build-Depends: debhelper (>= 9),
                libelementary-dev (>= 1.8.5),
                liblz4-dev
 Standards-Version: 3.9.6
-Homepage: http://enlightenment.org/p.php?p=about/terminology
-Vcs-Git: http://github.com/bofh80/debian-terminology
-Vcs-Browser: http://github.com/bofh80/debian-terminology
+Homepage: https://www.enlightenment.org/p.php?p=about/terminology
+Vcs-Git: https://github.com/bofh80/debian-terminology.git
+Vcs-Browser: https://github.com/bofh80/debian-terminology
 
 Package: terminology
 Architecture: any
