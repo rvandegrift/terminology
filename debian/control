@@ -1,7 +1,8 @@
 Source: terminology
 Section: x11
 Priority: optional
-Maintainer: Anthony F McInerney <afm404@gmail.com>
+Maintainer: Debian Pkg-e Team <pkg-e-devel@lists.alioth.debian.org>
+Uploaders: Ross Vandegrift <ross@kallisti.us>
 Build-Depends: debhelper (>= 9),
                dh-autoreconf,
                libecore-dev (>= 1.8.6),
