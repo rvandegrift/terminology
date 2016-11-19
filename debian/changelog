@@ -1,3 +1,24 @@
+terminology (0.9.1-1) unstable; urgency=high
+
+  [ Ross Vandegrift ]
+  * fix-minus-signs-manpage.patch: drop patch, fixed upstream
+  * use-system-lz4.patch: defuzz
+  * fix-del-backspace-key.patch: defuzz
+  * Provide x-terminal-emulator alternative (Closes: #774111)
+  * debian/copyright: remove unused ltmain.sh paragraph
+  * Add gbp.conf and notes on usage in README.source
+  * Enable build hardening options
+  * Suggest libemotion-players for media support (Closes: #773057, #766705)
+  * Reformat package descriptions (Closes: #779494, #782082)
+  * Use secure Vcs- URLs in debian/control
+  * Bump Standards-Version to 3.9.8
+  * New Maintainer.  Thanks to Anthony for original work. (Closes: #844244)
+
+  [ Nicolas Braud-Santoni ]
+  * Normalize links and use HTTPS
+
+ -- Ross Vandegrift <ross@kallisti.us>  Sat, 19 Nov 2016 11:52:58 -0500
+
 terminology (0.7.0-1) unstable; urgency=medium
 
   * New upstream release
