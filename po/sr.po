@@ -1,0 +1,896 @@
+# Serbian translation for enlightenment
+# Copyright (c) 2014 Rosetta Contributors and Canonical Ltd 2014
+# This file is distributed under the same license as the enlightenment package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2014.
+# Саша <Петровић>, 2014.
+# Саша Петровић <salepetronije@gmail.com>, 2015.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: enlightenment\n"
+"Report-Msgid-Bugs-To: enlightenment-devel@lists.sourceforge.net\n"
+"POT-Creation-Date: 2015-09-17 12:08+0200\n"
+"PO-Revision-Date: 2015-01-31 13:52+0100\n"
+"Last-Translator: Саша Петровић <salepetronije@gmail.com>\n"
+"Language-Team: српски <xfce4@xfce4.org>\n"
+"Language: sr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Generator: Poedit 1.5.4\n"
+"X-Launchpad-Export-Date: 2015-01-10 06:37+0000\n"
+
+#: src/bin/controls.c:247
+msgid "Controls"
+msgstr "Управљачи"
+
+#: src/bin/controls.c:263
+msgid "New"
+msgstr "Нови"
+
+#: src/bin/controls.c:269
+msgid "Split V"
+msgstr "Подели У"
+
+#: src/bin/controls.c:271
+msgid "Split H"
+msgstr "Подели В"
+
+#: src/bin/controls.c:277
+msgid "Miniview"
+msgstr "Мали преглед"
+
+#: src/bin/controls.c:287 src/bin/termio.c:950 src/bin/termio.c:4108
+msgid "Copy"
+msgstr "Умножи"
+
+#: src/bin/controls.c:293
+msgid "Paste"
+msgstr "Налепи"
+
+#: src/bin/controls.c:299
+msgid "Settings"
+msgstr "Поставке"
+
+#: src/bin/controls.c:305
+msgid "About"
+msgstr "О програму"
+
+#: src/bin/controls.c:315
+msgid "Close Terminal"
+msgstr "Затвори терминал"
+
+#: src/bin/about.c:56
+#, c-format
+msgid ""
+"<b>Terminology %s</b><br>Why should terminals be boring?<br><br>This "
+"terminal was written for Enlightenment, to use EFL and otherwise push the "
+"boundaries of what a modern terminal emulator should be. We hope you enjoy "
+"it.<br><br>Copyright © 2012-%d by:<br><br>%s<br><br>Distributed under the 2-"
+"clause BSD license detailed below:<br><br>%s"
+msgstr ""
+"<b>Терминологија%s</b><br>Зашто да термилали буду досадни?<br><br>Овај "
+"терминал је написан за Просвећење, да користи ЕФЛ и да на свој начин пробије "
+"ограничења смисла о томе како савремени терминал треба да буде. Надамо се да "
+"ћете уживати.<br><br>Права умножавања©2012-%d од:<br><br>%s<br>Расподељује "
+"се под 2-издањем БСД лиценце са поједниностима описаним испод:<br><br>%s"
+
+#: src/bin/keyin.c:565
+msgid "Scrolling"
+msgstr "Клизање"
+
+#: src/bin/keyin.c:566
+msgid "Scroll one page up"
+msgstr "Клизај једну страну навише"
+
+#: src/bin/keyin.c:567
+msgid "Scroll one page down"
+msgstr "Клизај једну страну наниже"
+
+#: src/bin/keyin.c:568
+msgid "Scroll one line up"
+msgstr "Клизај за једну линију навише"
+
+#: src/bin/keyin.c:569
+msgid "Scroll one line down"
+msgstr "Клизај за једну линију наниже"
+
+#: src/bin/keyin.c:571
+msgid "Copy/Paste"
+msgstr "Умножи путању у главну међуоставу"
+
+#: src/bin/keyin.c:572
+msgid "Copy selection to Primary buffer"
+msgstr "Умножи изабрано као текући исечак"
+
+#: src/bin/keyin.c:573
+msgid "Copy selection to Clipboard buffer"
+msgstr "Умножи избор у оставу исечака"
+
+#: src/bin/keyin.c:574
+msgid "Paste Primary buffer (highlight)"
+msgstr "Налепи главни исечак"
+
+#: src/bin/keyin.c:575
+msgid "Paste Clipboard buffer (ctrl+c/v)"
+msgstr "Налепи исечак из оставе (ctrl+c/v)"
+
+#: src/bin/keyin.c:577
+msgid "Splits/Tabs"
+msgstr "Поделе/листови"
+
+#: src/bin/keyin.c:578
+msgid "Focus to the previous terminal"
+msgstr "Пређи на претходни терминал"
+
+#: src/bin/keyin.c:579
+msgid "Focus to the next terminal"
+msgstr "Пређи на следећи терминал"
+
+#: src/bin/keyin.c:580
+msgid "Split horizontally (new below)"
+msgstr "Подели водоравно (нови испод)"
+
+#: src/bin/keyin.c:581
+msgid "Split vertically (new on right)"
+msgstr "Подели усправно (нови  с’ десна"
+
+#: src/bin/keyin.c:582
+msgid "Create a new \"tab\""
+msgstr "Направи нови „лист“"
+
+#: src/bin/keyin.c:583
+msgid "Close the focused terminal"
+msgstr "Затвори терминал у жижи"
+
+#: src/bin/keyin.c:584
+msgid "Bring up \"tab\" switcher"
+msgstr "Позови измењивача „језичака“"
+
+#: src/bin/keyin.c:585
+msgid "Switch to terminal tab 1"
+msgstr "Пређи на Пређи на лист терминалалист терминала 1"
+
+#: src/bin/keyin.c:586
+msgid "Switch to terminal tab 2"
+msgstr "Пређи на лист терминала 2"
+
+#: src/bin/keyin.c:587
+msgid "Switch to terminal tab 3"
+msgstr "Пређи на лист терминала 3"
+
+#: src/bin/keyin.c:588
+msgid "Switch to terminal tab 4"
+msgstr "Пређи на лист терминала 4"
+
+#: src/bin/keyin.c:589
+msgid "Switch to terminal tab 5"
+msgstr "Пређи на лист терминала 5"
+
+#: src/bin/keyin.c:590
+msgid "Switch to terminal tab 6"
+msgstr "Пређи на лист терминала 6"
+
+#: src/bin/keyin.c:591
+msgid "Switch to terminal tab 7"
+msgstr "Пређи на лист терминала 7"
+
+#: src/bin/keyin.c:592
+msgid "Switch to terminal tab 8"
+msgstr "Пређи на лист терминала 8"
+
+#: src/bin/keyin.c:593
+msgid "Switch to terminal tab 9"
+msgstr "Пређи на лист терминала 9"
+
+#: src/bin/keyin.c:594
+msgid "Switch to terminal tab 10"
+msgstr "Пређи на лист терминала 10"
+
+#: src/bin/keyin.c:596
+msgid "Font size"
+msgstr "Величина словног лика"
+
+#: src/bin/keyin.c:597
+msgid "Font size up 1"
+msgstr "Повећај словни лик за 1"
+
+#: src/bin/keyin.c:598
+msgid "Font size down 1"
+msgstr "Смањи величину словног лика за 1"
+
+#: src/bin/keyin.c:599
+msgid "Display big font size"
+msgstr "Приказуј велики словни лик"
+
+#: src/bin/keyin.c:600
+msgid "Reset font size"
+msgstr "_Врати величину словног лика"
+
+#: src/bin/keyin.c:602
+msgid "Actions"
+msgstr "Радње"
+
+#: src/bin/keyin.c:603
+msgid "Toggle Fullscreen of the window"
+msgstr ""
+
+#: src/bin/keyin.c:604
+msgid "Display the history miniview"
+msgstr "Прикажи мали преглед скорашњих"
+
+#: src/bin/keyin.c:605
+msgid "Display the command box"
+msgstr "Прикажи наредбену кућицу"
+
+#: src/bin/main.c:219 src/bin/main.c:852
+#, fuzzy
+msgid "Could not create window."
+msgstr "Нисам успео да направим област за пријаву „%s“."
+
+#: src/bin/main.c:288 src/bin/main.c:863
+#, fuzzy
+msgid "Could not create terminal widget."
+msgstr "Нисам успео да доделим меморију термптију"
+
+#: src/bin/main.c:327
+#, c-format
+msgid "(C) 2012-%d Carsten Haitzler and others"
+msgstr "(C) 2012-%d Карстен Хедзла (Carsten Haitzler) и остали"
+
+#: src/bin/main.c:329
+msgid "Terminal emulator written with Enlightenment Foundation Libraries."
+msgstr "Опонашач терминала написан по билиотекама задужбине Просвећења"
+
+#: src/bin/main.c:337
+msgid "Command to execute. Defaults to $SHELL (or passwd shell or /bin/sh)"
+msgstr ""
+"Наредба за извршење. Подразумевано је $SHELL (или passwd shell или /bin/sh)"
+
+#: src/bin/main.c:339
+msgid "Change to directory for execution of terminal command."
+msgstr "Промени фасциклу ради извршења наредбе терминала у њој."
+
+#: src/bin/main.c:341
+msgid "Use the named edje theme or path to theme file."
+msgstr "Користи именовану едје тему или путању до датотеке теме."
+
+#: src/bin/main.c:343
+msgid "Use the named file as a background wallpaper."
+msgstr "Користи именовану датотеку као слику позадине."
+
+#: src/bin/main.c:345
+msgid "Terminal geometry to use (eg 80x24 or 80x24+50+20 etc.)."
+msgstr "Размера терминала (нпр. 80x24 или 80x24+50+20 итд.)."
+
+#: src/bin/main.c:347
+msgid "Set window name."
+msgstr "Постави име прозору"
+
+#: src/bin/main.c:349
+msgid "Set window role."
+msgstr "Постави улогу прозора"
+
+#: src/bin/main.c:351
+msgid "Set window title."
+msgstr "Постави наслов прозора"
+
+#: src/bin/main.c:353
+msgid "Set icon name."
+msgstr "Постави име иконице"
+
+#: src/bin/main.c:355
+msgid "Set font (NAME/SIZE for scalable, NAME for bitmap."
+msgstr "Постави словни лик (ИМЕ/ВЕЛИЧИНА за променљив, ИМЕ за битмапу)."
+
+#: src/bin/main.c:357
+msgid ""
+"Split the terminal window. 'v' for vertical and 'h' for horizontal. Can be "
+"used multiple times. eg -S vhvv or --split hv More description available on "
+"the man page."
+msgstr ""
+"Подели прозор терминала. „v“ је за водоравно, а „h“ за усправно. Може бити "
+"коришћено више пута. НПР. -S vhvv или --split hv . Више описа је доступно на "
+"man страници."
+
+#: src/bin/main.c:362
+msgid "Set emotion module to use."
+msgstr "Подеси која јединица емоушна ће да се користи."
+
+#: src/bin/main.c:365
+msgid "Run the shell as a login shell."
+msgstr "Покрећи љуску као љуску за пријаву"
+
+#: src/bin/main.c:367
+msgid "Set mute mode for video playback."
+msgstr "Постави извођење видеа без звука."
+
+#: src/bin/main.c:369
+msgid "Set cursor blink mode."
+msgstr "Постави да трепће показивач."
+
+#: src/bin/main.c:371
+msgid "Set visual bell mode."
+msgstr "Укључи видно звоно."
+
+#: src/bin/main.c:373
+msgid "Go into the fullscreen mode from the start."
+msgstr "Покрећи  у приказу преко целог екрана."
+
+#: src/bin/main.c:375
+msgid "Go into an iconic state from the start."
+msgstr "Покрећи у умањеном стању."
+
+#: src/bin/main.c:377
+msgid "Become a borderless managed window."
+msgstr "Начини прозор без оквира."
+
+#: src/bin/main.c:379
+msgid "Become an override-redirect window."
+msgstr "Начини прозор као преусмерени прозор."
+
+#: src/bin/main.c:381
+msgid "Become maximized from the start."
+msgstr "Покрећи као увећан прозор."
+
+#: src/bin/main.c:383
+msgid "Terminology is run without a window manager."
+msgstr "Терминологија је покренута без управника прозора."
+
+#: src/bin/main.c:385
+msgid "Do not exit when the command process exits."
+msgstr "Не излази када се изврши наредба."
+
+#: src/bin/main.c:387
+msgid "Force single executable if multi-instance is enabled."
+msgstr "Приморај на једну извршну датотеку ако је омогућено више примерака."
+
+#: src/bin/main.c:389
+msgid "Set TERM to 'xterm-256color' instead of 'xterm'."
+msgstr "Постави TERM на „xterm-256color“ уместо на „xterm“."
+
+#: src/bin/main.c:391
+msgid "Highlight links."
+msgstr "Истакни везе."
+
+#: src/bin/main.c:420
+msgid "show program version."
+msgstr "прикажи издање програма."
+
+#: src/bin/main.c:423
+msgid "show copyright."
+msgstr "прикажи права умножавања"
+
+#: src/bin/main.c:426
+msgid "show license."
+msgstr "Прикажи дозволу."
+
+#: src/bin/main.c:429
+msgid "show this message."
+msgstr "прикажи ову поруку."
+
+#: src/bin/main.c:547 src/bin/miniview.c:38
+#, c-format
+msgid "Could not create logging domain '%s'."
+msgstr "Нисам успео да направим област за пријаву „%s“."
+
+#: src/bin/main.c:557
+msgid "Could not initialize key bindings."
+msgstr "Нисам успео да покренем пречице."
+
+#: src/bin/main.c:569
+msgid "Could not parse command line options."
+msgstr "Нисам успео да рашчланим могућности наредбене линије."
+
+#: src/bin/main.c:584
+#, c-format
+msgid "option %s requires an argument!"
+msgstr "могућност %s захтева примедбу!"
+
+#: src/bin/main.c:585
+msgid "invalid options found. See --help."
+msgstr "неисправна могућност. Погледајте --help."
+
+#: src/bin/main.c:907
+msgid "invalid argument found for option -S/--split. See --help."
+msgstr "неисправна примедба за могућност  -S/--split. Погледајте --help."
+
+#: src/bin/media.c:752
+#, c-format
+msgid "Could not Initialize the emotion module '%s'"
+msgstr "Нисам успео на покренем јединицу емоушна „%s“"
+
+#: src/bin/media.c:1281 src/bin/termpty.c:362 src/bin/termpty.c:367
+#: src/bin/termpty.c:371
+#, c-format
+msgid "Function %s failed: %s"
+msgstr "Радња %s није успела: %s"
+
+#: src/bin/media.c:1395
+msgid "Media visualizing is not supported"
+msgstr "Приказ садржаја није подржан"
+
+#: src/bin/options_behavior.c:67
+#, c-format
+msgid "%'d lines"
+msgstr "%'d линија"
+
+#: src/bin/options_behavior.c:150 src/bin/options.c:171
+msgid "Behavior"
+msgstr "Понашање"
+
+#: src/bin/options_behavior.c:178
+msgid "Scroll to bottom on new content"
+msgstr "Клизни до дна на појаву новог садржаја"
+
+#: src/bin/options_behavior.c:179
+msgid "Scroll to bottom when a key is pressed"
+msgstr "Клизни до дна када се притисне дугме"
+
+#: src/bin/options_behavior.c:180
+msgid "React to key presses"
+msgstr "Одазови се на притисак дугмади"
+
+#: src/bin/options_behavior.c:181
+msgid "Cursor blinking"
+msgstr "Трепћући показивач"
+
+#: src/bin/options_behavior.c:182
+msgid "Visual Bell"
+msgstr "Видно звоно"
+
+#: src/bin/options_behavior.c:183
+msgid "Bell rings"
+msgstr "Звоно звони"
+
+#: src/bin/options_behavior.c:184
+msgid "Urgent Bell"
+msgstr "Хитно звоно"
+
+#: src/bin/options_behavior.c:185
+msgid "Active Links"
+msgstr "Везе у погону"
+
+#: src/bin/options_behavior.c:186
+msgid "Multiple instances, one process"
+msgstr "Више примерака, један процес"
+
+#: src/bin/options_behavior.c:187
+msgid "Set TERM to xterm-256color"
+msgstr "Постави ТЕРМ на икстерм-256боја"
+
+#: src/bin/options_behavior.c:188
+msgid "BackArrow sends Del (instead of BackSpace)"
+msgstr "Стрелица брисања уназад шаље брисање (уместо брисања уназад)"
+
+#: src/bin/options_behavior.c:189
+msgid "Drag & drop links"
+msgstr "Превуци и спусти везе"
+
+#: src/bin/options_behavior.c:190
+msgid "Start as login shell"
+msgstr "Покрени као љуску за пријаву"
+
+#: src/bin/options_behavior.c:191
+msgid "Focus split under the Mouse"
+msgstr "Дели под мишем"
+
+#: src/bin/options_behavior.c:192
+msgid "Gravatar integration"
+msgstr "Обједињавање граватара"
+
+#: src/bin/options_behavior.c:193
+msgid "Show tabs"
+msgstr "Прикажи листове"
+
+#: src/bin/options_behavior.c:194
+#, fuzzy
+msgid "Always show miniview"
+msgstr "Прикажи мали преглед скорашњих"
+
+#: src/bin/options_behavior.c:195
+msgid "Enable special Terminology escape codes"
+msgstr ""
+
+#: src/bin/options_behavior.c:203
+msgid "Always open at size:"
+msgstr "Увек отвори у величини:"
+
+#: src/bin/options_behavior.c:213
+msgid "Width:"
+msgstr "Ширина:"
+
+#: src/bin/options_behavior.c:233
+msgid "Height:"
+msgstr "Висина:"
+
+#: src/bin/options_behavior.c:260
+msgid "Scrollback:"
+msgstr "Клизање уназад:"
+
+#: src/bin/options_behavior.c:294
+msgid "Tab zoom/switch animation time:"
+msgstr "Време дејства оживљавања приближавања/промене листа:"
+
+#: src/bin/options_behavior.c:295
+msgid ""
+"Set the time of the animation that<br>takes places on tab switches,<br>be "
+"them by key binding, mouse<br>wheel or tabs panel mouse move"
+msgstr ""
+"Постави време дејства оживљавања које<br>заузима место промене листова,"
+"<br>било пречицом дугмади, точкићем<br>миша или променом мишем на површи "
+"листова"
+
+#: src/bin/options_behavior.c:308 src/bin/options_behavior.c:309
+#, c-format
+msgid "%1.1f s"
+msgstr "%1.1f s"
+
+#: src/bin/options.c:137
+msgid "Options"
+msgstr "Могућности"
+
+#: src/bin/options.c:166 src/bin/options_font.c:361
+msgid "Font"
+msgstr "Словни лик"
+
+#: src/bin/options.c:167 src/bin/options_theme.c:113
+msgid "Theme"
+msgstr "Тема"
+
+#: src/bin/options.c:168
+msgid "Wallpaper"
+msgstr "Слика за позадину"
+
+#: src/bin/options.c:169 src/bin/options_video.c:75
+msgid "Video"
+msgstr "Снимци"
+
+#: src/bin/options.c:170 src/bin/options_colors.c:166
+msgid "Colors"
+msgstr "Боје"
+
+#: src/bin/options.c:172
+msgid "Keys"
+msgstr "Дугмад"
+
+#: src/bin/options.c:173 src/bin/options_helpers.c:177
+msgid "Helpers"
+msgstr "Помоћници"
+
+#: src/bin/options.c:174
+msgid "Toolkit"
+msgstr "Алатница"
+
+#: src/bin/options.c:185
+msgid "Temporary"
+msgstr "Привремено"
+
+#: src/bin/options_colors.c:13
+msgid "Default"
+msgstr "Подразумевано"
+
+#: src/bin/options_colors.c:14
+msgid "Black"
+msgstr "Црна"
+
+#: src/bin/options_colors.c:15
+msgid "Red"
+msgstr "Црвена"
+
+#: src/bin/options_colors.c:16
+msgid "Green"
+msgstr "Зелена"
+
+#: src/bin/options_colors.c:17
+msgid "Yellow"
+msgstr "Жута"
+
+#: src/bin/options_colors.c:18
+msgid "Blue"
+msgstr "Плава"
+
+#: src/bin/options_colors.c:19
+msgid "Magenta"
+msgstr "Љубичаста"
+
+#: src/bin/options_colors.c:20
+msgid "Cyan"
+msgstr "Плавичаста"
+
+#: src/bin/options_colors.c:21
+msgid "White"
+msgstr "Бела"
+
+#: src/bin/options_colors.c:22
+msgid "Inverse"
+msgstr "Изврнуто"
+
+#: src/bin/options_colors.c:23
+msgid "Inverse Base"
+msgstr "Супротно од основе"
+
+#: src/bin/options_colors.c:194
+msgid "Normal"
+msgstr "Уобичајено"
+
+#: src/bin/options_colors.c:195
+#, fuzzy
+msgid "Bright/Bold"
+msgstr "Светло"
+
+#: src/bin/options_colors.c:196
+msgid "Intense"
+msgstr ""
+
+#: src/bin/options_colors.c:197
+msgid "Intense Bright/Bold"
+msgstr ""
+
+#: src/bin/options_colors.c:275
+msgid "Use"
+msgstr "Користи"
+
+#: src/bin/options_colors.c:285
+msgid "Reset"
+msgstr "Врати на подразумевано"
+
+#: src/bin/options_font.c:426
+msgid "Bitmap"
+msgstr "Битмапа"
+
+#: src/bin/options_font.c:466
+msgid "Standard"
+msgstr "Уобичајено"
+
+#: src/bin/options_helpers.c:190
+msgid "Inline if possible"
+msgstr "У линији ако је могуће"
+
+#: src/bin/options_helpers.c:220
+msgid "E-mail:"
+msgstr "Е.пошта:"
+
+#: src/bin/options_helpers.c:253
+msgid "URL (Images):"
+msgstr "Адреса (слике):"
+
+#: src/bin/options_helpers.c:278
+msgid "URL (Video):"
+msgstr "Адреса (снимка):"
+
+#: src/bin/options_helpers.c:303
+msgid "URL (All):"
+msgstr "Адреса (свега):"
+
+#: src/bin/options_helpers.c:336
+msgid "Local (Images):"
+msgstr "Месно (слике):"
+
+#: src/bin/options_helpers.c:361
+msgid "Local (Video):"
+msgstr "Месно (снимака):"
+
+#: src/bin/options_helpers.c:386
+msgid "Local (All):"
+msgstr "Месно (свега):"
+
+#: src/bin/options_keys.c:52
+msgid "Ctrl+"
+msgstr "Ктрл+"
+
+#: src/bin/options_keys.c:53
+msgid "Alt+"
+msgstr "Мења+"
+
+#: src/bin/options_keys.c:54
+msgid "Shift+"
+msgstr "Више+"
+
+#: src/bin/options_keys.c:55
+msgid "Win+"
+msgstr "Супер+"
+
+#: src/bin/options_keys.c:56
+msgid "Meta+"
+msgstr ""
+
+#: src/bin/options_keys.c:57
+msgid "Hyper+"
+msgstr ""
+
+#: src/bin/options_keys.c:66
+msgid "Delete"
+msgstr "Обриши"
+
+#: src/bin/options_keys.c:251
+msgid "Please press key sequence"
+msgstr "Молим, притисните низ дугмади"
+
+#: src/bin/options_keys.c:353
+msgid "Key Bindings"
+msgstr "Пречице дугмади"
+
+#: src/bin/options_video.c:88
+msgid "Translucent"
+msgstr "Прозирност"
+
+#: src/bin/options_video.c:99 src/bin/options_video.c:100
+#, c-format
+msgid "%1.0f%%"
+msgstr "%1.0f%%"
+
+#: src/bin/options_video.c:119
+msgid "Audio muted"
+msgstr "Звук је утишан"
+
+#: src/bin/options_video.c:132
+msgid "Audio visualized"
+msgstr "Звук је оживљен сликом"
+
+#: src/bin/options_video.c:149
+msgid "Video Engine:"
+msgstr "Погон снимака:"
+
+#: src/bin/options_video.c:156
+msgid "Automatic"
+msgstr "Самостално"
+
+#: src/bin/options_wallpaper.c:99
+msgid "None"
+msgstr "Ништа"
+
+#: src/bin/options_wallpaper.c:390
+msgid "Source file is target file"
+msgstr "Изворна датотека је циљна датотека"
+
+#: src/bin/options_wallpaper.c:403
+msgid "Picture imported"
+msgstr "Слика је увезена"
+
+#: src/bin/options_wallpaper.c:408
+msgid "Failed"
+msgstr "Неуспех"
+
+#: src/bin/options_wallpaper.c:425
+msgid "Background"
+msgstr "Позадина"
+
+#: src/bin/options_wallpaper.c:469
+msgid "Select Path"
+msgstr "Изабери путању"
+
+#: src/bin/options_wallpaper.c:475
+msgid "System"
+msgstr "Систем"
+
+#: src/bin/options_wallpaper.c:478
+msgid "User"
+msgstr "Корисник"
+
+#: src/bin/options_wallpaper.c:481
+msgid "Other"
+msgstr "Друго"
+
+#: src/bin/options_wallpaper.c:496
+msgid "Double click on a picture to import it"
+msgstr "_Двоклик за увоз слике"
+
+#: src/bin/termcmd.c:67
+#, c-format
+msgid "Unknown font command: %s"
+msgstr "Непозната наредба за словолик: %s"
+
+#: src/bin/termcmd.c:98
+#, c-format
+msgid "Unknown grid size command: %s"
+msgstr "Непозната наредба за величину мреже: %s"
+
+#: src/bin/termcmd.c:123
+#, c-format
+msgid "Background file could not be read: %s"
+msgstr "Нисам успео да прочитам позадинску датотеку: %s"
+
+#: src/bin/termcmd.c:152
+#, c-format
+msgid "Unknown command: %s"
+msgstr "Непозната наредба: %s"
+
+#: src/bin/termio.c:512
+#, c-format
+msgid "Could not get working directory of pid %i: %s"
+msgstr "Нисам успео да добавим радну фасциклу за пид %i: %s"
+
+#: src/bin/termio.c:526
+#, c-format
+msgid "Could not load working directory %s: %s"
+msgstr "Нисам успео да учитам радну фасциклу %s: %s"
+
+#: src/bin/termio.c:945
+msgid "Preview"
+msgstr "Преглед"
+
+#: src/bin/termio.c:948
+msgid "Open"
+msgstr "Отвори"
+
+#: src/bin/termio.c:2442
+#, c-format
+msgid "unsupported selection format '%s'"
+msgstr "облик избора „%s“ није подржан"
+
+#: src/bin/termio.c:4110
+msgid "Open as URL"
+msgstr ""
+
+#: src/bin/termio.c:5264
+msgid "Ecore IMF failed"
+msgstr "Неуспех ИМФ екора"
+
+#: src/bin/termio.c:5976
+msgid "Could not allocate termpty"
+msgstr "Нисам успео да доделим меморију термптију"
+
+#: src/bin/termpty.c:72 src/bin/termpty.c:96 src/bin/termpty.c:130
+#, c-format
+msgid "memerr: %s"
+msgstr "гршкмем: %s"
+
+#: src/bin/termpty.c:156
+#, c-format
+msgid "Size set ioctl failed: %s"
+msgstr "Поставка величине иоцтл није успела: %s"
+
+#: src/bin/termpty.c:338
+#, c-format
+msgid "Could not find shell, falling back to %s"
+msgstr "Нисам успео да пронађем љуску, замењујем је са %s"
+
+#: src/bin/termpty.c:378
+#, c-format
+msgid "open() of pty '%s' failed: %s"
+msgstr "отварање() птипсилон „%s“ није успело: %s"
+
+#: src/bin/termpty.c:384 src/bin/termpty.c:390
+#, c-format
+msgid "fcntl() on pty '%s' failed: %s"
+msgstr "фнцтл() на припсилон „%s“ није успело: %s"
+
+#: src/bin/termpty.c:399
+#, fuzzy, c-format
+msgid "ioctl() on pty '%s' failed: %s"
+msgstr "фнцтл() на припсилон „%s“ није успело: %s"
+
+#: src/bin/termpty.c:441
+#, c-format
+msgid "Could not change current directory to '%s': %s"
+msgstr "Нисам успео да пређем са тренутне фасцикле на „%s“: %s"
+
+#: src/bin/termpty.c:871
+#, c-format
+msgid "Could not write to file descriptor %d: %s"
+msgstr "Нисам успео да пишем у опису датотеке %d: %s"
+
+#: src/bin/utils.c:48
+#, c-format
+msgid "Could not load any theme for group=%s: %s"
+msgstr "Нисам успео да учитам било коју тему скупа=%s: %s"
+
+#: src/bin/utils.c:65
+#, c-format
+msgid "Could not load default theme for group=%s: %s"
+msgstr "Нисам успео да учитам било коју тему скупа=%s: %s"
+
+#: src/bin/win.c:4028
+msgid "Couldn't find terminology theme! Forgot 'make install'?"
+msgstr ""
+"Нисам успео да пронађем тему Терминологије! Да нисте заборавили да урадите "
+"„make install“?"
+
+#~ msgid "Normal 2"
+#~ msgstr "Уобичајена 2"
+
+#~ msgid "Bright 2"
+#~ msgstr "Светла 2"

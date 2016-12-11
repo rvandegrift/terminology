@@ -1,0 +1,123 @@
+2015-09-17
+        * Release v0.9.1
+        * Fix resizing issue
+        * Fix solarized theme
+        * Handle Ctrl-[2-8] when tab key bindings are removed
+
+
+2015-09-06
+
+        * Release v0.9.0
+        * Add keybing to fullscreen Terminology
+        * Right click on selection to be able to copy/open it
+        * Add meta/hyper to key bindings
+        * Add option to always show miniview
+        * Add option to disable terminology escape codes
+        * Add -a option to tyls to display hidden files
+        * tybg without arguments restores the default wallpaper
+        * Escape closes media popup
+        * Terminology works on solaris
+        * Font selector now displays previews with current theme colors
+        * Try to get mime type when displaying URLs
+        * Do not use ':' as word separator but trim it from word selections
+        * Improved resizing handling
+        * Various bug fixes
+
+
+2015-02-15
+
+        * Release v0.8.0
+        * Gravatar support
+        * Add a visual tab bar
+        * Add xterm "notification" support
+        * Display pre-edit text when composing
+        * Selection improvements
+        * Various bug fixes
+
+
+2014-10-06
+
+        * Release v0.7.0
+        * Internationalization and Localization support
+        * Options -S/--split to start terminology with multiple splits
+        * Configurable key bindings
+        * Add a panel to launch elementary_config
+        * Opacity level can be configured in translucent mode
+        * Miniview: add position indicator
+        * Improve media controls
+        * Use a scalable font on default configuration
+        * Usual round of improvements on terminal compatibility
+        * Fix issue with mute option
+        * Various bug fixes
+
+
+2014-07-02
+
+        * Release v0.6.1
+        * Add .tga images to recognized files
+        * Reduced power consumption
+        * Fix issues with the teamwork modules and popups
+
+
+2014-06-30
+
+        * Release v0.6.0
+        * Make term switching cyclic
+        * Add Mouse-Over focus
+        * Fraktur support
+        * Add option whether to detect links
+        * Add option to disable the sound of the bell
+        * Add new themes: Nyanology and smyck
+        * Add miniview feature
+        * Improve terminal compatibility
+        * Improve font selector to be able to select different font styles
+        * Support rotation metadata on media files
+        * Various bug fixes
+
+
+2014-05-17
+
+        * Release v0.5.1
+        * Make terminology compatible with upcoming efl/elm 1.10
+        * Fix disappearing prompt on resize
+
+
+2014-03-08
+
+        * Release v0.5.0
+        * color settings panel
+        * wallpaper settings panel
+        * load themes from ~/.config/terminology/themes/
+        * better default configuration
+        * improve terminal compatibility
+        * bug fixes
+
+
+2013-12-07
+
+        * Release v0.4.0
+        * compress backscroll
+        * add audio keyboard
+        * text reflow
+        * full 256-colors support
+        * improve terminal compatibility
+        * improve selection
+        * add a man page
+        * add option to set geometry on start
+        * be able to inline edje objects
+        * bug fixes
+
+
+2013-03-24
+
+        * Release v0.3.0
+
+
+2012-12-15
+
+        * Release v0.2.0
+
+
+2012-08-25
+
+        * Initial release v0.1.0
