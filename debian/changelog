@@ -16,11 +16,12 @@ terminology (0.9.1-1) unstable; urgency=high
   * Use secure Vcs- URLs in debian/control
   * Bump Standards-Version to 3.9.8
   * New Maintainer.  Thanks to Anthony for original work. (Closes: #844244)
+  * debian/gbp.conf: import & build upstream tarballs
 
   [ Nicolas Braud-Santoni ]
   * Normalize links and use HTTPS
 
- -- Ross Vandegrift <ross@kallisti.us>  Sat, 19 Nov 2016 11:52:58 -0500
+ -- Ross Vandegrift <ross@kallisti.us>  Sun, 11 Dec 2016 12:25:35 -0500
 
 terminology (0.7.0-1) unstable; urgency=medium
 
