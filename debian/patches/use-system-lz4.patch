@@ -1,0 +1,42 @@
+use debian library version of liblz4 rather than the embedded copy
+--- a/configure.ac
++++ b/configure.ac
+@@ -104,6 +104,8 @@
+ )
+ CFLAGS=$orig_cflags
+ 
++AC_CHECK_HEADER([lz4.h], [AC_DEFINE([HAVE_LZ4_H], [1], [Define to 1 if you have <lz4.h>.])], [AC_MSG_ERROR([Please install the lz4 dev library https://code.google.com/p/lz4/])])
++
+ EFL_WITH_BIN([edje], [edje-cc], [edje_cc])
+ 
+ with_max_log_level="EINA_LOG_LEVEL_ERR"
+--- a/src/bin/Makefile.am
++++ b/src/bin/Makefile.am
+@@ -7,7 +7,7 @@
+ -DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
+ -DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
+ 
+-terminology_LDADD = @TERMINOLOGY_LIBS@ @ELDBUS_LIBS@
++terminology_LDADD = @TERMINOLOGY_LIBS@ @ELDBUS_LIBS@ -llz4
+ if HAVE_PO
+ terminology_CPPFLAGS += -DLOCALEDIR=\"$(localedir)\"
+ terminology_LDADD += @LIBINTL@
+@@ -50,7 +50,6 @@
+ termptygfx.c termptygfx.h \
+ termptyext.c termptyext.h \
+ termptysave.c termptysave.h \
+-lz4/lz4.c lz4/lz4.h \
+ md5/md5.c md5/md5.h \
+ utf8.c utf8.h \
+ win.c win.h \
+--- a/src/bin/termptysave.c
++++ b/src/bin/termptysave.c
+@@ -2,7 +2,7 @@
+ #include <Elementary.h>
+ #include "termpty.h"
+ #include "termptysave.h"
+-#include "lz4/lz4.h"
++#include <lz4.h>
+ #include <sys/mman.h>
+ 
+ #if defined (__MacOSX__) || (defined (__MACH__) && defined (__APPLE__))

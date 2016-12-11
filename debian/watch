@@ -1,0 +1,2 @@
+version=3
+http://download.enlightenment.org/rel/apps/terminology/terminology-([\d\.]+)\.(?:zip|tgz|tbz|txz|(?:tar\.(?:gz|bz2|xz)))

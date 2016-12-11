@@ -1,0 +1,69 @@
+Source: terminology
+Section: x11
+Priority: optional
+Maintainer: Debian Pkg-e Team <pkg-e-devel@lists.alioth.debian.org>
+Uploaders: Ross Vandegrift <ross@kallisti.us>
+Build-Depends: debhelper (>= 9),
+               dh-autoreconf,
+               libecore-dev (>= 1.8.6),
+               libedje-dev (>= 1.8.6),
+               libeet-dev (>= 1.8.6),
+               libeeze-dev (>= 1.8.6),
+               libefreet-dev (>= 1.8.6),
+               libeina-dev (>= 1.8.6),
+               libeio-dev (>= 1.8.6),
+               libembryo-dev (>= 1.8.6),
+               libemotion-dev (>= 1.8.6),
+               libethumb-dev (>= 1.8.6),
+               libevas-dev (>= 1.8.6),
+               libelementary-dev (>= 1.8.5),
+               liblz4-dev
+Standards-Version: 3.9.8
+Vcs-Git: https://github.com/bofh80/debian-terminology.git
+Homepage: https://www.enlightenment.org/p.php?p=about/terminology
+Vcs-Browser: https://github.com/bofh80/debian-terminology
+
+Package: terminology
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, terminology-data (= ${source:Version}), libevas1-engines-x
+Suggests: libelementary-bin, libemotion-players
+Provides: x-terminal-emulator
+Description: Enlightenment efl based terminal emulator
+ It emulates a slightly extended vt100 with some extensions and bling:
+  * Most escapes supported by xterm, rxvt, Xterm 256 color, etc. work
+  * Background effects, Transparency, bitmap and scalable fonts supported
+  * Themes for the layout and design, and a visual bell.
+  * URL, file path and email address detection and link-handling
+  * Inline display of link content
+  * Multiple copy and paste selections and buffer support
+  * Works in X11, Wayland and directly in the Linux framebuffer (fbcon)
+  * Finger/touch controlled, scan scale by UI scaling factors
+  * Render using OpenGL or OpenGL-ES2 or Software mode.
+  * Can display inlined multimedia, multiple tabs and split into multiple panes
+  * Block text selection. Drag and drop of text selections and links
+  * Can stream media from URLs
+  * Tab switcher has live thumbnail content
+  * Single process, multiple windows/terminals support
+
+Package: terminology-data
+Architecture: all
+Depends: ${misc:Depends}
+Enhances: terminology
+Description: Enlightenment efl based terminal emulator data
+ It emulates a slightly extended vt100 with some extensions and bling:
+  * Most escapes supported by xterm, rxvt, Xterm 256 color, etc. work
+  * Background effects, Transparency, bitmap and scalable fonts supported
+  * Themes for the layout and design, and a visual bell.
+  * URL, file path and email address detection and link-handling
+  * Inline display of link content
+  * Multiple copy and paste selections and buffer support
+  * Works in X11, Wayland and directly in the Linux framebuffer (fbcon)
+  * Finger/touch controlled, scan scale by UI scaling factors
+  * Render using OpenGL or OpenGL-ES2 or Software mode.
+  * Can display inlined multimedia, multiple tabs and split into multiple panes
+  * Block text selection. Drag and drop of text selections and links
+  * Can stream media from URLs
+  * Tab switcher has live thumbnail content
+  * Single process, multiple windows/terminals support
+ .
+ This package provides the shared data for all architectures.

@@ -1,0 +1,11 @@
+add Keywords entry as per lintian warning, using gnome-terminal.desktop keywords
+--- a/data/desktop/terminology.desktop
++++ b/data/desktop/terminology.desktop
+@@ -13,6 +13,7 @@
+ Comment[it]=Emulatore di terminale
+ Comment[pt]=Emulador de terminal
+ Comment[ru]=Эмулятор терминала
++Keywords=shell;prompt;command;commandline;
+ Exec=terminology
+ Icon=terminology
+ Categories=System;TerminalEmulator;
