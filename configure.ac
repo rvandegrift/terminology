@@ -3,7 +3,7 @@ dnl Process this file with autoconf to produce a configure script.
 # get rid of that stupid cache mechanism
 rm -f config.cache
 
-AC_INIT([terminology], [0.9.1], [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([terminology], [1.0.0], [enlightenment-devel@lists.sourceforge.net])
 AC_PREREQ([2.60])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
@@ -67,23 +67,32 @@ requirements="\
 EFL_ENABLE_EO_API_SUPPORT
 EFL_ENABLE_BETA_API_SUPPORT
 
-PKG_CHECK_MODULES([TERMINOLOGY], [${requirements}])
+# check for fuzzing
+want_fuzzing="fuzzing"
+AC_ARG_ENABLE([fuzzing],
+   [AS_HELP_STRING([--enable-fuzzing],[Enable fuzzing on terminology. Binaries
+    are not suited for production. @<:@default=disabled@:>@])],
+   [
+    if test "x${enableval}" = "xyes" ; then
+       want_fuzzing="yes"
+       AC_DEFINE([ENABLE_FUZZING], [1], [Fuzzing enabled])
+       AC_SUBST([want_fuzzing])
+    else
+       want_fuzzing="no"
+    fi
+   ],
+   [want_fuzzing="no"])
 
-PKG_CHECK_MODULES([ELDBUS],
-                  [eldbus],
-                  [
-                   AC_DEFINE(HAVE_ELDBUS, 1, [DBUS support])
-                   have_eldbus="yes"
-                   ],
-                   [have_eldbus="no"]
-                   )
+AM_CONDITIONAL([ENABLE_FUZZING], [test "${want_fuzzing}" = "yes"])
+
+PKG_CHECK_MODULES([TERMINOLOGY], [${requirements}])
 
 AC_CHECK_FUNCS(mkstemps)
 
-AC_MSG_CHECKING([for ecore_con_url_head])
 orig_cflags=$CFLAGS
 CFLAGS+=" $TERMINOLOGY_CFLAGS "
 LDFLAGS+=" $TERMINOLOGY_LDFLAGS $TERMINOLOGY_LIBS "
+AC_MSG_CHECKING([for ecore_con_url_head])
 AC_LINK_IFELSE(
    [
     AC_LANG_PROGRAM(
@@ -102,26 +111,29 @@ AC_LINK_IFELSE(
      AC_MSG_RESULT([no])
    ]
 )
+AC_MSG_CHECKING([for elm_win_teamwork])
+AC_LINK_IFELSE(
+   [
+    AC_LANG_PROGRAM(
+      [[
+       #include <Elementary.h>
+      ]],
+     [[
+        elm_win_teamwork_uri_show(NULL);
+     ]])
+   ],
+   [
+     AC_MSG_RESULT([yes])
+     AC_DEFINE([HAVE_ELM_WIN_TEAMWORK], [1], [define to 1 if
+                elm_win_teamwork_uri_show is available])
+   ],
+   [
+     AC_MSG_RESULT([no])
+   ]
+)
 CFLAGS=$orig_cflags
 
 EFL_WITH_BIN([edje], [edje-cc], [edje_cc])
-
-with_max_log_level="EINA_LOG_LEVEL_ERR"
-AC_ARG_WITH(maximum-log-level,
-   [AC_HELP_STRING([--with-maximum-log-level=NUMBER],
-                   [limit terminology log level to the given number, any call to EINA_LOG() with values greater than this will be compiled out, ignoring runtime settings, but saving function calls.])],
-   [
-    if test "x${withval}" != "xno"; then
-       if echo "${withval}" | grep -E '^[[0-9]]+$' >/dev/null 2>/dev/null; then
-          AC_MSG_NOTICE([ignoring any EINA_LOG() with level greater than ${withval}])
-          with_max_log_level="${withval}"
-       else
-          AC_MSG_ERROR([--with-maximum-log-level takes a decimal number, got "${withval}" instead.])
-       fi
-    fi
-    ], [:])
-
-AC_DEFINE_UNQUOTED(EINA_LOG_LEVEL_MAXIMUM, ${with_max_log_level}, [if set, logging is limited to this amount.])
 
 AC_CONFIG_FILES([
 terminology.spec
@@ -167,6 +179,6 @@ echo "Installation...............: make install (as root if needed, with 'su' or
 echo "  prefix...................: $prefix"
 echo
 echo "Features:"
-echo "  dbus................: $have_eldbus"
 echo "  gettext.............: $have_po"
+echo "  fuzzing.............: $want_fuzzing"
 echo

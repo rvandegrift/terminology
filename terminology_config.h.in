@@ -6,8 +6,8 @@
 /* Enable access to unstable EFL Eo API */
 #undef EFL_EO_API_SUPPORT
 
-/* if set, logging is limited to this amount. */
-#undef EINA_LOG_LEVEL_MAXIMUM
+/* Fuzzing enabled */
+#undef ENABLE_FUZZING
 
 /* Define to 1 if translation of program messages to the user's native
    language is requested. */
@@ -28,8 +28,8 @@
 /* define to 1 if ecore_con_url_head is available */
 #undef HAVE_ECORE_CON_URL_HEAD
 
-/* DBUS support */
-#undef HAVE_ELDBUS
+/* define to 1 if elm_win_teamwork_uri_show is available */
+#undef HAVE_ELM_WIN_TEAMWORK
 
 /* Define if the GNU gettext() function is already present or preinstalled. */
 #undef HAVE_GETTEXT

@@ -12,6 +12,7 @@
 #endif
 #define gettext_noop(String) String
 
+extern int terminology_starting_up;
 extern int _log_domain;
 
 #define CRITICAL(...) EINA_LOG_DOM_CRIT(_log_domain, __VA_ARGS__)
@@ -25,6 +26,16 @@ extern int _log_domain;
 #endif
 #ifndef MAX
 # define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#endif
+
+#ifndef DIV_ROUND_UP
+# define DIV_ROUND_UP(_v, _n) \
+     (((_v) + (_n) - 1) / (_n))
+#endif
+
+#ifndef ROUND_UP
+# define ROUND_UP(_v, _n) \
+     (DIV_ROUND_UP((_v), (_n)) * (_n))
 #endif
 
 #endif

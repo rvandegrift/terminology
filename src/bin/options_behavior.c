@@ -12,7 +12,7 @@ static Evas_Object *op_w, *op_h;
 #define CB(_cfg_name, _inv)                                     \
 static void                                                     \
 _cb_op_behavior_##_cfg_name(void *data, Evas_Object *obj,       \
-                            void *event EINA_UNUSED)            \
+                            void *_event EINA_UNUSED)           \
 {                                                               \
    Evas_Object *term = data;                                    \
    Config *config = termio_config_get(term);                    \
@@ -43,6 +43,7 @@ CB(gravatar,  0);
 CB(notabs,  1);
 CB(mv_always_show, 0);
 CB(ty_escapes, 0);
+CB(changedir_to_current, 0);
 
 #undef CB
 
@@ -68,7 +69,9 @@ sback_units_format(double d)
 }
 
 static void
-_cb_op_behavior_sback_chg(void *data, Evas_Object *obj, void *event EINA_UNUSED)
+_cb_op_behavior_sback_chg(void *data,
+                          Evas_Object *obj,
+                          void *_event EINA_UNUSED)
 {
    Evas_Object *term = data;
    Config *config = termio_config_get(term);
@@ -79,8 +82,9 @@ _cb_op_behavior_sback_chg(void *data, Evas_Object *obj, void *event EINA_UNUSED)
 }
 
 static void
-_cb_op_behavior_tab_zoom_slider_chg(void *data, Evas_Object *obj,
-                                    void *event EINA_UNUSED)
+_cb_op_behavior_tab_zoom_slider_chg(void *data,
+                                    Evas_Object *obj,
+                                    void *_event EINA_UNUSED)
 {
    Evas_Object *term = data;
    Config *config = termio_config_get(term);
@@ -91,7 +95,9 @@ _cb_op_behavior_tab_zoom_slider_chg(void *data, Evas_Object *obj,
 }
 
 static void
-_cb_op_behavior_custom_geometry(void *data, Evas_Object *obj, void *event EINA_UNUSED)
+_cb_op_behavior_custom_geometry(void *data,
+                                Evas_Object *obj,
+                                void *_event EINA_UNUSED)
 {
    Evas_Object *term = data;
    Config *config = termio_config_get(term);
@@ -109,7 +115,9 @@ _cb_op_behavior_custom_geometry(void *data, Evas_Object *obj, void *event EINA_U
 }
 
 static void
-_cb_op_behavior_cg_width(void *data, Evas_Object *obj, void *event EINA_UNUSED)
+_cb_op_behavior_cg_width(void *data,
+                         Evas_Object *obj,
+                         void *_event EINA_UNUSED)
 {
    Evas_Object *term = data;
    Config *config = termio_config_get(term);
@@ -122,7 +130,9 @@ _cb_op_behavior_cg_width(void *data, Evas_Object *obj, void *event EINA_UNUSED)
 }
 
 static void
-_cb_op_behavior_cg_height(void *data, Evas_Object *obj, void *event EINA_UNUSED)
+_cb_op_behavior_cg_height(void *data,
+                          Evas_Object *obj,
+                          void *_event EINA_UNUSED)
 {
    Evas_Object *term = data;
    Config *config = termio_config_get(term);
@@ -193,6 +203,7 @@ options_behavior(Evas_Object *opbox, Evas_Object *term)
    CX(_("Show tabs"), notabs, 1);
    CX(_("Always show miniview"), mv_always_show, 0);
    CX(_("Enable special Terminology escape codes"), ty_escapes, 0);
+   CX(_("Open new terminals in current working directory"), changedir_to_current, 0);
 
 #undef CX
 

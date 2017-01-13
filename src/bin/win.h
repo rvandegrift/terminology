@@ -14,7 +14,9 @@ void term_unfocus(Term *term);
 Evas_Object *term_termio_get(Term *term);
 Evas_Object *term_miniview_get(Term *term);
 void term_miniview_toggle(Term *term);
+void term_set_title(Term *term);
 void term_miniview_hide(Term *term);
+Eina_Bool term_tab_go(Term *term, int tnum);
 
 void split_horizontally(Evas_Object *win, Evas_Object *term, const char *cmd);
 void split_vertically(Evas_Object *win, Evas_Object *term, const char *cmd);

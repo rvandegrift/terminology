@@ -36,6 +36,7 @@ struct _Config
       int            orig_size; /* not in EET */
       unsigned char  bitmap;
       unsigned char  orig_bitmap; /* not in EET */
+      unsigned char  bolditalic;
    } font;
    struct {
       const char    *email;
@@ -76,6 +77,7 @@ struct _Config
    Eina_Bool         notabs;
    Eina_Bool         mv_always_show;
    Eina_Bool         ty_escapes;
+   Eina_Bool         changedir_to_current;
    Config_Color      colors[(4 * 12)];
    Eina_List        *keys;
 
@@ -90,8 +92,10 @@ void config_sync(const Config *config_src, Config *config);
 void config_save(Config *config, const char *key);
 Config *config_load(const char *key);
 Config *config_fork(Config *config);
+Config *config_new();
 void config_del(Config *config);
 void config_default_font_set(Config *config, Evas *evas);
+void config_reset_keys(Config *config);
 
 const char *config_theme_path_get(const Config *config);
 const char *config_theme_path_default_get(const Config *config);

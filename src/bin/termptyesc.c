@@ -1,5 +1,6 @@
 #include "private.h"
 #include <Elementary.h>
+#include <stdint.h>
 #include "termio.h"
 #include "termpty.h"
 #include "termptydbl.h"
@@ -100,12 +101,35 @@ _csi_arg_get(Eina_Unicode **ptr)
      }
    while ((*b >= '0') && (*b <= '9'))
      {
+        if (sum > INT32_MAX/10 )
+          {
+             *ptr = NULL;
+             return 0;
+          }
         sum *= 10;
         sum += *b - '0';
         b++;
      }
    *ptr = b;
    return sum;
+}
+
+static void
+_tab_forward(Termpty *ty, int n)
+{
+   int cx = ty->cursor_state.cx;
+
+   for (; n > 0; n--)
+     {
+        do
+          {
+             cx++;
+          }
+        while ((cx < ty->w) && (!TAB_TEST(ty, cx)));
+     }
+
+   ty->cursor_state.cx = cx;
+   TERMPTY_RESTRICT_FIELD(ty->cursor_state.cx, 0, ty->w);
 }
 
 static void
@@ -126,12 +150,8 @@ _handle_cursor_control(Termpty *ty, const Eina_Unicode *cc)
          return;
       case 0x09: // HT  '\t' (horizontal tab)
          DBG("->HT");
+         _tab_forward(ty, 1);
          ty->termstate.had_cr = 0;
-         TERMPTY_SCREEN(ty, ty->cursor_state.cx, ty->cursor_state.cy).att.tab = 1;
-         ty->termstate.wrapnext = 0;
-         ty->cursor_state.cx += 8;
-         ty->cursor_state.cx = (ty->cursor_state.cx / 8) * 8;
-         TERMPTY_RESTRICT_FIELD(ty->cursor_state.cx, 0, ty->w);
          return;
       case 0x0a: // LF  '\n' (new line)
       case 0x0b: // VT  '\v' (vertical tab)
@@ -167,15 +187,6 @@ _handle_cursor_control(Termpty *ty, const Eina_Unicode *cc)
 static void
 _switch_to_alternative_screen(Termpty *ty, int mode)
 {
-   DBG("switch to alternative screen, mode:%d", mode);
-   if (ty->altbuf)
-     {
-        // if we are looking at alt buf now,
-        // clear main buf before we swap it back
-        // into the screen2 save (so save is
-        // clear)
-        termpty_clear_all(ty);
-     }
    // swap screen content now
    if (mode != ty->altbuf)
      termpty_screen_swap(ty);
@@ -303,6 +314,9 @@ _handle_esc_csi_reset_mode(Termpty *ty, Eina_Unicode cc, Eina_Unicode *b)
                      case 45: // ignore
                         WRN("TODO: Reverse-wraparound Mode");
                         break;
+                     case 47:
+                        _switch_to_alternative_screen(ty, mode);
+                        break;
                      case 59: // ignore
                         WRN("TODO: kanji terminal mode %i", mode);
                         break;
@@ -362,14 +376,32 @@ _handle_esc_csi_reset_mode(Termpty *ty, Eina_Unicode cc, Eina_Unicode *b)
                         DBG("Ignored screen mode %i", arg);
                         break;
                      case 1047:
-                     case 47:
+                        if (!mode && ty->altbuf)
+                            /* clear screen before switching back to normal */
+                            termpty_clear_screen(ty, TERMPTY_CLR_ALL);
                         _switch_to_alternative_screen(ty, mode);
                         break;
                      case 1048:
-                     case 1049:
                         termpty_cursor_copy(ty, mode);
-                        if (arg == 1049)
-                          _switch_to_alternative_screen(ty, mode);
+                        break;
+                     case 1049:
+                        if (mode)
+                          {
+                             // switch to altbuf
+                             termpty_cursor_copy(ty, mode);
+                             _switch_to_alternative_screen(ty, mode);
+                             if (ty->altbuf)
+                               /* clear screen before switching back to normal */
+                               termpty_clear_screen(ty, TERMPTY_CLR_ALL);
+                          }
+                        else
+                          {
+                             if (ty->altbuf)
+                               /* clear screen before switching back to normal */
+                               termpty_clear_screen(ty, TERMPTY_CLR_ALL);
+                             _switch_to_alternative_screen(ty, mode);
+                             termpty_cursor_copy(ty, mode);
+                          }
                         break;
                      case 2004:
                         ty->bracketed_paste = mode;
@@ -381,7 +413,7 @@ _handle_esc_csi_reset_mode(Termpty *ty, Eina_Unicode cc, Eina_Unicode *b)
                         WRN("TODO: enable mouse wheel -> cursor key xlation %i", mode);
                         break;
                      default:
-                        ERR("Unhandled DEC Private Reset Mode arg %i", arg);
+                        WRN("Unhandled DEC Private Reset Mode arg %i", arg);
                         break;
                     }
                }
@@ -410,7 +442,7 @@ _handle_esc_csi_reset_mode(Termpty *ty, Eina_Unicode cc, Eina_Unicode *b)
                         WRN("TODO: hebrew encoding mode: %i", mode);
                         break;
                      default:
-                        ERR("Unhandled ANSI Reset Mode arg %i", arg);
+                        WRN("Unhandled ANSI Reset Mode arg %i", arg);
                     }
                }
           }
@@ -425,7 +457,7 @@ _handle_esc_csi_color_set(Termpty *ty, Eina_Unicode **ptr)
 
    if (b && (*b == '>'))
      { // key resources used by xterm
-        ERR("TODO: set/reset key resources used by xterm");
+        WRN("TODO: set/reset key resources used by xterm");
         return;
      }
    DBG("color set");
@@ -449,9 +481,7 @@ _handle_esc_csi_color_set(Termpty *ty, Eina_Unicode **ptr)
                    ty->termstate.att.faint = 1;
                    break;
                 case 3: // italic
-#if defined(SUPPORT_ITALIC)
                    ty->termstate.att.italic = 1;
-#endif
                    break;
                 case 4: // underline
                    ty->termstate.att.underline = 1;
@@ -482,9 +512,7 @@ _handle_esc_csi_color_set(Termpty *ty, Eina_Unicode **ptr)
                    ty->termstate.att.faint = 0;
                    break;
                 case 23: // no italic, not fraktur
-#if defined(SUPPORT_ITALIC)
                    ty->termstate.att.italic = 0;
-#endif
                    ty->termstate.att.fraktur = 0;
                    break;
                 case 24: // no underline
@@ -640,7 +668,7 @@ _handle_esc_csi_color_set(Termpty *ty, Eina_Unicode **ptr)
                    ty->termstate.att.bgintense = 1;
                    break;
                 default: //  not handled???
-                   ERR("Unhandled color cmd [%i]", arg);
+                   WRN("Unhandled color cmd [%i]", arg);
                    break;
                }
           }
@@ -655,7 +683,7 @@ _handle_esc_csi_dsr(Termpty *ty, Eina_Unicode *b)
 
    if (*b == '>')
      {
-        ERR("TODO: disable key resources used by xterm");
+        WRN("TODO: disable key resources used by xterm");
         return;
      }
    if (*b == '?')
@@ -666,7 +694,8 @@ _handle_esc_csi_dsr(Termpty *ty, Eina_Unicode *b)
           {
            case 6:
               len = snprintf(bf, sizeof(bf), "\033[?%d;%d;1R",
-                             ty->cursor_state.cy + 1, ty->cursor_state.cx + 1);
+                             ty->cursor_state.cy + 1,
+                             ty->cursor_state.cx + 1);
               termpty_write(ty, bf, len);
               break;
            default:
@@ -919,9 +948,7 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
                        cells[x].att.blink2 = 0;
                        cells[x].att.inverse = 0;
                        cells[x].att.strike = 0;
-#if defined(SUPPORT_DBLWIDTH)
                        cells[x].att.dblwidth = 0;
-#endif
                     }
                }
           }
@@ -953,30 +980,56 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
              termpty_write(ty, bf, strlen(bf));
           }
         break;
-      case 'J': // "2j" erases the screen, 1j erase from screen start to curs, 0j erase cursor to end of screen
-        DBG("2j erases the screen, 1j erase from screen start to curs, 0j erase cursor to end of screen");
-        arg = _csi_arg_get(&b);
-        if (b)
+      case 'J':
+        if (*b == '?')
           {
-             if ((arg >= TERMPTY_CLR_END) && (arg <= TERMPTY_CLR_ALL))
-               termpty_clear_screen(ty, arg);
-             else
-               ERR("invalid clr scr %i", arg);
+             b++;
+             arg = _csi_arg_get(&b);
+             WRN("Unsupported selected erase in display %d", arg);
           }
         else
-          termpty_clear_screen(ty, TERMPTY_CLR_END);
+          arg = _csi_arg_get(&b);
+        if (arg < 1) arg = 0;
+        /* 3J erases the backlog,
+         * 2J erases the screen,
+         * 1J erase from screen start to cursor,
+         * 0J erase form cursor to end of screen
+         */
+        DBG("ED/DECSED %d: erase in display", arg);
+        switch (arg)
+          {
+           case TERMPTY_CLR_END:
+           case TERMPTY_CLR_BEGIN:
+           case TERMPTY_CLR_ALL:
+              termpty_clear_screen(ty, arg);
+              break;
+           case 3:
+              termpty_clear_backlog(ty);
+              break;
+           default:
+              ERR("invalid EL/DECSEL argument %d", arg);
+          }
         break;
       case 'K': // 0K erase to end of line, 1K erase from screen start to cursor, 2K erase all of line
-        arg = _csi_arg_get(&b);
-        DBG("0K erase to end of line, 1K erase from screen start to cursor, 2K erase all of line: %d", arg);
-        if (b)
+        if (*b == '?')
           {
-             if ((arg >= TERMPTY_CLR_END) && (arg <= TERMPTY_CLR_ALL))
-               termpty_clear_line(ty, arg, ty->w);
-             else
-               ERR("invalid clr lin %i", arg);
+             b++;
+             arg = _csi_arg_get(&b);
+             WRN("Unsupported selected erase in line %d", arg);
           }
-        else termpty_clear_line(ty, TERMPTY_CLR_END, ty->w);
+        arg = _csi_arg_get(&b);
+        if (arg < 1) arg = 0;
+        DBG("EL/DECSEL %d: erase in line", arg);
+        switch (arg)
+          {
+           case TERMPTY_CLR_END:
+           case TERMPTY_CLR_BEGIN:
+           case TERMPTY_CLR_ALL:
+              termpty_clear_line(ty, arg, ty->w);
+              break;
+           default:
+              ERR("invalid EL/DECSEL argument %d", arg);
+          }
         break;
       case 'h':
       case 'l':
@@ -1026,7 +1079,7 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
       case 's': // store cursor pos
         termpty_cursor_copy(ty, EINA_TRUE);
         break;
-      case 't': // store cursor pos
+      case 't': // window manipulation
         arg = _csi_arg_get(&b);
         WRN("TODO: window operation %d not supported", arg);
         break;
@@ -1065,38 +1118,50 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
  */
       case 'g': // clear tabulation
         arg = _csi_arg_get(&b);
-        DBG("Tabulation Clear (TBC): %d", arg);
+        if (arg < 0) arg = 0;
+        if (arg == 0)
+          {
+             int cx = ty->cursor_state.cx;
+             TAB_UNSET(ty, cx);
+          }
+        else if (arg == 3)
+          {
+             termpty_clear_tabs_on_screen(ty);
+          }
+        else
+          {
+             ERR("Tabulation Clear (TBC) with invalid argument: %d", arg);
+          }
         break;
-       case 'Z': // Cursor Back Tab
-       {
-          int idx, size, cx = ty->cursor_state.cx, cy = ty->cursor_state.cy;
+      case 'Z':
+          {
+             int cx = ty->cursor_state.cx;
 
-          arg = _csi_arg_get(&b);
-          if (arg < 1) arg = 1;
+             arg = _csi_arg_get(&b);
+             DBG("Cursor Backward Tabulation (CBT): %d", arg);
+             if (arg < 1) arg = 1;
 
-          size = ty->w * cy + cx + 1;
-          for (idx = size - 1; idx >= 0; idx--)
-            {
-               if (TERMPTY_SCREEN(ty, cx, cy).att.tab) arg--;
-               cx--;
-               if (cx < 0)
-                 {
-                    cx = ty->w - 1;
-                    cy--;
-                 }
-               if (!arg) break;
-            }
-          if (!arg)
-            {
-               ty->cursor_state.cx = cx;
-               TERMPTY_RESTRICT_FIELD(ty->cursor_state.cx, 0, ty->w);
-               ty->cursor_state.cy = cy;
-               TERMPTY_RESTRICT_FIELD(ty->cursor_state.cy, 0, ty->h);
-            }
-       }
-       break;
+             for (; arg > 0; arg--)
+               {
+                  do
+                    {
+                       cx--;
+                    }
+                  while ((cx >= 0) && (!TAB_TEST(ty, cx)));
+               }
+
+             ty->cursor_state.cx = cx;
+             TERMPTY_RESTRICT_FIELD(ty->cursor_state.cx, 0, ty->w);
+          }
+        break;
+      case 'I':
+        arg = _csi_arg_get(&b);
+        if (arg < 1) arg = 1;
+        DBG("Cursor Forward Tabulation (CHT): %d", arg);
+        _tab_forward(ty, arg);
+        break;
       default:
-       goto unhandled;
+        goto unhandled;
      }
    cc++;
    return cc - c;
@@ -1112,7 +1177,7 @@ unhandled:
              else
                eina_strbuf_append_char(bf, c[i]);
           }
-        ERR("unhandled CSI '%s': %s", _safechar(*cc), eina_strbuf_string_get(bf));
+        WRN("unhandled CSI '%s': %s", _safechar(*cc), eina_strbuf_string_get(bf));
         eina_strbuf_free(bf);
      }
    cc++;
@@ -1160,7 +1225,7 @@ _xterm_parse_color(Eina_Unicode **ptr, unsigned char *r, unsigned char *g,
 
    if (*p != '#')
      {
-        ERR("unsupported xterm color");
+        WRN("unsupported xterm color");
         return -1;
      }
    p++;
@@ -1208,18 +1273,34 @@ _xterm_parse_color(Eina_Unicode **ptr, unsigned char *r, unsigned char *g,
    return 0;
 
 err:
-   ERR("invalid xterm color");
+   WRN("invalid xterm color");
    return -1;
 }
 
+static void
+_handle_xterm_50_command(Termpty *ty,
+                         char *s,
+                         int len)
+{
+  size_t i;
+  int size;
+  for (i = 0; i < (size_t)len - strlen(":size="); i++)
+    {
+       if (strncmp(s + i, ":size=", strlen(":size=")) == 0)
+         {
+            size = strtol(s + i + strlen(":size="), NULL, 10);
+            termio_font_size_set(ty->obj, size);
+         }
+    }
+}
 
 static void
-_handle_xterm_777_command(Termpty *ty EINA_UNUSED,
+_handle_xterm_777_command(Termpty *_ty EINA_UNUSED,
                           char *s
 #if ((ELM_VERSION_MAJOR == 1) && (ELM_VERSION_MINOR < 8))
               EINA_UNUSED
 #endif
-                          , int len EINA_UNUSED)
+                          , int _len EINA_UNUSED)
 {
 #if (ELM_VERSION_MAJOR > 1) || (ELM_VERSION_MINOR >= 8)
    char *cmd_end = NULL,
@@ -1229,13 +1310,13 @@ _handle_xterm_777_command(Termpty *ty EINA_UNUSED,
 
    if (strncmp(s, "notify;", strlen("notify;")))
      {
-        ERR("unrecognized xterm 777 command %s", s);
+        WRN("unrecognized xterm 777 command %s", s);
         return;
      }
 
    if (!elm_need_sys_notify())
      {
-        ERR("no elementary system notification support");
+        WRN("no elementary system notification support");
         return;
      }
    cmd_end = s + strlen("notify");
@@ -1326,7 +1407,8 @@ _handle_esc_xterm(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
                   ty->prop.title = NULL;
                   ty->prop.icon = NULL;
                }
-             if (ty->cb.set_title.func) ty->cb.set_title.func(ty->cb.set_title.data);
+             if (ty->cb.set_title.func && !ty->prop.user_title)
+               ty->cb.set_title.func(ty->cb.set_title.data);
              if (ty->cb.set_icon.func) ty->cb.set_icon.func(ty->cb.set_icon.data);
           }
         break;
@@ -1408,10 +1490,23 @@ _handle_esc_xterm(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
              len = cc - c - (p - buf);
              if (_xterm_parse_color(&p, &r, &g, &b, len) < 0)
                goto err;
+#ifndef ENABLE_FUZZING
              evas_object_textgrid_palette_set(
                 termio_textgrid_get(ty->obj),
                 EVAS_TEXTGRID_PALETTE_STANDARD, 0,
                 r, g, b, 0xff);
+#endif
+          }
+        break;
+      case 50:
+        DBG("xterm font support");
+        if (!*p)
+          goto err;
+        s = eina_unicode_unicode_to_utf8(p, &len);
+        if (s)
+          {
+             _handle_xterm_50_command(ty, s, len);
+             free(s);
           }
         break;
       case 777:
@@ -1425,7 +1520,7 @@ _handle_esc_xterm(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
         break;
       default:
         // many others
-        ERR("unhandled xterm esc %d", arg);
+        WRN("unhandled xterm esc %d", arg);
         break;
      }
 
@@ -1433,7 +1528,7 @@ _handle_esc_xterm(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
 
     return cc - c;
 err:
-    ERR("invalid xterm sequence");
+    WRN("invalid xterm sequence");
     return cc - c;
 }
 
@@ -1488,7 +1583,9 @@ _handle_esc_terminology(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *
 }
 
 static int
-_handle_esc_dcs(Termpty *ty EINA_UNUSED, const Eina_Unicode *c, const Eina_Unicode *ce)
+_handle_esc_dcs(Termpty *ty,
+                const Eina_Unicode *c,
+                const Eina_Unicode *ce)
 {
    const Eina_Unicode *cc, *be;
    Eina_Unicode buf[4096], *b;
@@ -1526,12 +1623,12 @@ _handle_esc_dcs(Termpty *ty EINA_UNUSED, const Eina_Unicode *c, const Eina_Unico
          switch (buf[1])
            {
             case 'q':
-              ERR("unhandled dsc request to get termcap/terminfo");
+              WRN("unhandled dsc request to get termcap/terminfo");
               /* TODO */
               goto end;
                break;
             case 'p':
-              ERR("unhandled dsc request to set termcap/terminfo");
+              WRN("unhandled dsc request to set termcap/terminfo");
               /* TODO */
               goto end;
                break;
@@ -1544,7 +1641,7 @@ _handle_esc_dcs(Termpty *ty EINA_UNUSED, const Eina_Unicode *c, const Eina_Unico
          /* Request status string */
          if (len > 1 && buf[1] != 'q')
            {
-              ERR("invalid/unhandled dsc esc '$%s' (expected '$q')", _safechar(buf[1]));
+              WRN("invalid/unhandled dsc esc '$%s' (expected '$q')", _safechar(buf[1]));
               goto end;
            }
          if (len < 4)
@@ -1560,12 +1657,12 @@ _handle_esc_dcs(Termpty *ty EINA_UNUSED, const Eina_Unicode *c, const Eina_Unico
                  }
                else if (buf[3] == 'q') /* DECSCA */
                  {
-                    ERR("unhandled DECSCA '$qq'");
+                    WRN("unhandled DECSCA '$qq'");
                     goto end;
                  }
                else
                  {
-                    ERR("invalid/unhandled dsc esc '$q\"%s'", _safechar(buf[3]));
+                    WRN("invalid/unhandled dsc esc '$q\"%s'", _safechar(buf[3]));
                     goto end;
                  }
                break;
@@ -1574,14 +1671,14 @@ _handle_esc_dcs(Termpty *ty EINA_UNUSED, const Eina_Unicode *c, const Eina_Unico
             case 'r': /* DECSTBM */
                /* TODO: */
             default:
-               ERR("unhandled dsc request status string '$q%s'", _safechar(buf[2]));
+               WRN("unhandled dsc request status string '$q%s'", _safechar(buf[2]));
                goto end;
            }
          /* TODO */
          break;
       default:
         // many others
-        ERR("Unhandled DCS escape '%s'", _safechar(buf[0]));
+        WRN("Unhandled DCS escape '%s'", _safechar(buf[0]));
         break;
      }
 end:
@@ -1620,16 +1717,19 @@ _handle_esc(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
         ty->termstate.alt_kp = 0;
         return 1;
       case 'M': // move to prev line
+        DBG("move to prev line");
         ty->termstate.wrapnext = 0;
         ty->cursor_state.cy--;
         termpty_text_scroll_rev_test(ty, EINA_TRUE);
         return 1;
       case 'D': // move to next line
+        DBG("move to next line");
         ty->termstate.wrapnext = 0;
         ty->cursor_state.cy++;
         termpty_text_scroll_test(ty, EINA_FALSE);
         return 1;
       case 'E': // add \n\r
+        DBG("add \\n\\r");
         ty->termstate.wrapnext = 0;
         ty->cursor_state.cx = 0;
         ty->cursor_state.cy++;
@@ -1704,7 +1804,8 @@ _handle_esc(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
         termpty_cursor_copy(ty, EINA_FALSE);
         return 1;
       case 'H': // set tab at current column
-        DBG("Character Tabulation Set (HTS)");
+        DBG("Character Tabulation Set (HTS) at x:%d", ty->cursor_state.cx);
+        TAB_SET(ty, ty->cursor_state.cx);
         return 1;
 /*
       case 'G': // query gfx mode
@@ -1715,7 +1816,7 @@ _handle_esc(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
         return 1;
  */
       default:
-        ERR("Unhandled escape '%s' (0x%02x)", _safechar(c[0]), (unsigned int) c[0]);
+        WRN("Unhandled escape '%s' (0x%02x)", _safechar(c[0]), (unsigned int) c[0]);
         return 1;
      }
    return 0;
@@ -1834,7 +1935,7 @@ termpty_handle_seq(Termpty *ty, Eina_Unicode *c, Eina_Unicode *ce)
    else if (c[0] == 0x7f) // DEL
      {
         ty->termstate.had_cr = 0;
-        ERR("Unhandled char 0x%02x [DEL]", (unsigned int) c[0]);
+        WRN("Unhandled char 0x%02x [DEL]", (unsigned int) c[0]);
         return 1;
      }
    else if (c[0] == 0x9b) // ANSI ESC!!!

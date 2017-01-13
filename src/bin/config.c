@@ -7,7 +7,7 @@
 #include "col.h"
 #include "utils.h"
 
-#define CONF_VER 6
+#define CONF_VER 14
 
 #define LIM(v, min, max) {if (v >= max) v = max; else if (v <= min) v = min;}
 
@@ -82,6 +82,8 @@ config_init(void)
      (edd_base, Config, "font.size", font.size, EET_T_INT);
    EET_DATA_DESCRIPTOR_ADD_BASIC
      (edd_base, Config, "font.bitmap", font.bitmap, EET_T_UCHAR);
+   EET_DATA_DESCRIPTOR_ADD_BASIC
+     (edd_base, Config, "font.bolditalic", font.bolditalic, EET_T_UCHAR);
    EET_DATA_DESCRIPTOR_ADD_BASIC
      (edd_base, Config, "helper.email", helper.email, EET_T_STRING);
    EET_DATA_DESCRIPTOR_ADD_BASIC
@@ -165,6 +167,8 @@ config_init(void)
      (edd_base, Config, "mv_always_show", mv_always_show, EET_T_UCHAR);
    EET_DATA_DESCRIPTOR_ADD_BASIC
      (edd_base, Config, "ty_escapes", ty_escapes, EET_T_UCHAR);
+   EET_DATA_DESCRIPTOR_ADD_BASIC
+     (edd_base, Config, "changedir_to_current", changedir_to_current, EET_T_UCHAR);
 }
 
 void
@@ -227,6 +231,7 @@ config_sync(const Config *config_src, Config *config)
    config->font.size = config_src->font.size;
    eina_stringshare_replace(&(config->font.name), config_src->font.name);
    config->font.bitmap = config_src->font.bitmap;
+   config->font.bolditalic = config_src->font.bolditalic;
    config->helper.inline_please = config_src->helper.inline_please;
    eina_stringshare_replace(&(config->helper.email), config_src->helper.email);
    eina_stringshare_replace(&(config->helper.url.general), config_src->helper.url.general);
@@ -265,6 +270,7 @@ config_sync(const Config *config_src, Config *config)
    config->notabs = config_src->notabs;
    config->mv_always_show = config_src->mv_always_show;
    config->ty_escapes = config_src->ty_escapes;
+   config->changedir_to_current = config_src->changedir_to_current;
 }
 
 static void
@@ -337,12 +343,14 @@ _add_default_keys(Config *config)
    ADD_KB("v", 1, 0, 1, 0, "paste_clipboard");
    ADD_KB("h", 1, 0, 1, 0, "miniview");
    ADD_KB("Insert", 1, 0, 1, 0, "paste_clipboard");
+   ADD_KB("n", 1, 0, 1, 0, "term_new");
 
    /* Ctrl-Alt- */
    ADD_KB("equal", 1, 1, 0, 0, "increase_font_size");
    ADD_KB("minus", 1, 1, 0, 0, "decrease_font_size");
    ADD_KB("0", 1, 1, 0, 0, "reset_font_size");
    ADD_KB("9", 1, 1, 0, 0, "big_font_size");
+   ADD_KB("t", 1, 1, 0, 0, "tab_title");
 
    /* Shift- */
    ADD_KB("Prior", 0, 0, 1, 0, "one_page_up");
@@ -354,10 +362,37 @@ _add_default_keys(Config *config)
    ADD_KB("KP_Subtract", 0, 0, 1, 0, "decrease_font_size");
    ADD_KB("KP_Multiply", 0, 0, 1, 0, "reset_font_size");
    ADD_KB("KP_Divide", 0, 0, 1, 0, "copy_clipboard");
+   ADD_KB("Left", 0, 0, 1, 0, "term_prev");
+   ADD_KB("Right", 0, 0, 1, 0, "term_next");
+   ADD_KB("Home", 0, 0, 1, 0, "top_backlog");
+   ADD_KB("End", 0, 0, 1, 0, "reset_scroll");
+}
+
+void
+config_reset_keys(Config *config)
+{
+   Config_Keys *key;
+
+   EINA_LIST_FREE(config->keys, key)
+     {
+        eina_stringshare_del(key->keyname);
+        eina_stringshare_del(key->cb);
+        free(key);
+     }
+   _add_default_keys(config);
+}
+
+
+static void
+_add_key(Config *config, const char *name, int ctrl, int alt, int shift,
+         int win, const char *cb_name)
+{
+   Config_Keys *kb;
+
+   ADD_KB(name, ctrl, alt, shift, win, cb_name);
 }
 
 #undef ADD_KB
-
 
 void
 config_default_font_set(Config *config, Evas *evas)
@@ -420,12 +455,85 @@ config_default_font_set(Config *config, Evas *evas)
      {
         config->font.bitmap = EINA_FALSE;
         config->font.size = 12;
+        config->font.bolditalic = EINA_TRUE;
         eina_stringshare_del(fname);
      }
 #undef FONT_DEJAVU
 #undef FONT_LIBERATION
 #undef FONT_DROID
 #undef FONT_BITSTREAM
+}
+
+Config *
+config_new(void)
+{
+   Config *config;
+   config = calloc(1, sizeof(Config));
+   if (config)
+     {
+        int i, j;
+
+        config->version = CONF_VER;
+        config->font.bitmap = EINA_TRUE;
+        config->font.name = eina_stringshare_add("nexus.pcf");
+        config->font.size = 10;
+        config->font.bolditalic = EINA_TRUE;
+        config->helper.email = eina_stringshare_add("xdg-email");;
+        config->helper.url.general = eina_stringshare_add("xdg-open");
+        config->helper.url.video = eina_stringshare_add("xdg-open");
+        config->helper.url.image = eina_stringshare_add("xdg-open");
+        config->helper.local.general = eina_stringshare_add("xdg-open");
+        config->helper.local.video = eina_stringshare_add("xdg-open");
+        config->helper.local.image = eina_stringshare_add("xdg-open");
+        config->helper.inline_please = EINA_TRUE;
+        config->scrollback = 2000;
+        config->theme = eina_stringshare_add("default.edj");
+        config->background = NULL;
+        config->tab_zoom = 0.5;
+        config->vidmod = 0;
+        config->opacity = 50;
+        config->cg_width = 80;
+        config->cg_height = 24;
+        config->jump_on_change = EINA_FALSE;
+        config->jump_on_keypress = EINA_TRUE;
+        config->flicker_on_key = EINA_FALSE;
+        config->disable_cursor_blink = EINA_FALSE;
+        config->disable_visual_bell = EINA_FALSE;
+        config->bell_rings = EINA_TRUE;
+        config->active_links = EINA_TRUE;
+        config->translucent = EINA_FALSE;
+        config->mute = EINA_FALSE;
+        config->visualize = EINA_TRUE;
+        config->urg_bell = EINA_TRUE;
+        config->multi_instance = EINA_FALSE;
+        config->xterm_256color = EINA_FALSE;
+        config->erase_is_del = EINA_FALSE;
+        config->custom_geometry = EINA_FALSE;
+        config->drag_links = EINA_FALSE;
+        config->login_shell = EINA_FALSE;
+        config->mouse_over_focus = EINA_TRUE;
+        config->colors_use = EINA_FALSE;
+        config->gravatar = EINA_TRUE;
+        config->notabs = EINA_FALSE;
+        config->mv_always_show = EINA_FALSE;
+        config->ty_escapes = EINA_TRUE;
+        config->changedir_to_current = EINA_TRUE;
+        for (j = 0; j < 4; j++)
+          {
+             for (i = 0; i < 12; i++)
+               {
+                  unsigned char rr = 0, gg = 0, bb = 0, aa = 0;
+
+                  colors_standard_get(j, i, &rr, &gg, &bb, &aa);
+                  config->colors[(j * 12) + i].r = rr;
+                  config->colors[(j * 12) + i].g = gg;
+                  config->colors[(j * 12) + i].b = bb;
+                  config->colors[(j * 12) + i].a = aa;
+               }
+          }
+        _add_default_keys(config);
+     }
+   return config;
 }
 
 Config *
@@ -474,12 +582,36 @@ config_load(const char *key)
                   config->gravatar = EINA_TRUE;
                   /*pass through*/
                 case 4:
-                  config->version = 5;
                   /*pass through*/
                 case 5:
                   config->ty_escapes = EINA_TRUE;
                   /*pass through*/
-                case CONF_VER: /* 6 */
+                case 6:
+                  config->changedir_to_current = EINA_TRUE;
+                  /*pass through*/
+                case 7:
+                  _add_key(config, "n", 1, 0, 1, 0, "term_new");
+                  /*pass through*/
+                case 8:
+                  _add_key(config, "t", 1, 1, 0, 0, "tab_title");
+                  /*pass through*/
+                case 9:
+                  /* actually do nothing */
+                  /*pass through*/
+                case 10:
+                  config->font.bolditalic = EINA_TRUE;
+                  /*pass through*/
+                case 11:
+                  _add_key(config, "Left", 0, 0, 1, 0, "term_prev");
+                  _add_key(config, "Right", 0, 0, 1, 0, "term_next");
+                  /*pass through*/
+                case 12:
+                  _add_key(config, "Home", 0, 0, 1, 0, "top_backlog");
+                  /*pass through*/
+                case 13:
+                  _add_key(config, "End", 0, 0, 1, 0, "reset_scroll");
+                  /*pass through*/
+                case CONF_VER: /* 13 */
                   config->version = CONF_VER;
                   break;
                 default:
@@ -496,69 +628,7 @@ config_load(const char *key)
      }
    if (!config)
      {
-        config = calloc(1, sizeof(Config));
-        if (config)
-          {
-             int i, j;
-
-             config->version = CONF_VER;
-             config->font.bitmap = EINA_TRUE;
-             config->font.name = eina_stringshare_add("nexus.pcf");
-             config->font.size = 10;
-             config->helper.email = eina_stringshare_add("xdg-email");;
-             config->helper.url.general = eina_stringshare_add("xdg-open");
-             config->helper.url.video = eina_stringshare_add("xdg-open");
-             config->helper.url.image = eina_stringshare_add("xdg-open");
-             config->helper.local.general = eina_stringshare_add("xdg-open");
-             config->helper.local.video = eina_stringshare_add("xdg-open");
-             config->helper.local.image = eina_stringshare_add("xdg-open");
-             config->helper.inline_please = EINA_TRUE;
-             config->scrollback = 2000;
-             config->theme = eina_stringshare_add("default.edj");
-             config->background = NULL;
-             config->tab_zoom = 0.5;
-             config->vidmod = 0;
-             config->opacity = 50;
-             config->cg_width = 80;
-             config->cg_height = 24;
-             config->jump_on_change = EINA_TRUE;
-             config->jump_on_keypress = EINA_TRUE;
-             config->flicker_on_key = EINA_FALSE;
-             config->disable_cursor_blink = EINA_FALSE;
-             config->disable_visual_bell = EINA_FALSE;
-             config->bell_rings = EINA_TRUE;
-             config->active_links = EINA_TRUE;
-             config->translucent = EINA_FALSE;
-             config->mute = EINA_FALSE;
-             config->visualize = EINA_TRUE;
-             config->urg_bell = EINA_TRUE;
-             config->multi_instance = EINA_FALSE;
-             config->xterm_256color = EINA_FALSE;
-             config->erase_is_del = EINA_FALSE;
-             config->custom_geometry = EINA_FALSE;
-             config->drag_links = EINA_FALSE;
-             config->login_shell = EINA_FALSE;
-             config->mouse_over_focus = EINA_TRUE;
-             config->colors_use = EINA_FALSE;
-             config->gravatar = EINA_TRUE;
-             config->notabs = EINA_FALSE;
-             config->mv_always_show = EINA_FALSE;
-             config->ty_escapes = EINA_TRUE;
-             for (j = 0; j < 4; j++)
-               {
-                  for (i = 0; i < 12; i++)
-                    {
-                       unsigned char rr = 0, gg = 0, bb = 0, aa = 0;
-
-                       colors_standard_get(j, i, &rr, &gg, &bb, &aa);
-                       config->colors[(j * 12) + i].r = rr;
-                       config->colors[(j * 12) + i].g = gg;
-                       config->colors[(j * 12) + i].b = bb;
-                       config->colors[(j * 12) + i].a = aa;
-                    }
-               }
-             _add_default_keys(config);
-          }
+        config = config_new();
      }
    else
      {
@@ -595,6 +665,7 @@ config_fork(Config *config)
    SCPY(font.orig_name);
    CPY(font.orig_size);
    CPY(font.orig_bitmap);
+   CPY(font.bolditalic);
    SCPY(helper.email);
    SCPY(helper.url.general);
    SCPY(helper.url.video);
@@ -637,10 +708,12 @@ config_fork(Config *config)
    CPY(notabs);
    CPY(mv_always_show);
    CPY(ty_escapes);
+   CPY(changedir_to_current);
 
    EINA_LIST_FOREACH(config->keys, l, key)
      {
         Config_Keys *key2 = calloc(1, sizeof(Config_Keys));
+        if (!key2) break;
         key2->keyname = key->keyname;
         eina_stringshare_ref(key->keyname);
         key2->ctrl = key->ctrl;
@@ -698,7 +771,7 @@ config_theme_path_get(const Config *config)
 }
 
 const char *
-config_theme_path_default_get(const Config *config EINA_UNUSED)
+config_theme_path_default_get(const Config *config)
 {
    static char path[PATH_MAX] = "";
 

@@ -3,7 +3,7 @@
 
 Summary: EFL Terminal Emulator
 Name: terminology
-Version: 0.9.1
+Version: 1.0.0
 Release: %{_rel}
 License: BSD
 Group: Applications/System

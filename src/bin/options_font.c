@@ -128,7 +128,9 @@ _parse_font_name(const char *full_name,
 }
 
 static void
-_cb_op_font_sel(void *data, Evas_Object *obj EINA_UNUSED, void *event EINA_UNUSED)
+_cb_op_font_sel(void *data,
+                Evas_Object *_obj EINA_UNUSED,
+                void *_event EINA_UNUSED)
 {
    Font *f = data;
    Config *config = termio_config_get(f->term);
@@ -145,7 +147,9 @@ _cb_op_font_sel(void *data, Evas_Object *obj EINA_UNUSED, void *event EINA_UNUSE
 }
 
 static void
-_cb_op_fontsize_sel(void *data, Evas_Object *obj, void *event EINA_UNUSED)
+_cb_op_fontsize_sel(void *data,
+                    Evas_Object *obj,
+                    void *_event EINA_UNUSED)
 {
    Evas_Object *term = data;
    Config *config = termio_config_get(term);
@@ -165,7 +169,10 @@ _cb_op_font_sort(const void *d1, const void *d2)
 }
 
 static void
-_cb_op_font_preview_del(void *data EINA_UNUSED, Evas *e EINA_UNUSED, Evas_Object *obj, void *event EINA_UNUSED)
+_cb_op_font_preview_del(void *_data EINA_UNUSED,
+                        Evas *_e EINA_UNUSED,
+                        Evas_Object *obj,
+                        void *_event EINA_UNUSED)
 {
    Evas_Object *o;
    Ecore_Timer *timer = evas_object_data_get(obj, "delay");
@@ -233,7 +240,10 @@ done:
 }
 
 static void
-_cb_op_font_preview_eval(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, void *event EINA_UNUSED)
+_cb_op_font_preview_eval(void *data,
+                         Evas *_e EINA_UNUSED,
+                         Evas_Object *obj,
+                         void *_event EINA_UNUSED)
 {
    Font *f = data;
    Evas_Coord ox, oy, ow, oh, vx, vy, vw, vh;
@@ -287,20 +297,27 @@ _cb_op_font_content_get(void *data, Evas_Object *obj, const char *part)
 }
 
 static char *
-_cb_op_font_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part EINA_UNUSED)
+_cb_op_font_text_get(void *data,
+                     Evas_Object *_obj EINA_UNUSED,
+                     const char *_part EINA_UNUSED)
 {
    Font *f = data;
    return strdup(f->pretty_name);
 }
 
 static char *
-_cb_op_font_group_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part EINA_UNUSED)
+_cb_op_font_group_text_get(void *data,
+                           Evas_Object *_obj EINA_UNUSED,
+                           const char *_part EINA_UNUSED)
 {
    return strdup(data);
 }
 
 static void
-_cb_term_resize(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event EINA_UNUSED)
+_cb_term_resize(void *data,
+                Evas *_e EINA_UNUSED,
+                Evas_Object *_obj EINA_UNUSED,
+                void *_event EINA_UNUSED)
 {
    Evas_Object *term = data;
    if (expecting_resize)
@@ -312,7 +329,10 @@ _cb_term_resize(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, v
 }
 
 static void
-_cb_font_del(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event EINA_UNUSED)
+_cb_font_del(void *data,
+             Evas *_e EINA_UNUSED,
+             Evas_Object *_obj EINA_UNUSED,
+             void *_event EINA_UNUSED)
 {
    Evas_Object *term = data;
    evas_object_event_callback_del_full(term, EVAS_CALLBACK_RESIZE, 
@@ -340,6 +360,19 @@ options_font_clear(void)
         eina_hash_free(fonthash);
         fonthash = NULL;
      }
+}
+
+static void
+_cb_font_bolditalic(void *data,
+                    Evas_Object *obj,
+                    void *_event EINA_UNUSED)
+{
+   Evas_Object *term = data;
+   Config *config = termio_config_get(term);
+
+   config->font.bolditalic = elm_check_state_get(obj);
+   termio_config_update(term);
+   config_save(config, NULL);
 }
 
 void
@@ -433,6 +466,7 @@ options_font(Evas_Object *opbox, Evas_Object *term)
      {
         char *s;
         f = calloc(1, sizeof(Font));
+        if (!f) break;
         f->full_name = eina_stringshare_add(file);
         s = strchr(file, '.');
         if (s != NULL) *s = '\0';
@@ -474,6 +508,7 @@ options_font(Evas_Object *opbox, Evas_Object *term)
         if (!eina_hash_find(fonthash, fname))
           {
              f = calloc(1, sizeof(Font));
+             if (!f) break;
              if (_parse_font_name(fname, &f->full_name, &f->pretty_name) <0)
                {
                   free(f);
@@ -519,6 +554,16 @@ options_font(Evas_Object *opbox, Evas_Object *term)
    evas_object_size_hint_weight_set(opbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(opbox, EVAS_HINT_FILL, EVAS_HINT_FILL);
    evas_object_show(o);
+
+   o = elm_check_add(bx0);
+   evas_object_size_hint_weight_set(o, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(o, EVAS_HINT_FILL, 0.5);
+   elm_object_text_set(o, _("Display bold and italic in the terminal"));
+   elm_check_state_set(o, config->font.bolditalic);
+   elm_box_pack_end(bx0, o);
+   evas_object_show(o);
+   evas_object_smart_callback_add(o, "changed",
+                                  _cb_font_bolditalic, term);
 
    expecting_resize = 0;
    evas_object_geometry_get(term, NULL, NULL, &tsize_w, &tsize_h);

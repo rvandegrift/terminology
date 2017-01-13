@@ -54,8 +54,8 @@ termpty_shutdown(void)
    _termpty_log_dom = -1;
 }
 
-static void
-_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len)
+void
+termpty_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len)
 {
    Eina_Unicode *c, *ce, *b;
    int n, bytes;
@@ -157,37 +157,26 @@ _pty_size(Termpty *ty)
 }
 
 static Eina_Bool
-_cb_exe_exit(void *data, int type EINA_UNUSED, void *event)
+_fd_read_do(Termpty *ty, Ecore_Fd_Handler *fd_handler, Eina_Bool false_on_empty)
 {
-   Ecore_Exe_Event_Del *ev = event;
-   Termpty *ty = data;
-
-   if (ev->pid != ty->pid) return ECORE_CALLBACK_PASS_ON;
-   ty->exit_code = ev->exit_code;
-   
-   ty->pid = -1;
-
-   if (ty->hand_exe_exit) ecore_event_handler_del(ty->hand_exe_exit);
-   ty->hand_exe_exit = NULL;
-   if (ty->hand_fd) ecore_main_fd_handler_del(ty->hand_fd);
-   ty->hand_fd = NULL;
-   if (ty->fd >= 0) close(ty->fd);
-   ty->fd = -1;
-   if (ty->slavefd >= 0) close(ty->slavefd);
-   ty->slavefd = -1;
-
-   if (ty->cb.exited.func) ty->cb.exited.func(ty->cb.exited.data);
-   
-   return ECORE_CALLBACK_PASS_ON;
-}
-
-static Eina_Bool
-_cb_fd_read(void *data, Ecore_Fd_Handler *fd_handler EINA_UNUSED)
-{
-   Termpty *ty = data;
    char buf[4097];
    Eina_Unicode codepoint[4097];
    int len, i, j, k, reads;
+
+   if (ecore_main_fd_handler_active_get(fd_handler, ECORE_FD_ERROR))
+     {
+        ERR("error while reading from tty slave fd");
+        return ECORE_CALLBACK_CANCEL;
+     }
+   if (ty->fd == -1)
+     return ECORE_CALLBACK_CANCEL;
+
+/* it seems the BSDs can not read from this side of the pair if the other side
+ * is closed */
+#if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__OpenBSD__) || defined(__NetBSD__)
+   if (ty->pid == -1)
+       return ECORE_CALLBACK_CANCEL;
+#endif
 
    // read up to 64 * 4096 bytes
    for (reads = 0; reads < 64; reads++)
@@ -201,9 +190,23 @@ _cb_fd_read(void *data, Ecore_Fd_Handler *fd_handler EINA_UNUSED)
              rbuf++;
              len--;
           }
+        errno = 0;
         len = read(ty->fd, rbuf, len);
+        if ((len < 0 && errno != EAGAIN) ||
+            (len == 0 && errno != 0))
+          {
+             /* Do not print error if the child has exited */
+             if (ty->pid != -1)
+               {
+                  ERR("error while reading from tty slave fd: %s", strerror(errno));
+               }
+             close(ty->fd);
+             ty->fd = -1;
+             if (ty->hand_fd) ecore_main_fd_handler_del(ty->hand_fd);
+             ty->hand_fd = NULL;
+             return ECORE_CALLBACK_CANCEL;
+          }
         if (len <= 0) break;
-
 
         for (i = 0; i < (int)sizeof(ty->oldbuf); i++)
           ty->oldbuf[i] = 0;
@@ -262,11 +265,72 @@ _cb_fd_read(void *data, Ecore_Fd_Handler *fd_handler EINA_UNUSED)
           }
         codepoint[j] = 0;
 //        DBG("---------------- handle buf %i", j);
-        _handle_buf(ty, codepoint, j);
+        termpty_handle_buf(ty, codepoint, j);
      }
    if (ty->cb.change.func) ty->cb.change.func(ty->cb.change.data);
+#ifdef ENABLE_FUZZING
+   if (len <= 0)
+     {
+        ty->exit_code = 0;
+        ty->pid = -1;
+
+        if (ty->hand_exe_exit) ecore_event_handler_del(ty->hand_exe_exit);
+        ty->hand_exe_exit = NULL;
+        if (ty->hand_fd) ecore_main_fd_handler_del(ty->hand_fd);
+        ty->hand_fd = NULL;
+        ty->fd = -1;
+        ty->slavefd = -1;
+        if (ty->cb.exited.func)
+          ty->cb.exited.func(ty->cb.exited.data);
+        return ECORE_CALLBACK_CANCEL;
+     }
+#endif
+   if ((false_on_empty) && (len <= 0)) return ECORE_CALLBACK_CANCEL;
    return EINA_TRUE;
 }
+
+static Eina_Bool
+_cb_fd_read(void *data, Ecore_Fd_Handler *fd_handler)
+{
+   return _fd_read_do(data, fd_handler, EINA_FALSE);
+}
+
+static Eina_Bool
+_cb_exe_exit(void *data,
+             int _type EINA_UNUSED,
+             void *event)
+{
+   Ecore_Exe_Event_Del *ev = event;
+   Termpty *ty = data;
+   Eina_Bool res;
+
+   if (ev->pid != ty->pid) return ECORE_CALLBACK_PASS_ON;
+   ty->exit_code = ev->exit_code;
+
+   ty->pid = -1;
+
+   if (ty->hand_exe_exit) ecore_event_handler_del(ty->hand_exe_exit);
+   ty->hand_exe_exit = NULL;
+
+   /* Read everything till the end */
+   res = ECORE_CALLBACK_PASS_ON;
+   while (ty->hand_fd && res != ECORE_CALLBACK_CANCEL)
+     {
+        res = _fd_read_do(ty, ty->hand_fd, EINA_TRUE);
+     }
+
+   if (ty->hand_fd) ecore_main_fd_handler_del(ty->hand_fd);
+   ty->hand_fd = NULL;
+   if (ty->fd >= 0) close(ty->fd);
+   ty->fd = -1;
+   if (ty->slavefd >= 0) close(ty->slavefd);
+   ty->slavefd = -1;
+
+   if (ty->cb.exited.func) ty->cb.exited.func(ty->cb.exited.data);
+
+   return ECORE_CALLBACK_PASS_ON;
+}
+
 
 static void
 _limit_coord(Termpty *ty)
@@ -277,8 +341,70 @@ _limit_coord(Termpty *ty)
    TERMPTY_RESTRICT_FIELD(ty->cursor_state.cx, 0, ty->w);
    TERMPTY_RESTRICT_FIELD(ty->cursor_state.cy, 0, ty->h);
 
-   TERMPTY_RESTRICT_FIELD(ty->cursor_save.cx, 0, ty->w);
-   TERMPTY_RESTRICT_FIELD(ty->cursor_save.cy, 0, ty->h);
+   TERMPTY_RESTRICT_FIELD(ty->cursor_save[0].cx, 0, ty->w);
+   TERMPTY_RESTRICT_FIELD(ty->cursor_save[0].cy, 0, ty->h);
+   TERMPTY_RESTRICT_FIELD(ty->cursor_save[1].cx, 0, ty->w);
+   TERMPTY_RESTRICT_FIELD(ty->cursor_save[1].cy, 0, ty->h);
+}
+
+static void
+_termpty_resize_tabs(Termpty *ty, int new_w)
+{
+    unsigned int *new_tabs;
+    int i;
+    size_t nb_elems;
+
+    if (new_w == ty->w && ty->tabs)
+        return;
+
+    nb_elems = DIV_ROUND_UP(new_w, sizeof(unsigned int) * 8);
+    new_tabs = calloc(nb_elems, sizeof(unsigned int));
+    if (!new_tabs)
+        return;
+
+    if (ty->tabs)
+      {
+         memcpy(new_tabs, ty->tabs, nb_elems * sizeof(unsigned int));
+         free(ty->tabs);
+      }
+
+    ty->tabs = new_tabs;
+    for (i = ROUND_UP(ty->w, TAB_WIDTH); i < new_w; i += TAB_WIDTH)
+      {
+         TAB_SET(ty, i);
+      }
+}
+
+static Eina_Bool
+_is_shell_valid(const char *cmd)
+{
+    struct stat st;
+
+   if (!cmd)
+     return EINA_FALSE;
+   if (cmd[0] == '\0')
+     return EINA_FALSE;
+   if (cmd[0] != '/')
+     {
+        ERR("shell command '%s' is not an absolute path", cmd);
+        return EINA_FALSE;
+     }
+   if (stat(cmd, &st) != 0)
+     {
+        ERR("shell command '%s' can not be stat(): %s", cmd, strerror(errno));
+        return EINA_FALSE;
+     }
+   if ((st.st_mode & S_IFMT) != S_IFREG)
+     {
+        ERR("shell command '%s' is not a regular file", cmd);
+        return EINA_FALSE;
+     }
+   if ((st.st_mode & S_IXOTH) == 0)
+     {
+        ERR("shell command '%s' is not executable", cmd);
+        return EINA_FALSE;
+     }
+   return EINA_TRUE;
 }
 
 Termpty *
@@ -301,8 +427,6 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
    ty->h = h;
    ty->backsize = backscroll;
 
-   termpty_reset_state(ty);
-
    ty->screen = calloc(1, sizeof(Termcell) * ty->w * ty->h);
    if (!ty->screen)
      {
@@ -318,7 +442,23 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
         goto err;
      }
 
+   ty->tabs = NULL;
+   _termpty_resize_tabs(ty, w);
+
+   termpty_reset_state(ty);
+
    ty->circular_offset = 0;
+
+#ifdef ENABLE_FUZZING
+   ty->fd = STDIN_FILENO;
+   ty->hand_fd = ecore_main_fd_handler_add(ty->fd,
+                                           ECORE_FD_READ | ECORE_FD_ERROR,
+                                           _cb_fd_read, ty,
+                                           NULL, NULL);
+   _pty_size(ty);
+   termpty_save_register(ty);
+   return ty;
+#endif
 
    needs_shell = ((!cmd) ||
                   (strpbrk(cmd, " |&;<>()$`\\\"'*?#") != NULL));
@@ -327,6 +467,8 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
    if (needs_shell)
      {
         shell = getenv("SHELL");
+        if (!_is_shell_valid(shell))
+          shell = NULL;
         if (!shell)
           {
              uid_t uid = getuid();
@@ -378,6 +520,7 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
         ERR(_("open() of pty '%s' failed: %s"), pty, strerror(errno));
         goto err;
      }
+
    mode = fcntl(ty->fd, F_GETFL, 0);
    if (mode < 0)
      {
@@ -385,20 +528,20 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
         goto err;
      }
    if (!(mode & O_NDELAY))
-      if (fcntl(ty->fd, F_SETFL, mode | O_NDELAY))
-        {
-           ERR(_("fcntl() on pty '%s' failed: %s"), pty, strerror(errno));
-           goto err;
-        }
+     if (fcntl(ty->fd, F_SETFL, mode | O_NDELAY))
+       {
+          ERR(_("fcntl() on pty '%s' failed: %s"), pty, strerror(errno));
+          goto err;
+       }
 
 #if defined (__sun) || defined (__sun__)
    if (ioctl(ty->slavefd, I_PUSH, "ptem") < 0
        || ioctl(ty->slavefd, I_PUSH, "ldterm") < 0
        || ioctl(ty->slavefd, I_PUSH, "ttcompat") < 0)
-   {
-       ERR(_("ioctl() on pty '%s' failed: %s"), pty, strerror(errno));
-       goto err;
-   }
+     {
+        ERR(_("ioctl() on pty '%s' failed: %s"), pty, strerror(errno));
+        goto err;
+     }
 # endif
 
    if (tcgetattr(ty->slavefd, &t) < 0)
@@ -423,6 +566,7 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
         ERR("event handler add failed");
         goto err;
      }
+
    ty->pid = fork();
    if (ty->pid < 0)
      {
@@ -431,7 +575,6 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
      }
    if (!ty->pid)
      {
-        int i;
         char buf[256];
 
         if (cd)
@@ -449,10 +592,6 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
         DBG("exec %s %s %s %s", NC(0), NC(1), NC(2), NC(3));
 #undef NC
 
-        for (i = 0; i < 100; i++)
-          {
-             if (i != ty->slavefd) close(i);
-          }
         setsid();
 
         dup2(ty->slavefd, 0);
@@ -460,11 +599,14 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
         dup2(ty->slavefd, 2);
 
         if (ioctl(ty->slavefd, TIOCSCTTY, NULL) < 0) exit(1);
-        
-        close(ty->fd);
+
         close(ty->slavefd);
-        
-        /* TODO: should we reset signals here? */
+        close(ty->fd);
+
+        /* Unset env variables that no longer apply */
+        unsetenv("TERMCAP");
+        unsetenv("COLUMNS");
+        unsetenv("LINES");
 
         /* pretend to be xterm */
         if (xterm_256color)
@@ -496,11 +638,15 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
           }
         exit(127); /* same as system() for failed commands */
      }
+   close(ty->slavefd);
+   ty->slavefd = -1;
+
    ty->hand_fd = ecore_main_fd_handler_add(ty->fd, ECORE_FD_READ,
                                            _cb_fd_read, ty,
                                            NULL, NULL);
-   close(ty->slavefd);
-   ty->slavefd = -1;
+   /* ensure we're not missing a read */
+   _cb_fd_read(ty, ty->hand_fd);
+
    _pty_size(ty);
    termpty_save_register(ty);
    return ty;
@@ -523,7 +669,11 @@ termpty_free(Termpty *ty)
    if (ty->block.blocks) eina_hash_free(ty->block.blocks);
    if (ty->block.chid_map) eina_hash_free(ty->block.chid_map);
    if (ty->block.active) eina_list_free(ty->block.active);
-   if (ty->fd >= 0) close(ty->fd);
+   if (ty->fd >= 0)
+     {
+        close(ty->fd);
+        ty->fd = -1;
+     }
    if (ty->slavefd >= 0) close(ty->slavefd);
    if (ty->pid >= 0)
      {
@@ -563,6 +713,7 @@ termpty_free(Termpty *ty)
    if (ty->hand_exe_exit) ecore_event_handler_del(ty->hand_exe_exit);
    if (ty->hand_fd) ecore_main_fd_handler_del(ty->hand_fd);
    if (ty->prop.title) eina_stringshare_del(ty->prop.title);
+   if (ty->prop.user_title) eina_stringshare_del(ty->prop.user_title);
    if (ty->prop.icon) eina_stringshare_del(ty->prop.icon);
    if (ty->back)
      {
@@ -575,6 +726,7 @@ termpty_free(Termpty *ty)
    free(ty->screen);
    free(ty->screen2);
    free(ty->buf);
+   free(ty->tabs);
    free(ty);
 }
 
@@ -612,6 +764,9 @@ termpty_line_length(const Termcell *cells, ssize_t nb_cells)
 {
    ssize_t len = nb_cells;
 
+   if (!cells)
+     return 0;
+
    for (len = nb_cells - 1; len >= 0; len--)
      {
         const Termcell *cell = cells + len;
@@ -627,10 +782,10 @@ termpty_line_length(const Termcell *cells, ssize_t nb_cells)
    (&Ty->back[(Ty->backsize + ty->backpos - ((Y) - 1 )) % Ty->backsize])
 
 
-#if 0
-static void
-verify_beacon(Termpty *ty)
+static inline void
+verify_beacon(Termpty *ty EINA_UNUSED, int verbose EINA_UNUSED)
 {
+#if 0
    Termsave *ts;
    int nb_lines;
    int backlog_y = ty->backlog_beacon.backlog_y;
@@ -640,32 +795,65 @@ verify_beacon(Termpty *ty)
    assert(ty->backlog_beacon.backlog_y >= 0);
    assert(ty->backlog_beacon.screen_y >= ty->backlog_beacon.backlog_y);
 
-   //ERR("FROM screen_y:%d backlog_y:%d",
-   //    screen_y, backlog_y);
+   if (verbose)
+     {
+        ERR("FROM screen_y:%d backlog_y:%d",
+            screen_y, backlog_y);
+     }
    while (backlog_y > 0)
      {
         ts = BACKLOG_ROW_GET(ty, backlog_y);
         if (!ts->cells)
           {
-             ERR("went too far: screen_y:%d backlog_y:%d",
-                 screen_y, backlog_y);
+             if (verbose)
+               {
+                  ERR("went too far: screen_y:%d backlog_y:%d",
+                      screen_y, backlog_y);
+               }
              return;
           }
 
         nb_lines = (ts->w == 0) ? 1 : (ts->w + ty->w - 1) / ty->w;
         screen_y -= nb_lines;
         backlog_y--;
-        //ERR("nb_lines:%d screen_y:%d backlog_y:%d ts->w:%d ty->w:%d",
-        //    nb_lines, screen_y, backlog_y, ts->w, ty->w);
+        if (verbose)
+          {
+             ERR("nb_lines:%d screen_y:%d backlog_y:%d ts->w:%d ty->w:%d",
+                 nb_lines, screen_y, backlog_y, ts->w, ty->w);
+          }
         assert(screen_y >= backlog_y);
 
      }
-   //ERR("TO screen_y:%d backlog_y:%d",
-   //    screen_y, backlog_y);
+   if (verbose)
+     {
+        ERR("TO screen_y:%d backlog_y:%d",
+            screen_y, backlog_y);
+     }
    assert (backlog_y == 0);
    assert (screen_y == 0);
-}
 #endif
+}
+
+static void
+_backlog_remove_latest_nolock(Termpty *ty)
+{
+   Termsave *ts;
+   if (ty->backsize <= 0)
+     return;
+   ts = BACKLOG_ROW_GET(ty, 1);
+
+   if (ty->backpos == 0)
+     ty->backpos = ty->backsize - 1;
+   else
+     ty->backpos--;
+
+   /* reset beacon */
+   ty->backlog_beacon.screen_y = 0;
+   ty->backlog_beacon.backlog_y = 0;
+   verify_beacon(ty, 0);
+
+   termpty_save_free(ts);
+}
 
 
 void
@@ -678,6 +866,7 @@ termpty_text_save_top(Termpty *ty, Termcell *cells, ssize_t w_max)
      return;
    assert(ty->back);
 
+   verify_beacon(ty, 0);
    termpty_backlog_lock();
 
    w = termpty_line_length(cells, w_max);
@@ -693,6 +882,7 @@ termpty_text_save_top(Termpty *ty, Termcell *cells, ssize_t w_max)
              termpty_save_expand(ts, cells, w);
              ty->backlog_beacon.screen_y += (ts->w + ty->w - 1) / ty->w
                                           - (old_len + ty->w - 1) / ty->w;
+             verify_beacon(ty, 0);
              return;
           }
      }
@@ -715,6 +905,7 @@ add_new_ts:
         ty->backlog_beacon.screen_y = 0;
         ty->backlog_beacon.backlog_y = 0;
      }
+   verify_beacon(ty, 0);
 }
 
 
@@ -724,9 +915,11 @@ termpty_row_length(Termpty *ty, int y)
    ssize_t wret;
    Termcell *cells = termpty_cellrow_get(ty, y, &wret);
 
+   if (!cells)
+     return 0;
    if (y >= 0)
      return termpty_line_length(cells, ty->w);
-   return cells ? wret : 0;
+   return wret;
 }
 
 ssize_t
@@ -737,7 +930,9 @@ termpty_backlog_length(Termpty *ty)
 
    if (!ty->backsize)
      return 0;
+   verify_beacon(ty, 0);
 
+   backlog_y++;
    while (42)
      {
         int nb_lines;
@@ -748,9 +943,10 @@ termpty_backlog_length(Termpty *ty)
           return ty->backlog_beacon.screen_y;
 
         nb_lines = (ts->w == 0) ? 1 : (ts->w + ty->w - 1) / ty->w;
+        screen_y += nb_lines;
         ty->backlog_beacon.screen_y = screen_y;
         ty->backlog_beacon.backlog_y = backlog_y;
-        screen_y += nb_lines;
+        verify_beacon(ty, 0);
         backlog_y++;
      }
 }
@@ -761,35 +957,42 @@ termpty_backscroll_adjust(Termpty *ty, int *scroll)
    int backlog_y = ty->backlog_beacon.backlog_y;
    int screen_y = ty->backlog_beacon.screen_y;
 
+   verify_beacon(ty, 0);
    if (!ty->backsize || *scroll <= 0)
      {
         *scroll = 0;
         return;
      }
    if (*scroll < screen_y)
-     return;
+     {
+        verify_beacon(ty, 0);
+        return;
+     }
 
+   backlog_y++;
    while (42)
      {
         int nb_lines;
         Termsave *ts;
 
         ts = BACKLOG_ROW_GET(ty, backlog_y);
-        if (*scroll <= screen_y)
-          {
-             return;
-          }
         if (!ts->cells || backlog_y >= (int)ty->backsize)
           {
              *scroll = ty->backlog_beacon.screen_y;
+             verify_beacon(ty, 0);
              return;
           }
-
         nb_lines = (ts->w == 0) ? 1 : (ts->w + ty->w - 1) / ty->w;
+        screen_y += nb_lines;
         ty->backlog_beacon.screen_y = screen_y;
         ty->backlog_beacon.backlog_y = backlog_y;
-        screen_y += nb_lines;
+        verify_beacon(ty, 0);
         backlog_y++;
+        if (*scroll <= screen_y)
+          {
+             verify_beacon(ty, 0);
+             return;
+          }
      }
 }
 
@@ -798,50 +1001,78 @@ _termpty_cellrow_from_beacon_get(Termpty *ty, int requested_y, ssize_t *wret)
 {
    int backlog_y = ty->backlog_beacon.backlog_y;
    int screen_y = ty->backlog_beacon.screen_y;
-   Eina_Bool going_forward = EINA_TRUE;
+   Termsave *ts;
+   int nb_lines;
+   int first_loop = EINA_TRUE;
 
    requested_y = -requested_y;
 
    /* check if going from 0,0 is faster than using the beacon */
    if (screen_y - requested_y > requested_y)
      {
-        backlog_y = 1;
-        screen_y = 1;
+        ty->backlog_beacon.backlog_y = 0;
+        ty->backlog_beacon.screen_y = 0;
      }
-   while (42) {
-        Termsave *ts;
-        int nb_lines;
+   verify_beacon(ty, 0);
 
+   /* going upward */
+   while (requested_y >= screen_y)
+     {
         ts = BACKLOG_ROW_GET(ty, backlog_y);
-        if (!ts->cells)
-          return NULL;
-        nb_lines = (ts->w == 0) ? 1 : (ts->w + ty->w - 1) / ty->w;
-        if (!going_forward) {
-             screen_y -= nb_lines;
-        }
-
-        if ((screen_y <= requested_y) && (requested_y < screen_y + nb_lines))
+        if (!ts->cells || backlog_y >= (int)ty->backsize)
           {
-             int delta = screen_y + nb_lines - 1 - requested_y;
+             return NULL;
+          }
+        nb_lines = (ts->w == 0) ? 1 : (ts->w + ty->w - 1) / ty->w;
+
+        /* Only update the beacon if working on different line than the one
+         * from the beacon */
+        if (!first_loop)
+          {
+             screen_y += nb_lines;
+             ty->backlog_beacon.screen_y = screen_y;
+             ty->backlog_beacon.backlog_y = backlog_y;
+             verify_beacon(ty, 0);
+          }
+
+        if ((screen_y - nb_lines < requested_y) && (requested_y <= screen_y))
+          {
+             /* found the line */
+             int delta = screen_y - requested_y;
              *wret = ts->w - delta * ty->w;
              if (*wret > ts->w)
                *wret = ts->w;
-             ty->backlog_beacon.screen_y = screen_y;
-             ty->backlog_beacon.backlog_y = backlog_y;
              return &ts->cells[delta * ty->w];
           }
+        backlog_y++;
+        first_loop = EINA_FALSE;
+     }
+   /* else, going downward */
+   while (requested_y <= screen_y)
+     {
+        ts = BACKLOG_ROW_GET(ty, backlog_y);
+        if (!ts->cells)
+          {
+             return NULL;
+          }
+        nb_lines = (ts->w == 0) ? 1 : (ts->w + ty->w - 1) / ty->w;
 
-        if (requested_y > screen_y)
+        ty->backlog_beacon.screen_y = screen_y;
+        ty->backlog_beacon.backlog_y = backlog_y;
+        verify_beacon(ty, 0);
+
+        if ((screen_y - nb_lines < requested_y) && (requested_y <= screen_y))
           {
-             screen_y += nb_lines;
-             backlog_y++;
+             /* found the line */
+             int delta = screen_y - requested_y;
+             *wret = ts->w - delta * ty->w;
+             if (*wret > ts->w)
+               *wret = ts->w;
+             return &ts->cells[delta * ty->w];
           }
-        else
-          {
-             backlog_y--;
-             going_forward = EINA_FALSE;
-          }
-   }
+        screen_y -= nb_lines;
+        backlog_y--;
+     }
 
    return NULL;
 }
@@ -866,10 +1097,15 @@ termpty_cellrow_get(Termpty *ty, int y_requested, ssize_t *wret)
 void
 termpty_write(Termpty *ty, const char *input, int len)
 {
-   if (ty->fd < 0) return;
-   if (write(ty->fd, input, len) < 0)
+   int fd = ty->fd;
+
+#ifdef ENABLE_FUZZING
+   fd = ty->fd_dev_null;
+#endif
+   if (fd < 0) return;
+   if (write(fd, input, len) < 0)
      ERR(_("Could not write to file descriptor %d: %s"),
-         ty->fd, strerror(errno));
+         fd, strerror(errno));
 }
 
 struct screen_info
@@ -907,11 +1143,11 @@ _check_screen_info(Termpty *ty, struct screen_info *si)
 }
 
 static void
-_termpty_line_rewrap(Termpty *ty, Termcell *cells, int len,
+_termpty_line_rewrap(Termpty *ty, Termcell *src_cells, int len,
                      struct screen_info *si,
                      Eina_Bool set_cursor)
 {
-   int autowrapped = cells[len-1].att.autowrapped;
+   int autowrapped;
 
    if (len == 0)
      {
@@ -925,13 +1161,18 @@ _termpty_line_rewrap(Termpty *ty, Termcell *cells, int len,
         _check_screen_info(ty, si);
         return;
      }
+
+   autowrapped = src_cells[len-1].att.autowrapped;
+   src_cells[len-1].att.autowrapped = 0;
+
    while (len > 0)
      {
         int copy_width = MIN(len, si->w - si->x);
+        Termcell *dst_cells = &SCREEN_INFO_GET_CELLS(si, si->x, si->y);
 
         termpty_cell_copy(ty,
-                          /*src*/ cells,
-                          /*dst*/&SCREEN_INFO_GET_CELLS(si, si->x, si->y),
+                          /*src*/ src_cells,
+                          /*dst*/ dst_cells,
                           copy_width);
         if (set_cursor)
           {
@@ -947,9 +1188,14 @@ _termpty_line_rewrap(Termpty *ty, Termcell *cells, int len,
           }
         len -= copy_width;
         si->x += copy_width;
-        cells += copy_width;
+        src_cells += copy_width;
         if (si->x >= si->w)
           {
+             if ((len > 0) || (len == 0 && autowrapped))
+               {
+                  dst_cells = &SCREEN_INFO_GET_CELLS(si, 0, si->y);
+                  dst_cells[si->w - 1].att.autowrapped = 1;
+               }
              si->y++;
              si->x = 0;
           }
@@ -973,10 +1219,7 @@ termpty_resize(Termpty *ty, int new_w, int new_h)
        effective_old_h;
    int altbuf = 0;
    struct screen_info new_si = {.screen = NULL};
-
    if ((ty->w == new_w) && (ty->h == new_h)) return;
-   if ((new_w == new_h) && (new_w == 1)) return; // FIXME: something weird is
-                                                 // going on at term init
 
    termpty_backlog_lock();
 
@@ -1010,10 +1253,47 @@ termpty_resize(Termpty *ty, int new_w, int new_h)
           }
      }
 
+   _termpty_resize_tabs(ty, new_w);
+
    if (effective_old_h <= ty->cursor_state.cy)
      effective_old_h = ty->cursor_state.cy + 1;
 
-   for (old_y = 0; old_y < effective_old_h; old_y++)
+   old_y = 0;
+   /* Rewrap the first line from the history if needed */
+   if (ty->backsize >= 1)
+     {
+        Termsave *ts;
+        ts = BACKLOG_ROW_GET(ty, 1);
+        ts = termpty_save_extract(ts);
+        if (ts->cells && ts->w && ts->cells[ts->w - 1].att.autowrapped)
+          {
+             Termcell *cells = &(TERMPTY_SCREEN(ty, 0, old_y)),
+                      *new_cells;
+             int len;
+
+             ts->cells[ts->w - 1].att.autowrapped = 0;
+
+             len = termpty_line_length(cells, old_w);
+
+             new_cells = malloc((ts->w + len) * sizeof(Termcell));
+             if (!new_cells)
+               goto bad;
+             memcpy(new_cells, ts->cells, ts->w * sizeof(Termcell));
+             memcpy(new_cells + ts->w, cells, len * sizeof(Termcell));
+
+             len+= ts->w;
+
+             _backlog_remove_latest_nolock(ty);
+
+             _termpty_line_rewrap(ty, new_cells, len, &new_si,
+                                  old_y == ty->cursor_state.cy);
+
+             free(new_cells);
+             old_y = 1;
+          }
+     }
+   /* For all the other lines, do not care about the history */
+   for (; old_y < effective_old_h; old_y++)
      {
         /* for each line in the old screen, append it to the new screen */
         Termcell *cells = &(TERMPTY_SCREEN(ty, 0, old_y));
@@ -1045,9 +1325,10 @@ termpty_resize(Termpty *ty, int new_w, int new_h)
 
    termpty_backlog_unlock();
 
-   ty->backlog_beacon.backlog_y = 1;
-   ty->backlog_beacon.screen_y = 1;
+   ty->backlog_beacon.backlog_y = 0;
+   ty->backlog_beacon.screen_y = 0;
 
+   verify_beacon(ty, 0);
    return;
 
 bad:
