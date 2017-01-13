@@ -1,7 +1,7 @@
 use debian library version of liblz4 rather than the embedded copy
 --- a/configure.ac
 +++ b/configure.ac
-@@ -104,6 +104,8 @@
+@@ -133,6 +133,8 @@
  )
  CFLAGS=$orig_cflags
  
@@ -9,19 +9,19 @@ use debian library version of liblz4 rather than the embedded copy
 +
  EFL_WITH_BIN([edje], [edje-cc], [edje_cc])
  
- with_max_log_level="EINA_LOG_LEVEL_ERR"
+ AC_CONFIG_FILES([
 --- a/src/bin/Makefile.am
 +++ b/src/bin/Makefile.am
-@@ -7,7 +7,7 @@
+@@ -10,7 +10,7 @@
  -DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
  -DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
  
--terminology_LDADD = @TERMINOLOGY_LIBS@ @ELDBUS_LIBS@
-+terminology_LDADD = @TERMINOLOGY_LIBS@ @ELDBUS_LIBS@ -llz4
+-terminology_LDADD = @TERMINOLOGY_LIBS@
++terminology_LDADD = @TERMINOLOGY_LIBS@ -llz4
  if HAVE_PO
  terminology_CPPFLAGS += -DLOCALEDIR=\"$(localedir)\"
  terminology_LDADD += @LIBINTL@
-@@ -50,7 +50,6 @@
+@@ -53,7 +53,6 @@
  termptygfx.c termptygfx.h \
  termptyext.c termptyext.h \
  termptysave.c termptysave.h \
