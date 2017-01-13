@@ -5,18 +5,8 @@ Maintainer: Debian Pkg-e Team <pkg-e-devel@lists.alioth.debian.org>
 Uploaders: Ross Vandegrift <ross@kallisti.us>
 Build-Depends: debhelper (>= 9),
                dh-autoreconf,
-               libecore-dev (>= 1.8.6),
-               libedje-dev (>= 1.8.6),
-               libeet-dev (>= 1.8.6),
-               libeeze-dev (>= 1.8.6),
-               libefreet-dev (>= 1.8.6),
-               libeina-dev (>= 1.8.6),
-               libeio-dev (>= 1.8.6),
-               libembryo-dev (>= 1.8.6),
-               libemotion-dev (>= 1.8.6),
-               libethumb-dev (>= 1.8.6),
-               libevas-dev (>= 1.8.6),
-               libelementary-dev (>= 1.8.5),
+               libefl-all-dev (>= 1.18),
+               libelementary-dev (>= 1.18),
                liblz4-dev
 Standards-Version: 3.9.8
 Vcs-Git: https://github.com/bofh80/debian-terminology.git
