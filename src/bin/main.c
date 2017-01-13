@@ -15,12 +15,11 @@
 #include "utils.h"
 #include "ipc.h"
 #include "sel.h"
-#include "dbus.h"
 #include "miniview.h"
 #include "gravatar.h"
 #include "keyin.h"
 
-
+int terminology_starting_up;
 int _log_domain = -1;
 
 static Config *_main_config = NULL;
@@ -403,7 +402,7 @@ static void
 _translate_options(void)
 {
    options.copyright = eina_stringshare_printf(gettext(options.copyright),
-                                               2015);
+                                               2016);
 
    Ecore_Getopt_Desc *desc = (Ecore_Getopt_Desc *) options.descs;
    while ((desc->shortname != '\0') || (desc->longname)
@@ -434,6 +433,42 @@ _translate_options(void)
           }
         desc++;
      }
+}
+#endif
+
+#ifdef ENABLE_FUZZING
+#include <syslog.h>
+static void
+_log_to_syslog(const Eina_Log_Domain *_d EINA_UNUSED,
+               Eina_Log_Level level,
+               const char *_file EINA_UNUSED,
+               const char *_fnc EINA_UNUSED,
+               int _line EINA_UNUSED,
+               const char *fmt,
+               void *_data EINA_UNUSED,
+               va_list args)
+{
+    int priority;
+    switch (level) {
+     case EINA_LOG_LEVEL_CRITICAL:
+        priority = LOG_CRIT;
+        break;
+     case EINA_LOG_LEVEL_ERR:
+        priority = LOG_ERR;
+        break;
+     case EINA_LOG_LEVEL_WARN:
+        priority = LOG_WARNING;
+        break;
+     case EINA_LOG_LEVEL_INFO:
+        priority = LOG_INFO;
+        break;
+     case EINA_LOG_LEVEL_DBG:
+        priority = LOG_DEBUG;
+        break;
+     default:
+        priority = level + LOG_CRIT;
+    }
+    vsyslog(priority, fmt, args);
 }
 #endif
 
@@ -523,6 +558,12 @@ elm_main(int argc, char **argv)
    Eina_List *cmds_list = NULL;
 #endif
 
+   terminology_starting_up = EINA_TRUE;
+
+#ifdef ENABLE_FUZZING
+   eina_log_print_cb_set(_log_to_syslog, NULL);
+#endif
+
    elm_language_set("");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_app_compile_bin_dir_set(PACKAGE_BIN_DIR);
@@ -538,7 +579,7 @@ elm_main(int argc, char **argv)
    textdomain(PACKAGE);
    _translate_options();
 #else
-   options.copyright = "(C) 2012-2015 Carsten Haitzler and others";
+   options.copyright = "(C) 2012-2016 Carsten Haitzler and others";
 #endif
 
    _log_domain = eina_log_domain_register("terminology", NULL);
@@ -577,7 +618,6 @@ elm_main(int argc, char **argv)
    if (cmd_options)
      {
         int i;
-        Eina_Strbuf *strb;
 
         if (args == argc)
           {
@@ -586,16 +626,24 @@ elm_main(int argc, char **argv)
              goto end;
           }
 
-        strb = eina_strbuf_new();
-        for(i = args; i < argc; i++)
+        if (startup_split)
           {
-             eina_strbuf_append(strb, argv[i]);
-             eina_strbuf_append_char(strb, ' ');
-             if (startup_split)
+             for(i = args+1; i < argc; i++)
                cmds_list = eina_list_append(cmds_list, argv[i]);
+             cmd = argv[args];
           }
-        cmd = eina_strbuf_string_steal(strb);
-        eina_strbuf_free(strb);
+        else
+          {
+             Eina_Strbuf *strb;
+             strb = eina_strbuf_new();
+             for(i = args; i < argc; i++)
+               {
+                  eina_strbuf_append(strb, argv[i]);
+                  eina_strbuf_append_char(strb, ' ');
+               }
+             cmd = eina_strbuf_string_steal(strb);
+             eina_strbuf_free(strb);
+          }
      }
 #endif
    
@@ -881,24 +929,23 @@ remote:
      {
 #if (ECORE_VERSION_MAJOR > 1) || (ECORE_VERSION_MINOR >= 8)
         unsigned int i = 0;
-        void *pch = NULL;
         Term *next = term;
 
         for (i = 0; i < strlen(startup_split); i++)
           {
              if (startup_split[i] == 'v')
                {
-                  pch = eina_list_nth(cmds_list, 1);
+                  cmd = cmds_list ? cmds_list->data : NULL;
                   split_vertically(win_evas_object_get(term_win_get(next)),
-                                   term_termio_get(next), pch);
-                  cmds_list = eina_list_remove(cmds_list, pch);
+                                   term_termio_get(next), cmd);
+                  cmds_list = eina_list_remove_list(cmds_list, cmds_list);
                }
              else if (startup_split[i] == 'h')
                {
-                  pch = eina_list_nth(cmds_list, 1);
+                  cmd = cmds_list ? cmds_list->data : NULL;
                   split_horizontally(win_evas_object_get(term_win_get(next)),
-                                     term_termio_get(next), pch);
-                  cmds_list = eina_list_remove(cmds_list, pch);
+                                     term_termio_get(next), cmd);
+                  cmds_list = eina_list_remove_list(cmds_list, cmds_list);
                }
              else if (startup_split[i] == '-')
                next = term_next_get(next);
@@ -909,7 +956,8 @@ remote:
                   goto end;
                }
           }
-        if (cmds_list) eina_list_free(cmds_list);
+        if (cmds_list)
+          eina_list_free(cmds_list);
 #endif
      }
    if (pos_set)
@@ -925,21 +973,21 @@ remote:
       ecore_evas_focus_set(ecore_evas_ecore_evas_get(
             evas_object_evas_get(win)), 1);
 
-   ty_dbus_init();
-
    ecore_con_init();
    ecore_con_url_init();
+
+   terminology_starting_up = EINA_FALSE;
 
    elm_run();
 
    ecore_con_url_shutdown();
    ecore_con_shutdown();
 
-   ty_dbus_shutdown();
    config = NULL;
  end:
 #if (ECORE_VERSION_MAJOR > 1) || (ECORE_VERSION_MINOR >= 8)
-   free(cmd);
+   if (!startup_split)
+     free(cmd);
 #endif
    if (config)
      {

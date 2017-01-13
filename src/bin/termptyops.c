@@ -171,10 +171,28 @@ termpty_text_append(Termpty *ty, const Eina_Unicode *codepoints, int len)
           }
 
         g = _termpty_charset_trans(codepoints[i], ty);
+        /* Skip 0-width space */
+        if (EINA_UNLIKELY(g == 0x200b))
+          {
+             continue;
+          }
+        if (EINA_UNLIKELY(g >= 0x300 && g <=0x36f))
+          {
+             /* combining chars */
+             if (EINA_UNLIKELY(g == 0x336))
+               {
+                  ty->termstate.combining_strike = 1;
+               }
+             continue;
+          }
 
         termpty_cell_codepoint_att_fill(ty, g, ty->termstate.att,
                                         &(cells[ty->cursor_state.cx]), 1);
-#if defined(SUPPORT_DBLWIDTH)
+        if (EINA_UNLIKELY(ty->termstate.combining_strike))
+          {
+             ty->termstate.combining_strike = 0;
+             cells[ty->cursor_state.cx].att.strike = 1;
+          }
         cells[ty->cursor_state.cx].att.dblwidth = _termpty_is_dblwidth_get(ty, g);
         if (EINA_UNLIKELY((cells[ty->cursor_state.cx].att.dblwidth) && (ty->cursor_state.cx < (ty->w - 1))))
           {
@@ -182,16 +200,13 @@ termpty_text_append(Termpty *ty, const Eina_Unicode *codepoints, int len)
              termpty_cell_codepoint_att_fill(ty, 0, cells[ty->cursor_state.cx].att,
                                              &(cells[ty->cursor_state.cx + 1]), 1);
           }
-#endif
         if (ty->termstate.wrap)
           {
              unsigned char offset = 1;
 
              ty->termstate.wrapnext = 0;
-#if defined(SUPPORT_DBLWIDTH)
              if (EINA_UNLIKELY(cells[ty->cursor_state.cx].att.dblwidth))
                offset = 2;
-#endif
              if (EINA_UNLIKELY(ty->cursor_state.cx >= (ty->w - offset)))
                ty->termstate.wrapnext = 1;
              else
@@ -205,10 +220,8 @@ termpty_text_append(Termpty *ty, const Eina_Unicode *codepoints, int len)
              unsigned char offset = 1;
 
              ty->termstate.wrapnext = 0;
-#if defined(SUPPORT_DBLWIDTH)
              if (EINA_UNLIKELY(cells[ty->cursor_state.cx].att.dblwidth))
                offset = 2;
-#endif
              ty->cursor_state.cx += offset;
              if (ty->cursor_state.cx > (ty->w - offset))
                {
@@ -252,6 +265,41 @@ termpty_clear_line(Termpty *ty, Termpty_Clear mode, int limit)
 }
 
 void
+termpty_clear_tabs_on_screen(Termpty *ty)
+{
+   if (ty->tabs)
+     {
+        memset(ty->tabs, 0,
+               DIV_ROUND_UP(ty->w, sizeof(unsigned int) * 8u)
+               * sizeof(unsigned int));
+     }
+}
+
+void
+termpty_clear_backlog(Termpty *ty)
+{
+   int backsize;
+
+   ty->backlog_beacon.screen_y = 0;
+   ty->backlog_beacon.backlog_y = 0;
+
+   termpty_backlog_lock();
+   if (ty->back)
+     {
+        size_t i;
+        for (i = 0; i < ty->backsize; i++)
+          termpty_save_free(&ty->back[i]);
+        free(ty->back);
+        ty->back = NULL;
+     }
+   ty->backpos = 0;
+   backsize = ty->backsize;
+   ty->backsize = 0;
+   termpty_backlog_size_set(ty, backsize);
+   termpty_backlog_unlock();
+}
+
+void
 termpty_clear_screen(Termpty *ty, Termpty_Clear mode)
 {
    Termcell *cells;
@@ -290,7 +338,7 @@ termpty_clear_screen(Termpty *ty, Termpty_Clear mode)
                }
              else
                {
-                  int yt = y % ty->w;
+                  int yt = y % ty->h;
                   int yb = ty->h - ty->circular_offset;
 
                   termpty_cells_clear(ty, cells, ty->w * yb);
@@ -325,11 +373,8 @@ termpty_reset_att(Termatt *att)
    att->bg = COL_DEF;
    att->bold = 0;
    att->faint = 0;
-#if defined(SUPPORT_ITALIC)
    att->italic = 0;
-#elif defined(SUPPORT_DBLWIDTH)
    att->dblwidth = 0;
-#endif
    att->underline = 0;
    att->blink = 0;
    att->blink2 = 0;
@@ -342,14 +387,13 @@ termpty_reset_att(Termatt *att)
    att->bgintense = 0;
    att->autowrapped = 0;
    att->newline = 0;
-   att->tab = 0;
    att->fraktur = 0;
 }
 
 void
 termpty_reset_state(Termpty *ty)
 {
-   int backsize;
+   int i;
 
    ty->cursor_state.cx = 0;
    ty->cursor_state.cy = 0;
@@ -381,23 +425,12 @@ termpty_reset_state(Termpty *ty)
    ty->mouse_ext = MOUSE_EXT_NONE;
    ty->bracketed_paste = 0;
 
-   ty->backlog_beacon.screen_y = 0;
-   ty->backlog_beacon.backlog_y = 0;
-
-   termpty_backlog_lock();
-   if (ty->back)
+   termpty_clear_backlog(ty);
+   termpty_clear_tabs_on_screen(ty);
+   for (i = 0; i < ty->w; i += TAB_WIDTH)
      {
-        size_t i;
-        for (i = 0; i < ty->backsize; i++)
-          termpty_save_free(&ty->back[i]);
-        free(ty->back);
-        ty->back = NULL;
+        TAB_SET(ty, i);
      }
-   ty->backpos = 0;
-   backsize = ty->backsize;
-   ty->backsize = 0;
-   termpty_backlog_size_set(ty, backsize);
-   termpty_backlog_unlock();
 }
 
 void
@@ -405,12 +438,12 @@ termpty_cursor_copy(Termpty *ty, Eina_Bool save)
 {
    if (save)
      {
-        ty->cursor_save.cx = ty->cursor_state.cx;
-        ty->cursor_save.cy = ty->cursor_state.cy;
+        ty->cursor_save[ty->altbuf].cx = ty->cursor_state.cx;
+        ty->cursor_save[ty->altbuf].cy = ty->cursor_state.cy;
      }
    else
      {
-        ty->cursor_state.cx = ty->cursor_save.cx;
-        ty->cursor_state.cy = ty->cursor_save.cy;
+        ty->cursor_state.cx = ty->cursor_save[ty->altbuf].cx;
+        ty->cursor_state.cy = ty->cursor_save[ty->altbuf].cy;
      }
 }

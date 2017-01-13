@@ -2,12 +2,15 @@ AUTOMAKE_OPTIONS = subdir-objects
 MAINTAINERCLEANFILES = Makefile.in
 
 bin_PROGRAMS = terminology tybg tyalpha typop tyq tycat tyls
+if ENABLE_FUZZING
+bin_PROGRAMS += tyfuzz
+endif
 
 terminology_CPPFLAGS = -I. \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
 -DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
 
-terminology_LDADD = @TERMINOLOGY_LIBS@ @ELDBUS_LIBS@
+terminology_LDADD = @TERMINOLOGY_LIBS@
 if HAVE_PO
 terminology_CPPFLAGS += -DLOCALEDIR=\"$(localedir)\"
 terminology_LDADD += @LIBINTL@
@@ -55,49 +58,54 @@ md5/md5.c md5/md5.h \
 utf8.c utf8.h \
 win.c win.h \
 utils.c utils.h \
-dbus.c dbus.h \
 extns.c extns.h \
 gravatar.c gravatar.h \
-tty_keys.h
+tty_keys.h \
+sb.c sb.h
 
 tybg_SOURCES = \
+tycommon.c tycommon.h \
 tybg.c
 
 tybg_CPPFLAGS = -I. \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
--DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"
+-DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
 
 tybg_LDADD =
 
 tyalpha_SOURCES = \
+tycommon.c \
 tyalpha.c
 
 tyalpha_CPPFLAGS = -I. \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
--DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"
+-DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
 
 tyalpha_LDADD =
 
 typop_SOURCES = \
+tycommon.c \
 typop.c
 
 typop_CPPFLAGS = -I. \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
--DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"
+-DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
 
 typop_LDADD =
 
 tyq_SOURCES = \
+tycommon.c \
 tyq.c
 
 tyq_CPPFLAGS = -I. \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
--DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"
+-DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
 
 tyq_LDADD =
 
 tycat_SOURCES = \
 tycat.c \
+tycommon.c \
 extns.c extns.h
 
 tycat_CPPFLAGS = -I. \
@@ -108,6 +116,7 @@ tycat_LDADD = @TERMINOLOGY_LIBS@
 
 tyls_SOURCES = \
 tyls.c \
+tycommon.c \
 extns.h
 
 tyls_CPPFLAGS = -I. \
@@ -115,3 +124,23 @@ tyls_CPPFLAGS = -I. \
 -DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
 
 tyls_LDADD = @TERMINOLOGY_LIBS@
+
+if ENABLE_FUZZING
+tyfuzz_SOURCES = \
+termptyesc.c \
+termptysave.c \
+termptyops.c \
+termptydbl.c \
+termptyext.c \
+termptygfx.c \
+termpty.c \
+config.c \
+col.c \
+tyfuzz.c
+
+tyfuzz_CPPFLAGS = -I. \
+-DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
+-DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
+
+tyfuzz_LDADD = @TERMINOLOGY_LIBS@
+endif

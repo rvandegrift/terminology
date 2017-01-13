@@ -1,9 +1,9 @@
-Terminology 0.9.0
+Terminology 1.0.0
 
 ******************************************************************************
 
- FOR ANY ISSUES PLEASE OPEN A TICKET:
- https://phab.enlightenment.org/maniphest/task/create/
+ FOR ANY ISSUES, PLEASE CONSULT THEM ON
+ http://issues.terminolo.gy/
 
 ******************************************************************************
 
@@ -40,6 +40,10 @@ Shift+PgUp = Scroll 1 page up
 Shift+PgDn = Scroll 1 page down
 Shift+Up = Scroll 1 line up
 Shift+Down = Scroll 1 line down
+Shift+Home = Scroll to the top of the backlog
+Shift+End = Reset scroll
+Shift+Left = switch focus to previous terminal inside a window
+Shift+Right = switch focus to next terminal inside a window
 Shift+Insert = Paste Clipboard (ctrl+v/c) selection
 Shift+Ctrl+Insert = Paste Primary (highlight) selection
 Shift+Keypad-Plus = Font size up 1
@@ -63,6 +67,7 @@ Ctrl+Alt+Equal = Font size up 1
 Ctrl+Alt+Minus = Font size down 1
 Ctrl+Alt+0 = Reset font size
 Ctrl+Alt+9 = Big font size
+Ctrl+Alt+t = Set terminal title
 Ctrl+1 = switch to terminal tab 1
 Ctrl+2 = switch to terminal tab 2
 Ctrl+3 = switch to terminal tab 3

@@ -6,17 +6,19 @@
 #include "options.h"
 #include "options_keys.h"
 #include "keyin.h"
+#include "utils.h"
 
 /*XXX: can have only one widget at a time… */
 static Config *_config;
 static Evas_Object *_fr;
-static Evas_Object *_rect, *_bg, *_lbl;
+static Evas_Object *_layout;
 
 static void _hover_del(Evas_Object *o);
 
 static void
-_shortcut_delete(void *data, Evas_Object *obj EINA_UNUSED,
-                 void *event_info EINA_UNUSED)
+_shortcut_delete(void *data,
+                 Evas_Object *_obj EINA_UNUSED,
+                 void *_event_info EINA_UNUSED)
 {
    Evas_Object *hs, *bx;
    Config_Keys *cfg_key;
@@ -71,7 +73,8 @@ _shortcut_button_add(Evas_Object *bx, const Config_Keys *key)
 }
 
 static void
-_cb_key_up(void *data, Evas *e EINA_UNUSED,
+_cb_key_up(void *data,
+           Evas *_e EINA_UNUSED,
            Evas_Object *obj, void *event)
 {
    Evas_Event_Key_Up *ev = event;
@@ -141,8 +144,10 @@ _cb_key_up(void *data, Evas *e EINA_UNUSED,
 }
 
 static void
-_cb_mouse_down(void *data EINA_UNUSED, Evas *e EINA_UNUSED,
-               Evas_Object *obj, void *event EINA_UNUSED)
+_cb_mouse_down(void *_data EINA_UNUSED,
+               Evas *_e EINA_UNUSED,
+               Evas_Object *obj,
+               void *_event EINA_UNUSED)
 {
    _hover_del(obj);
 }
@@ -151,58 +156,47 @@ _cb_mouse_down(void *data EINA_UNUSED, Evas *e EINA_UNUSED,
 static void
 _hover_sizing_eval(void)
 {
-   Evas_Coord x = 0, y = 0, w = 0, h = 0, min_w, min_h, new_x, new_y;
+   Evas_Coord x = 0, y = 0, w = 0, h = 0;
    evas_object_geometry_get(_fr, &x, &y, &w, &h);
 #if (ECORE_VERSION_MAJOR > 1) || (ECORE_VERSION_MINOR >= 8)
-   evas_object_geometry_set(_rect, x, y, w, h);
+   evas_object_geometry_set(_layout, x, y, w, h);
 #else
-   evas_object_move(_rect, x, y);
-   evas_object_resize(_rect, w, h);
-#endif
-   evas_object_size_hint_min_get(_lbl, &min_w, &min_h);
-   new_x = x + w/2 - min_w/2;
-   new_y = y + h/2 - min_h/2;
-#if (ECORE_VERSION_MAJOR > 1) || (ECORE_VERSION_MINOR >= 8)
-   evas_object_geometry_set(_lbl, new_x, new_y, min_w, min_h);
-   evas_object_geometry_set(_bg, new_x - 1, new_y - 1, min_w + 2, min_h + 2);
-#else
-   evas_object_move(_lbl, new_x, new_y);
-   evas_object_resize(_lbl, min_w, min_h);
-   evas_object_move(_bg, new_x - 1, new_y - 1);
-   evas_object_resize(_bg, min_w + 2, min_h + 2);
+   evas_object_move(_layout, x, y);
+   evas_object_resize(_layout, w, h);
 #endif
 }
 
 static void
-_parent_move_cb(void *data EINA_UNUSED,
-                Evas *e EINA_UNUSED,
-                Evas_Object *obj EINA_UNUSED,
-                void *event_info EINA_UNUSED)
+_parent_move_cb(void *_data EINA_UNUSED,
+                Evas *_e EINA_UNUSED,
+                Evas_Object *_obj EINA_UNUSED,
+                void *_event_info EINA_UNUSED)
 {
    _hover_sizing_eval();
 }
+
 static void
-_parent_resize_cb(void *data EINA_UNUSED,
-                  Evas *e EINA_UNUSED,
-                  Evas_Object *obj EINA_UNUSED,
-                  void *event_info EINA_UNUSED)
+_parent_resize_cb(void *_data EINA_UNUSED,
+                  Evas *_e EINA_UNUSED,
+                  Evas_Object *_obj EINA_UNUSED,
+                  void *_event_info EINA_UNUSED)
 {
    _hover_sizing_eval();
 }
 
 static void
 _parent_hide_cb(void *data,
-                Evas *e EINA_UNUSED,
-                Evas_Object *obj EINA_UNUSED,
-                void *event_info EINA_UNUSED)
+                Evas *_e EINA_UNUSED,
+                Evas_Object *_obj EINA_UNUSED,
+                void *_event_info EINA_UNUSED)
 {
    _hover_del(data);
 }
 static void
 _parent_del_cb(void *data,
-               Evas *e EINA_UNUSED,
-               Evas_Object *obj EINA_UNUSED,
-               void *event_info EINA_UNUSED)
+               Evas *_e EINA_UNUSED,
+               Evas_Object *_obj EINA_UNUSED,
+               void *_event_info EINA_UNUSED)
 {
    _hover_del(data);
 }
@@ -210,7 +204,6 @@ _parent_del_cb(void *data,
 static void
 _hover_del(Evas_Object *o)
 {
-   elm_object_focus_set(o, EINA_FALSE);
    evas_object_event_callback_del(o, EVAS_CALLBACK_KEY_UP,
                                   _cb_key_up);
    evas_object_event_callback_del(o, EVAS_CALLBACK_MOUSE_DOWN,
@@ -223,35 +216,49 @@ _hover_del(Evas_Object *o)
                                   _parent_hide_cb);
    evas_object_event_callback_del(_fr, EVAS_CALLBACK_DEL,
                                   _parent_del_cb);
-   evas_object_del(_bg);
-   _bg = NULL;
-   evas_object_del(_lbl);
-   _lbl = NULL;
    evas_object_del(o);
-   _rect = NULL;
+   _layout = NULL;
+}
+
+static void
+_cb_focused(void *_data EINA_UNUSED,
+            Evas_Object *_obj EINA_UNUSED,
+            void *_event EINA_UNUSED)
+{
+    DBG("focused");
+}
+static void
+_cb_unfocused(void *_data EINA_UNUSED,
+              Evas_Object *_obj EINA_UNUSED,
+              void *_event EINA_UNUSED)
+{
+    DBG("unfocused");
+    if (_layout)
+        elm_object_focus_set(_layout, EINA_TRUE);
 }
 
 static void
 on_shortcut_add(void *data,
-                Evas_Object *obj,
-                void *event_info EINA_UNUSED)
+                Evas_Object *bt,
+                void *_event_info EINA_UNUSED)
 {
-   Evas_Object *o, *bx;
+   Evas_Object *o, *oe;
+   Evas_Object *bx = data;
 
-   bx = data;
-
-   _rect = o = evas_object_rectangle_add(evas_object_evas_get(obj));
-   evas_object_repeat_events_set(o, EINA_TRUE);
-   evas_object_color_set(o, 0, 0, 0, 127);
-   elm_object_focus_set(o, EINA_TRUE);
+   _layout = o = elm_layout_add(bt);
+   oe = elm_layout_edje_get(o);
+   theme_apply(oe, _config, "terminology/keybinding");
+   theme_auto_reload_enable(oe);
+   elm_layout_text_set(o, "label", _("Please press key sequence"));
    evas_object_show(o);
+   elm_object_focus_allow_set(o, EINA_TRUE);
+   evas_object_smart_callback_add(o, "focused",
+                                  _cb_focused, NULL);
+   evas_object_smart_callback_add(o, "unfocused",
+                                  _cb_unfocused, NULL);
+   elm_object_focus_set(o, EINA_TRUE);
 
-   _bg = elm_bg_add(_fr);
-   _lbl = elm_label_add(_fr);
-   elm_layout_text_set(_lbl, NULL, _("Please press key sequence"));
    _hover_sizing_eval();
-   evas_object_show(_bg);
-   evas_object_show(_lbl);
 
    evas_object_event_callback_add(o, EVAS_CALLBACK_KEY_UP,
                                   _cb_key_up, bx);
@@ -268,7 +275,7 @@ on_shortcut_add(void *data,
 }
 
 static Evas_Object *
-gl_content_get(void *data, Evas_Object *obj, const char *part EINA_UNUSED)
+gl_content_get(void *data, Evas_Object *obj, const char *_part EINA_UNUSED)
 {
    Evas_Coord min_w = 0, w = 0, min_h = 0, h = 0;
    const Shortcut_Action *action = data;
@@ -330,11 +337,23 @@ gl_content_get(void *data, Evas_Object *obj, const char *part EINA_UNUSED)
 
 
 
-char *gl_group_text_get(void *data, Evas_Object *obj EINA_UNUSED,
-                        const char *part EINA_UNUSED)
+char *gl_group_text_get(void *data,
+                        Evas_Object *_obj EINA_UNUSED,
+                        const char *_part EINA_UNUSED)
 {
    Shortcut_Action *action = data;
    return strdup(action->description);
+}
+
+static void
+_cb_reset_keys(void *data,
+               Evas_Object *_obj EINA_UNUSED,
+               void *_event EINA_UNUSED)
+{
+   Evas_Object *gl = data;
+
+   config_reset_keys(_config);
+   elm_genlist_realized_items_update(gl);
 }
 
 void
@@ -409,5 +428,11 @@ options_keys(Evas_Object *opbox, Evas_Object *term)
         action++;
      }
 
-   /* TODO: reset button ? */
+   o = elm_button_add(bx);
+   evas_object_size_hint_weight_set(o, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(o, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_object_text_set(o, _("Reset bindings"));
+   elm_box_pack_end(bx, o);
+   evas_object_show(o);
+   evas_object_smart_callback_add(o, "clicked", _cb_reset_keys, gl);
 }

@@ -23,7 +23,9 @@ static Eina_List *themes = NULL;
 static Ecore_Timer *seltimer = NULL;
 
 static char *
-_cb_op_theme_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part EINA_UNUSED)
+_cb_op_theme_text_get(void *data,
+                      Evas_Object *_obj EINA_UNUSED,
+                      const char *_part EINA_UNUSED)
 {
    Theme *t = data;
    char buf[4096], *p;
@@ -59,7 +61,9 @@ _cb_op_theme_content_get(void *data, Evas_Object *obj, const char *part)
 }
 
 static void
-_cb_op_theme_sel(void *data, Evas_Object *obj EINA_UNUSED, void *event EINA_UNUSED)
+_cb_op_theme_sel(void *data,
+                 Evas_Object *_obj EINA_UNUSED,
+                 void *_event EINA_UNUSED)
 {
    Theme *t = data;
    Config *config = termio_config_get(t->term);
@@ -181,6 +185,7 @@ options_theme(Evas_Object *opbox, Evas_Object *term)
           }
 
         t = calloc(1, sizeof(Theme));
+        if (!t) break;
         t->name = eina_stringshare_add(file);
         t->term = term;
         t->item = elm_gengrid_item_append(o, it_class, t,

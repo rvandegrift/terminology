@@ -1,3 +1,4 @@
+#include "private.h"
 #include <Eina.h>
 #include <Ecore.h>
 #include <Evas.h>
@@ -11,6 +12,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fnmatch.h>
+#include "tycommon.h"
 
 // this code sucks. just letting you know... in advance... in case you
 // might be tempted to think otherwise... :)
@@ -718,6 +720,19 @@ list_dir(const char *dir, Tyls_Options *options)
    EINA_LIST_FREE(files, s) free(s);
 }
 
+static void
+print_usage(const char *argv0)
+{
+   printf("Usage: %s "HELP_ARGUMENT_SHORT" [-a] [-s|-m] FILE1 [FILE2 ...]\n"
+          "\n"
+          "  -a  Show hidden files\n"
+          "  -s  Small list mode\n"
+          "  -m  Medium list mode\n"
+          HELP_ARGUMENT_DOC"\n",
+          /*"  -l  Large list mode\n", Enable again once we support it */
+          argv0);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -725,19 +740,10 @@ main(int argc, char **argv)
    char *path;
    Eina_List *dirs = NULL;
    Tyls_Options options = {SMALL, EINA_FALSE};
-   
-   if (!getenv("TERMINOLOGY")) return 0;
-   if ((argc == 2) && (!strcmp(argv[1], "-h")))
-     {
-        printf("Usage: %s [-a] [-s|-m] FILE1 [FILE2 ...]\n"
-               "\n"
-               "  -a  Show hidden files\n"
-               "  -s  Small list mode\n"
-               "  -m  Medium list mode\n",
-               /*"  -l  Large list mode\n", Enable again once we support it */
-              argv[0]);
-        return 0;
-     }
+
+   ON_NOT_RUNNING_IN_TERMINOLOGY_EXIT_1();
+   ARGUMENT_ENTRY_CHECK(argc, argv, print_usage);
+
    eina_init();
 #if (ECORE_VERSION_MAJOR > 1) || (ECORE_VERSION_MINOR >= 8)
    ecore_app_no_system_modules();

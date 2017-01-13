@@ -41,7 +41,9 @@ static Ecore_Timer *_bubble_disappear;
 static Ecore_Thread *_thread;
 
 static void
-_cb_fileselector(void *data EINA_UNUSED, Evas_Object *obj, void* event)
+_cb_fileselector(void *_data EINA_UNUSED,
+                 Evas_Object *obj,
+                 void *event)
 {
 
   if (event) 
@@ -56,7 +58,7 @@ _cb_fileselector(void *data EINA_UNUSED, Evas_Object *obj, void* event)
 }
 
 static Eina_Bool
-_cb_timer_bubble_disappear(void *data EINA_UNUSED)
+_cb_timer_bubble_disappear(void *_data EINA_UNUSED)
 {
    evas_object_del(_bubble);
    _bubble_disappear = NULL;
@@ -91,7 +93,9 @@ _bubble_show(char *text)
 }
 
 static char *
-_grid_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part EINA_UNUSED)
+_grid_text_get(void *data,
+               Evas_Object *_obj EINA_UNUSED,
+               const char *_part EINA_UNUSED)
 {
    Background_Item *item = data;
    const char *s;
@@ -145,7 +149,9 @@ _grid_content_get(void *data, Evas_Object *obj, const char *part)
 }
 
 static void
-_item_selected(void *data, Evas_Object *obj EINA_UNUSED, void *event EINA_UNUSED)
+_item_selected(void *data,
+               Evas_Object *_obj EINA_UNUSED,
+               void *_event EINA_UNUSED)
 {
    Background_Item *item = data;
    Config *config = termio_config_get(_term);
@@ -230,15 +236,18 @@ _rec_read_directorys(Eina_List *list, const char *root_path,
                             item = calloc(1, sizeof(Background_Item));
                             if (item)
                               {
-                                 notify = calloc(1, 
+                                 notify = calloc(1,
                                           sizeof(Insert_Gen_Grid_Item_Notify));
                                  item->path = eina_stringshare_add(path);
                                  list = eina_list_append(list, item);
-                                 //insert item to gengrid
-                                 notify->class = class;
-                                 notify->item = item;
-                                 //ecore_thread_feedback(th, notify);
-                                 _insert_gengrid_item(notify);
+                                 if (notify)
+                                   {
+                                      //insert item to gengrid
+                                      notify->class = class;
+                                      notify->item = item;
+                                      //ecore_thread_feedback(th, notify);
+                                      _insert_gengrid_item(notify);
+                                   }
                               }
                             break;
                          }
@@ -280,10 +289,13 @@ _refresh_directory(const char* data)
    //Insert None Item
    Insert_Gen_Grid_Item_Notify *notify = calloc(1, 
                                          sizeof(Insert_Gen_Grid_Item_Notify));
-   notify->class = item_class;
-   notify->item = item;
+   if (notify)
+     {
+        notify->class = item_class;
+        notify->item = item;
 
-   _insert_gengrid_item(notify);
+        _insert_gengrid_item(notify);
+     }
 
    _backgroundlist = _rec_read_directorys(_backgroundlist, data,
                                           item_class);
@@ -301,16 +313,18 @@ _gengrid_refresh_samples(const char *path)
 }
 
 static void
-_cb_entry_changed(void *data EINA_UNUSED, Evas_Object *parent,
-                  void *event EINA_UNUSED)
+_cb_entry_changed(void *_data EINA_UNUSED,
+                  Evas_Object *parent,
+                  void *_event EINA_UNUSED)
 {
    const char *path = elm_object_text_get(parent);
    _gengrid_refresh_samples(path);
 }
 
 static void
-_cb_hoversel_select(void *data, Evas_Object *hoversel EINA_UNUSED, 
-                    void *event EINA_UNUSED)
+_cb_hoversel_select(void *data,
+                    Evas_Object *_hoversel EINA_UNUSED,
+                    void *_event EINA_UNUSED)
 {
    Evas_Object *o;
    char *path = data;
@@ -372,8 +386,9 @@ _import_background(const char* background)
 }
 
 static void
-_cb_grid_doubleclick(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, 
-                     void *event EINA_UNUSED)
+_cb_grid_doubleclick(void *_data EINA_UNUSED,
+                     Evas_Object *_obj EINA_UNUSED,
+                     void *_event EINA_UNUSED)
 {
    Config *config = termio_config_get(_term);
    char *config_background_dir = ecore_file_dir_get(config->background);

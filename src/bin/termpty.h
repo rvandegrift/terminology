@@ -36,11 +36,6 @@ typedef struct _Termexp       Termexp;
 #define MOUSE_EXT_SGR          2
 #define MOUSE_EXT_URXVT        3
 
-// choose - italic OR double-width support
-
-//#define SUPPORT_ITALIC   1
-#define SUPPORT_DBLWIDTH 1
-
 // Only for testing purpose
 //#define SUPPORT_80_132_COLUMNS 1
 
@@ -53,13 +48,8 @@ struct _Termatt
    unsigned char fg, bg;
    unsigned short bold : 1;
    unsigned short faint : 1;
-#if defined(SUPPORT_ITALIC)
    unsigned short italic : 1;
-#elif defined(SUPPORT_DBLWIDTH)
    unsigned short dblwidth : 1;
-#else
-   unsigned short bit_padding_0 : 1;
-#endif
    unsigned short underline : 1;
    unsigned short blink : 1; // don't intend to support this currently
    unsigned short blink2 : 1; // don't intend to support this currently
@@ -73,7 +63,6 @@ struct _Termatt
    // below used for working out text from selections
    unsigned short autowrapped : 1;
    unsigned short newline : 1;
-   unsigned short tab : 1;
    unsigned short fraktur : 1;
 #if defined(SUPPORT_80_132_COLUMNS)
    unsigned short is_80_132_mode_allowed : 1;
@@ -95,10 +84,11 @@ struct _Termpty
       } change, set_title, set_icon, cancel_sel, exited, bell, command;
    } cb;
    struct {
-      const char *title, *icon;
+      const char *title, *icon, *user_title;
    } prop;
    const char *cur_cmd;
    Termcell *screen, *screen2;
+   unsigned int *tabs;
    int circular_offset;
    int circular_offset2;
    Eina_Unicode *buf;
@@ -106,12 +96,17 @@ struct _Termpty
    unsigned char oldbuf[4];
    Termsave *back;
    size_t backsize, backpos;
+   /* this beacon in the backlog tells about the top line in screen
+    * coordinates that maps to a line in the backlog */
    struct {
         int screen_y;
         int backlog_y;
    } backlog_beacon;
    int w, h;
    int fd, slavefd;
+#ifdef ENABLE_FUZZING
+   int fd_dev_null;
+#endif
    struct {
       int curid;
       Eina_Hash *blocks;
@@ -156,10 +151,11 @@ struct _Termpty
         unsigned int  no_autorepeat : 1;
         unsigned int  cjk_ambiguous_wide : 1;
         unsigned int  hide_cursor : 1;
+        unsigned int  combining_strike : 1;
    } termstate;
    struct {
         int           cx, cy;
-   } cursor_state, cursor_save;
+   } cursor_state, cursor_save[2];
    int exit_code;
    pid_t pid;
    unsigned int altbuf     : 1;
@@ -261,13 +257,14 @@ void       termpty_screen_swap(Termpty *ty);
 ssize_t termpty_line_length(const Termcell *cells, ssize_t nb_cells);
 
 Config *termpty_config_get(const Termpty *ty);
+void termpty_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len);
 
 extern int _termpty_log_dom;
 
 #define TERMPTY_SCREEN(Tpty, X, Y) \
   Tpty->screen[X + (((Y + Tpty->circular_offset) % Tpty->h) * Tpty->w)]
 #define TERMPTY_FMTCLR(Tatt) \
-   (Tatt).autowrapped = (Tatt).newline = (Tatt).tab = 0
+   (Tatt).autowrapped = (Tatt).newline = 0
 
 #define TERMPTY_RESTRICT_FIELD(Field, Min, Max) \
    do {                                         \

@@ -52,9 +52,11 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = terminology$(EXEEXT) tybg$(EXEEXT) tyalpha$(EXEEXT) \
-	typop$(EXEEXT) tyq$(EXEEXT) tycat$(EXEEXT) tyls$(EXEEXT)
-@HAVE_PO_TRUE@am__append_1 = -DLOCALEDIR=\"$(localedir)\"
-@HAVE_PO_TRUE@am__append_2 = @LIBINTL@
+	typop$(EXEEXT) tyq$(EXEEXT) tycat$(EXEEXT) tyls$(EXEEXT) \
+	$(am__EXEEXT_1)
+@ENABLE_FUZZING_TRUE@am__append_1 = tyfuzz
+@HAVE_PO_TRUE@am__append_2 = -DLOCALEDIR=\"$(localedir)\"
+@HAVE_PO_TRUE@am__append_3 = @LIBINTL@
 subdir = src/bin
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -72,6 +74,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/terminology_config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
+@ENABLE_FUZZING_TRUE@am__EXEEXT_1 = tyfuzz$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
@@ -100,27 +103,44 @@ am_terminology_OBJECTS = terminology-about.$(OBJEXT) \
 	terminology-termptysave.$(OBJEXT) \
 	lz4/terminology-lz4.$(OBJEXT) md5/terminology-md5.$(OBJEXT) \
 	terminology-utf8.$(OBJEXT) terminology-win.$(OBJEXT) \
-	terminology-utils.$(OBJEXT) terminology-dbus.$(OBJEXT) \
-	terminology-extns.$(OBJEXT) terminology-gravatar.$(OBJEXT)
+	terminology-utils.$(OBJEXT) terminology-extns.$(OBJEXT) \
+	terminology-gravatar.$(OBJEXT) terminology-sb.$(OBJEXT)
 terminology_OBJECTS = $(am_terminology_OBJECTS)
 am__DEPENDENCIES_1 =
 terminology_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_tyalpha_OBJECTS = tyalpha-tyalpha.$(OBJEXT)
+am_tyalpha_OBJECTS = tyalpha-tycommon.$(OBJEXT) \
+	tyalpha-tyalpha.$(OBJEXT)
 tyalpha_OBJECTS = $(am_tyalpha_OBJECTS)
 tyalpha_DEPENDENCIES =
-am_tybg_OBJECTS = tybg-tybg.$(OBJEXT)
+am_tybg_OBJECTS = tybg-tycommon.$(OBJEXT) tybg-tybg.$(OBJEXT)
 tybg_OBJECTS = $(am_tybg_OBJECTS)
 tybg_DEPENDENCIES =
-am_tycat_OBJECTS = tycat-tycat.$(OBJEXT) tycat-extns.$(OBJEXT)
+am_tycat_OBJECTS = tycat-tycat.$(OBJEXT) tycat-tycommon.$(OBJEXT) \
+	tycat-extns.$(OBJEXT)
 tycat_OBJECTS = $(am_tycat_OBJECTS)
 tycat_DEPENDENCIES =
-am_tyls_OBJECTS = tyls-tyls.$(OBJEXT)
+am__tyfuzz_SOURCES_DIST = termptyesc.c termptysave.c termptyops.c \
+	termptydbl.c termptyext.c termptygfx.c termpty.c config.c \
+	col.c tyfuzz.c
+@ENABLE_FUZZING_TRUE@am_tyfuzz_OBJECTS = tyfuzz-termptyesc.$(OBJEXT) \
+@ENABLE_FUZZING_TRUE@	tyfuzz-termptysave.$(OBJEXT) \
+@ENABLE_FUZZING_TRUE@	tyfuzz-termptyops.$(OBJEXT) \
+@ENABLE_FUZZING_TRUE@	tyfuzz-termptydbl.$(OBJEXT) \
+@ENABLE_FUZZING_TRUE@	tyfuzz-termptyext.$(OBJEXT) \
+@ENABLE_FUZZING_TRUE@	tyfuzz-termptygfx.$(OBJEXT) \
+@ENABLE_FUZZING_TRUE@	tyfuzz-termpty.$(OBJEXT) \
+@ENABLE_FUZZING_TRUE@	tyfuzz-config.$(OBJEXT) \
+@ENABLE_FUZZING_TRUE@	tyfuzz-col.$(OBJEXT) \
+@ENABLE_FUZZING_TRUE@	tyfuzz-tyfuzz.$(OBJEXT)
+tyfuzz_OBJECTS = $(am_tyfuzz_OBJECTS)
+tyfuzz_DEPENDENCIES =
+am_tyls_OBJECTS = tyls-tyls.$(OBJEXT) tyls-tycommon.$(OBJEXT)
 tyls_OBJECTS = $(am_tyls_OBJECTS)
 tyls_DEPENDENCIES =
-am_typop_OBJECTS = typop-typop.$(OBJEXT)
+am_typop_OBJECTS = typop-tycommon.$(OBJEXT) typop-typop.$(OBJEXT)
 typop_OBJECTS = $(am_typop_OBJECTS)
 typop_DEPENDENCIES =
-am_tyq_OBJECTS = tyq-tyq.$(OBJEXT)
+am_tyq_OBJECTS = tyq-tycommon.$(OBJEXT) tyq-tyq.$(OBJEXT)
 tyq_OBJECTS = $(am_tyq_OBJECTS)
 tyq_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -147,11 +167,11 @@ AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN   " $@;
 SOURCES = $(terminology_SOURCES) $(tyalpha_SOURCES) $(tybg_SOURCES) \
-	$(tycat_SOURCES) $(tyls_SOURCES) $(typop_SOURCES) \
-	$(tyq_SOURCES)
-DIST_SOURCES = $(terminology_SOURCES) $(tyalpha_SOURCES) \
-	$(tybg_SOURCES) $(tycat_SOURCES) $(tyls_SOURCES) \
+	$(tycat_SOURCES) $(tyfuzz_SOURCES) $(tyls_SOURCES) \
 	$(typop_SOURCES) $(tyq_SOURCES)
+DIST_SOURCES = $(terminology_SOURCES) $(tyalpha_SOURCES) \
+	$(tybg_SOURCES) $(tycat_SOURCES) $(am__tyfuzz_SOURCES_DIST) \
+	$(tyls_SOURCES) $(typop_SOURCES) $(tyq_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -179,8 +199,6 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-ELDBUS_CFLAGS = @ELDBUS_CFLAGS@
-ELDBUS_LIBS = @ELDBUS_LIBS@
 EXEEXT = @EXEEXT@
 GETTEXT_MACRO_VERSION = @GETTEXT_MACRO_VERSION@
 GMSGFMT = @GMSGFMT@
@@ -281,13 +299,14 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+want_fuzzing = @want_fuzzing@
 AUTOMAKE_OPTIONS = subdir-objects
 MAINTAINERCLEANFILES = Makefile.in
 terminology_CPPFLAGS = -I. -DPACKAGE_BIN_DIR=\"$(bindir)\" \
 	-DPACKAGE_LIB_DIR=\"$(libdir)\" \
 	-DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@ \
-	$(am__append_1)
-terminology_LDADD = @TERMINOLOGY_LIBS@ @ELDBUS_LIBS@ $(am__append_2)
+	$(am__append_2)
+terminology_LDADD = @TERMINOLOGY_LIBS@ $(am__append_3)
 terminology_SOURCES = \
 private.h \
 about.c about.h \
@@ -327,45 +346,50 @@ md5/md5.c md5/md5.h \
 utf8.c utf8.h \
 win.c win.h \
 utils.c utils.h \
-dbus.c dbus.h \
 extns.c extns.h \
 gravatar.c gravatar.h \
-tty_keys.h
+tty_keys.h \
+sb.c sb.h
 
 tybg_SOURCES = \
+tycommon.c tycommon.h \
 tybg.c
 
 tybg_CPPFLAGS = -I. \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
--DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"
+-DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
 
 tybg_LDADD = 
 tyalpha_SOURCES = \
+tycommon.c \
 tyalpha.c
 
 tyalpha_CPPFLAGS = -I. \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
--DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"
+-DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
 
 tyalpha_LDADD = 
 typop_SOURCES = \
+tycommon.c \
 typop.c
 
 typop_CPPFLAGS = -I. \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
--DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"
+-DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
 
 typop_LDADD = 
 tyq_SOURCES = \
+tycommon.c \
 tyq.c
 
 tyq_CPPFLAGS = -I. \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
--DPACKAGE_DATA_DIR=\"$(pkgdatadir)\"
+-DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
 
 tyq_LDADD = 
 tycat_SOURCES = \
 tycat.c \
+tycommon.c \
 extns.c extns.h
 
 tycat_CPPFLAGS = -I. \
@@ -375,6 +399,7 @@ tycat_CPPFLAGS = -I. \
 tycat_LDADD = @TERMINOLOGY_LIBS@
 tyls_SOURCES = \
 tyls.c \
+tycommon.c \
 extns.h
 
 tyls_CPPFLAGS = -I. \
@@ -382,6 +407,23 @@ tyls_CPPFLAGS = -I. \
 -DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
 
 tyls_LDADD = @TERMINOLOGY_LIBS@
+@ENABLE_FUZZING_TRUE@tyfuzz_SOURCES = \
+@ENABLE_FUZZING_TRUE@termptyesc.c \
+@ENABLE_FUZZING_TRUE@termptysave.c \
+@ENABLE_FUZZING_TRUE@termptyops.c \
+@ENABLE_FUZZING_TRUE@termptydbl.c \
+@ENABLE_FUZZING_TRUE@termptyext.c \
+@ENABLE_FUZZING_TRUE@termptygfx.c \
+@ENABLE_FUZZING_TRUE@termpty.c \
+@ENABLE_FUZZING_TRUE@config.c \
+@ENABLE_FUZZING_TRUE@col.c \
+@ENABLE_FUZZING_TRUE@tyfuzz.c
+
+@ENABLE_FUZZING_TRUE@tyfuzz_CPPFLAGS = -I. \
+@ENABLE_FUZZING_TRUE@-DPACKAGE_BIN_DIR=\"$(bindir)\" -DPACKAGE_LIB_DIR=\"$(libdir)\" \
+@ENABLE_FUZZING_TRUE@-DPACKAGE_DATA_DIR=\"$(pkgdatadir)\" @TERMINOLOGY_CFLAGS@
+
+@ENABLE_FUZZING_TRUE@tyfuzz_LDADD = @TERMINOLOGY_LIBS@
 all: all-am
 
 .SUFFIXES:
@@ -484,6 +526,9 @@ tybg$(EXEEXT): $(tybg_OBJECTS) $(tybg_DEPENDENCIES) $(EXTRA_tybg_DEPENDENCIES)
 tycat$(EXEEXT): $(tycat_OBJECTS) $(tycat_DEPENDENCIES) $(EXTRA_tycat_DEPENDENCIES) 
 	@rm -f tycat$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(tycat_OBJECTS) $(tycat_LDADD) $(LIBS)
+tyfuzz$(EXEEXT): $(tyfuzz_OBJECTS) $(tyfuzz_DEPENDENCIES) $(EXTRA_tyfuzz_DEPENDENCIES) 
+	@rm -f tyfuzz$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(tyfuzz_OBJECTS) $(tyfuzz_LDADD) $(LIBS)
 tyls$(EXEEXT): $(tyls_OBJECTS) $(tyls_DEPENDENCIES) $(EXTRA_tyls_DEPENDENCIES) 
 	@rm -f tyls$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(tyls_OBJECTS) $(tyls_LDADD) $(LIBS)
@@ -506,7 +551,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-col.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-controls.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-dbus.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-extns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-gravatar.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-ipc.Po@am__quote@
@@ -525,6 +569,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-options_themepv.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-options_video.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-options_wallpaper.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-sb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-sel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-termcmd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-termio.Po@am__quote@
@@ -540,11 +585,27 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/terminology-win.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyalpha-tyalpha.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyalpha-tycommon.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tybg-tybg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tybg-tycommon.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tycat-extns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tycat-tycat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tycat-tycommon.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyfuzz-col.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyfuzz-config.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyfuzz-termpty.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyfuzz-termptydbl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyfuzz-termptyesc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyfuzz-termptyext.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyfuzz-termptygfx.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyfuzz-termptyops.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyfuzz-termptysave.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyfuzz-tyfuzz.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyls-tycommon.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyls-tyls.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/typop-tycommon.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/typop-typop.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyq-tycommon.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tyq-tyq.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lz4/$(DEPDIR)/terminology-lz4.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@md5/$(DEPDIR)/terminology-md5.Po@am__quote@
@@ -1069,20 +1130,6 @@ terminology-utils.obj: utils.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(terminology_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o terminology-utils.obj `if test -f 'utils.c'; then $(CYGPATH_W) 'utils.c'; else $(CYGPATH_W) '$(srcdir)/utils.c'; fi`
 
-terminology-dbus.o: dbus.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(terminology_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT terminology-dbus.o -MD -MP -MF $(DEPDIR)/terminology-dbus.Tpo -c -o terminology-dbus.o `test -f 'dbus.c' || echo '$(srcdir)/'`dbus.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/terminology-dbus.Tpo $(DEPDIR)/terminology-dbus.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='dbus.c' object='terminology-dbus.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(terminology_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o terminology-dbus.o `test -f 'dbus.c' || echo '$(srcdir)/'`dbus.c
-
-terminology-dbus.obj: dbus.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(terminology_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT terminology-dbus.obj -MD -MP -MF $(DEPDIR)/terminology-dbus.Tpo -c -o terminology-dbus.obj `if test -f 'dbus.c'; then $(CYGPATH_W) 'dbus.c'; else $(CYGPATH_W) '$(srcdir)/dbus.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/terminology-dbus.Tpo $(DEPDIR)/terminology-dbus.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='dbus.c' object='terminology-dbus.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(terminology_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o terminology-dbus.obj `if test -f 'dbus.c'; then $(CYGPATH_W) 'dbus.c'; else $(CYGPATH_W) '$(srcdir)/dbus.c'; fi`
-
 terminology-extns.o: extns.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(terminology_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT terminology-extns.o -MD -MP -MF $(DEPDIR)/terminology-extns.Tpo -c -o terminology-extns.o `test -f 'extns.c' || echo '$(srcdir)/'`extns.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/terminology-extns.Tpo $(DEPDIR)/terminology-extns.Po
@@ -1111,6 +1158,34 @@ terminology-gravatar.obj: gravatar.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(terminology_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o terminology-gravatar.obj `if test -f 'gravatar.c'; then $(CYGPATH_W) 'gravatar.c'; else $(CYGPATH_W) '$(srcdir)/gravatar.c'; fi`
 
+terminology-sb.o: sb.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(terminology_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT terminology-sb.o -MD -MP -MF $(DEPDIR)/terminology-sb.Tpo -c -o terminology-sb.o `test -f 'sb.c' || echo '$(srcdir)/'`sb.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/terminology-sb.Tpo $(DEPDIR)/terminology-sb.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sb.c' object='terminology-sb.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(terminology_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o terminology-sb.o `test -f 'sb.c' || echo '$(srcdir)/'`sb.c
+
+terminology-sb.obj: sb.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(terminology_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT terminology-sb.obj -MD -MP -MF $(DEPDIR)/terminology-sb.Tpo -c -o terminology-sb.obj `if test -f 'sb.c'; then $(CYGPATH_W) 'sb.c'; else $(CYGPATH_W) '$(srcdir)/sb.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/terminology-sb.Tpo $(DEPDIR)/terminology-sb.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sb.c' object='terminology-sb.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(terminology_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o terminology-sb.obj `if test -f 'sb.c'; then $(CYGPATH_W) 'sb.c'; else $(CYGPATH_W) '$(srcdir)/sb.c'; fi`
+
+tyalpha-tycommon.o: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyalpha_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyalpha-tycommon.o -MD -MP -MF $(DEPDIR)/tyalpha-tycommon.Tpo -c -o tyalpha-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyalpha-tycommon.Tpo $(DEPDIR)/tyalpha-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='tyalpha-tycommon.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyalpha_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyalpha-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+
+tyalpha-tycommon.obj: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyalpha_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyalpha-tycommon.obj -MD -MP -MF $(DEPDIR)/tyalpha-tycommon.Tpo -c -o tyalpha-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyalpha-tycommon.Tpo $(DEPDIR)/tyalpha-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='tyalpha-tycommon.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyalpha_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyalpha-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
+
 tyalpha-tyalpha.o: tyalpha.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyalpha_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyalpha-tyalpha.o -MD -MP -MF $(DEPDIR)/tyalpha-tyalpha.Tpo -c -o tyalpha-tyalpha.o `test -f 'tyalpha.c' || echo '$(srcdir)/'`tyalpha.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyalpha-tyalpha.Tpo $(DEPDIR)/tyalpha-tyalpha.Po
@@ -1124,6 +1199,20 @@ tyalpha-tyalpha.obj: tyalpha.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tyalpha.c' object='tyalpha-tyalpha.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyalpha_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyalpha-tyalpha.obj `if test -f 'tyalpha.c'; then $(CYGPATH_W) 'tyalpha.c'; else $(CYGPATH_W) '$(srcdir)/tyalpha.c'; fi`
+
+tybg-tycommon.o: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tybg_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tybg-tycommon.o -MD -MP -MF $(DEPDIR)/tybg-tycommon.Tpo -c -o tybg-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tybg-tycommon.Tpo $(DEPDIR)/tybg-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='tybg-tycommon.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tybg_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tybg-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+
+tybg-tycommon.obj: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tybg_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tybg-tycommon.obj -MD -MP -MF $(DEPDIR)/tybg-tycommon.Tpo -c -o tybg-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tybg-tycommon.Tpo $(DEPDIR)/tybg-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='tybg-tycommon.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tybg_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tybg-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
 
 tybg-tybg.o: tybg.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tybg_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tybg-tybg.o -MD -MP -MF $(DEPDIR)/tybg-tybg.Tpo -c -o tybg-tybg.o `test -f 'tybg.c' || echo '$(srcdir)/'`tybg.c
@@ -1153,6 +1242,20 @@ tycat-tycat.obj: tycat.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tycat_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tycat-tycat.obj `if test -f 'tycat.c'; then $(CYGPATH_W) 'tycat.c'; else $(CYGPATH_W) '$(srcdir)/tycat.c'; fi`
 
+tycat-tycommon.o: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tycat_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tycat-tycommon.o -MD -MP -MF $(DEPDIR)/tycat-tycommon.Tpo -c -o tycat-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tycat-tycommon.Tpo $(DEPDIR)/tycat-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='tycat-tycommon.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tycat_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tycat-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+
+tycat-tycommon.obj: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tycat_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tycat-tycommon.obj -MD -MP -MF $(DEPDIR)/tycat-tycommon.Tpo -c -o tycat-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tycat-tycommon.Tpo $(DEPDIR)/tycat-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='tycat-tycommon.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tycat_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tycat-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
+
 tycat-extns.o: extns.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tycat_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tycat-extns.o -MD -MP -MF $(DEPDIR)/tycat-extns.Tpo -c -o tycat-extns.o `test -f 'extns.c' || echo '$(srcdir)/'`extns.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tycat-extns.Tpo $(DEPDIR)/tycat-extns.Po
@@ -1166,6 +1269,146 @@ tycat-extns.obj: extns.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='extns.c' object='tycat-extns.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tycat_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tycat-extns.obj `if test -f 'extns.c'; then $(CYGPATH_W) 'extns.c'; else $(CYGPATH_W) '$(srcdir)/extns.c'; fi`
+
+tyfuzz-termptyesc.o: termptyesc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptyesc.o -MD -MP -MF $(DEPDIR)/tyfuzz-termptyesc.Tpo -c -o tyfuzz-termptyesc.o `test -f 'termptyesc.c' || echo '$(srcdir)/'`termptyesc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptyesc.Tpo $(DEPDIR)/tyfuzz-termptyesc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptyesc.c' object='tyfuzz-termptyesc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptyesc.o `test -f 'termptyesc.c' || echo '$(srcdir)/'`termptyesc.c
+
+tyfuzz-termptyesc.obj: termptyesc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptyesc.obj -MD -MP -MF $(DEPDIR)/tyfuzz-termptyesc.Tpo -c -o tyfuzz-termptyesc.obj `if test -f 'termptyesc.c'; then $(CYGPATH_W) 'termptyesc.c'; else $(CYGPATH_W) '$(srcdir)/termptyesc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptyesc.Tpo $(DEPDIR)/tyfuzz-termptyesc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptyesc.c' object='tyfuzz-termptyesc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptyesc.obj `if test -f 'termptyesc.c'; then $(CYGPATH_W) 'termptyesc.c'; else $(CYGPATH_W) '$(srcdir)/termptyesc.c'; fi`
+
+tyfuzz-termptysave.o: termptysave.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptysave.o -MD -MP -MF $(DEPDIR)/tyfuzz-termptysave.Tpo -c -o tyfuzz-termptysave.o `test -f 'termptysave.c' || echo '$(srcdir)/'`termptysave.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptysave.Tpo $(DEPDIR)/tyfuzz-termptysave.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptysave.c' object='tyfuzz-termptysave.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptysave.o `test -f 'termptysave.c' || echo '$(srcdir)/'`termptysave.c
+
+tyfuzz-termptysave.obj: termptysave.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptysave.obj -MD -MP -MF $(DEPDIR)/tyfuzz-termptysave.Tpo -c -o tyfuzz-termptysave.obj `if test -f 'termptysave.c'; then $(CYGPATH_W) 'termptysave.c'; else $(CYGPATH_W) '$(srcdir)/termptysave.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptysave.Tpo $(DEPDIR)/tyfuzz-termptysave.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptysave.c' object='tyfuzz-termptysave.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptysave.obj `if test -f 'termptysave.c'; then $(CYGPATH_W) 'termptysave.c'; else $(CYGPATH_W) '$(srcdir)/termptysave.c'; fi`
+
+tyfuzz-termptyops.o: termptyops.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptyops.o -MD -MP -MF $(DEPDIR)/tyfuzz-termptyops.Tpo -c -o tyfuzz-termptyops.o `test -f 'termptyops.c' || echo '$(srcdir)/'`termptyops.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptyops.Tpo $(DEPDIR)/tyfuzz-termptyops.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptyops.c' object='tyfuzz-termptyops.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptyops.o `test -f 'termptyops.c' || echo '$(srcdir)/'`termptyops.c
+
+tyfuzz-termptyops.obj: termptyops.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptyops.obj -MD -MP -MF $(DEPDIR)/tyfuzz-termptyops.Tpo -c -o tyfuzz-termptyops.obj `if test -f 'termptyops.c'; then $(CYGPATH_W) 'termptyops.c'; else $(CYGPATH_W) '$(srcdir)/termptyops.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptyops.Tpo $(DEPDIR)/tyfuzz-termptyops.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptyops.c' object='tyfuzz-termptyops.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptyops.obj `if test -f 'termptyops.c'; then $(CYGPATH_W) 'termptyops.c'; else $(CYGPATH_W) '$(srcdir)/termptyops.c'; fi`
+
+tyfuzz-termptydbl.o: termptydbl.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptydbl.o -MD -MP -MF $(DEPDIR)/tyfuzz-termptydbl.Tpo -c -o tyfuzz-termptydbl.o `test -f 'termptydbl.c' || echo '$(srcdir)/'`termptydbl.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptydbl.Tpo $(DEPDIR)/tyfuzz-termptydbl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptydbl.c' object='tyfuzz-termptydbl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptydbl.o `test -f 'termptydbl.c' || echo '$(srcdir)/'`termptydbl.c
+
+tyfuzz-termptydbl.obj: termptydbl.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptydbl.obj -MD -MP -MF $(DEPDIR)/tyfuzz-termptydbl.Tpo -c -o tyfuzz-termptydbl.obj `if test -f 'termptydbl.c'; then $(CYGPATH_W) 'termptydbl.c'; else $(CYGPATH_W) '$(srcdir)/termptydbl.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptydbl.Tpo $(DEPDIR)/tyfuzz-termptydbl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptydbl.c' object='tyfuzz-termptydbl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptydbl.obj `if test -f 'termptydbl.c'; then $(CYGPATH_W) 'termptydbl.c'; else $(CYGPATH_W) '$(srcdir)/termptydbl.c'; fi`
+
+tyfuzz-termptyext.o: termptyext.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptyext.o -MD -MP -MF $(DEPDIR)/tyfuzz-termptyext.Tpo -c -o tyfuzz-termptyext.o `test -f 'termptyext.c' || echo '$(srcdir)/'`termptyext.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptyext.Tpo $(DEPDIR)/tyfuzz-termptyext.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptyext.c' object='tyfuzz-termptyext.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptyext.o `test -f 'termptyext.c' || echo '$(srcdir)/'`termptyext.c
+
+tyfuzz-termptyext.obj: termptyext.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptyext.obj -MD -MP -MF $(DEPDIR)/tyfuzz-termptyext.Tpo -c -o tyfuzz-termptyext.obj `if test -f 'termptyext.c'; then $(CYGPATH_W) 'termptyext.c'; else $(CYGPATH_W) '$(srcdir)/termptyext.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptyext.Tpo $(DEPDIR)/tyfuzz-termptyext.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptyext.c' object='tyfuzz-termptyext.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptyext.obj `if test -f 'termptyext.c'; then $(CYGPATH_W) 'termptyext.c'; else $(CYGPATH_W) '$(srcdir)/termptyext.c'; fi`
+
+tyfuzz-termptygfx.o: termptygfx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptygfx.o -MD -MP -MF $(DEPDIR)/tyfuzz-termptygfx.Tpo -c -o tyfuzz-termptygfx.o `test -f 'termptygfx.c' || echo '$(srcdir)/'`termptygfx.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptygfx.Tpo $(DEPDIR)/tyfuzz-termptygfx.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptygfx.c' object='tyfuzz-termptygfx.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptygfx.o `test -f 'termptygfx.c' || echo '$(srcdir)/'`termptygfx.c
+
+tyfuzz-termptygfx.obj: termptygfx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termptygfx.obj -MD -MP -MF $(DEPDIR)/tyfuzz-termptygfx.Tpo -c -o tyfuzz-termptygfx.obj `if test -f 'termptygfx.c'; then $(CYGPATH_W) 'termptygfx.c'; else $(CYGPATH_W) '$(srcdir)/termptygfx.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termptygfx.Tpo $(DEPDIR)/tyfuzz-termptygfx.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termptygfx.c' object='tyfuzz-termptygfx.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termptygfx.obj `if test -f 'termptygfx.c'; then $(CYGPATH_W) 'termptygfx.c'; else $(CYGPATH_W) '$(srcdir)/termptygfx.c'; fi`
+
+tyfuzz-termpty.o: termpty.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termpty.o -MD -MP -MF $(DEPDIR)/tyfuzz-termpty.Tpo -c -o tyfuzz-termpty.o `test -f 'termpty.c' || echo '$(srcdir)/'`termpty.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termpty.Tpo $(DEPDIR)/tyfuzz-termpty.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termpty.c' object='tyfuzz-termpty.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termpty.o `test -f 'termpty.c' || echo '$(srcdir)/'`termpty.c
+
+tyfuzz-termpty.obj: termpty.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-termpty.obj -MD -MP -MF $(DEPDIR)/tyfuzz-termpty.Tpo -c -o tyfuzz-termpty.obj `if test -f 'termpty.c'; then $(CYGPATH_W) 'termpty.c'; else $(CYGPATH_W) '$(srcdir)/termpty.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-termpty.Tpo $(DEPDIR)/tyfuzz-termpty.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='termpty.c' object='tyfuzz-termpty.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-termpty.obj `if test -f 'termpty.c'; then $(CYGPATH_W) 'termpty.c'; else $(CYGPATH_W) '$(srcdir)/termpty.c'; fi`
+
+tyfuzz-config.o: config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-config.o -MD -MP -MF $(DEPDIR)/tyfuzz-config.Tpo -c -o tyfuzz-config.o `test -f 'config.c' || echo '$(srcdir)/'`config.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-config.Tpo $(DEPDIR)/tyfuzz-config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='config.c' object='tyfuzz-config.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-config.o `test -f 'config.c' || echo '$(srcdir)/'`config.c
+
+tyfuzz-config.obj: config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-config.obj -MD -MP -MF $(DEPDIR)/tyfuzz-config.Tpo -c -o tyfuzz-config.obj `if test -f 'config.c'; then $(CYGPATH_W) 'config.c'; else $(CYGPATH_W) '$(srcdir)/config.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-config.Tpo $(DEPDIR)/tyfuzz-config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='config.c' object='tyfuzz-config.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-config.obj `if test -f 'config.c'; then $(CYGPATH_W) 'config.c'; else $(CYGPATH_W) '$(srcdir)/config.c'; fi`
+
+tyfuzz-col.o: col.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-col.o -MD -MP -MF $(DEPDIR)/tyfuzz-col.Tpo -c -o tyfuzz-col.o `test -f 'col.c' || echo '$(srcdir)/'`col.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-col.Tpo $(DEPDIR)/tyfuzz-col.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='col.c' object='tyfuzz-col.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-col.o `test -f 'col.c' || echo '$(srcdir)/'`col.c
+
+tyfuzz-col.obj: col.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-col.obj -MD -MP -MF $(DEPDIR)/tyfuzz-col.Tpo -c -o tyfuzz-col.obj `if test -f 'col.c'; then $(CYGPATH_W) 'col.c'; else $(CYGPATH_W) '$(srcdir)/col.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-col.Tpo $(DEPDIR)/tyfuzz-col.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='col.c' object='tyfuzz-col.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-col.obj `if test -f 'col.c'; then $(CYGPATH_W) 'col.c'; else $(CYGPATH_W) '$(srcdir)/col.c'; fi`
+
+tyfuzz-tyfuzz.o: tyfuzz.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-tyfuzz.o -MD -MP -MF $(DEPDIR)/tyfuzz-tyfuzz.Tpo -c -o tyfuzz-tyfuzz.o `test -f 'tyfuzz.c' || echo '$(srcdir)/'`tyfuzz.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-tyfuzz.Tpo $(DEPDIR)/tyfuzz-tyfuzz.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tyfuzz.c' object='tyfuzz-tyfuzz.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-tyfuzz.o `test -f 'tyfuzz.c' || echo '$(srcdir)/'`tyfuzz.c
+
+tyfuzz-tyfuzz.obj: tyfuzz.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyfuzz-tyfuzz.obj -MD -MP -MF $(DEPDIR)/tyfuzz-tyfuzz.Tpo -c -o tyfuzz-tyfuzz.obj `if test -f 'tyfuzz.c'; then $(CYGPATH_W) 'tyfuzz.c'; else $(CYGPATH_W) '$(srcdir)/tyfuzz.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyfuzz-tyfuzz.Tpo $(DEPDIR)/tyfuzz-tyfuzz.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tyfuzz.c' object='tyfuzz-tyfuzz.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyfuzz_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyfuzz-tyfuzz.obj `if test -f 'tyfuzz.c'; then $(CYGPATH_W) 'tyfuzz.c'; else $(CYGPATH_W) '$(srcdir)/tyfuzz.c'; fi`
 
 tyls-tyls.o: tyls.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyls_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyls-tyls.o -MD -MP -MF $(DEPDIR)/tyls-tyls.Tpo -c -o tyls-tyls.o `test -f 'tyls.c' || echo '$(srcdir)/'`tyls.c
@@ -1181,6 +1424,34 @@ tyls-tyls.obj: tyls.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyls_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyls-tyls.obj `if test -f 'tyls.c'; then $(CYGPATH_W) 'tyls.c'; else $(CYGPATH_W) '$(srcdir)/tyls.c'; fi`
 
+tyls-tycommon.o: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyls_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyls-tycommon.o -MD -MP -MF $(DEPDIR)/tyls-tycommon.Tpo -c -o tyls-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyls-tycommon.Tpo $(DEPDIR)/tyls-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='tyls-tycommon.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyls_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyls-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+
+tyls-tycommon.obj: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyls_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyls-tycommon.obj -MD -MP -MF $(DEPDIR)/tyls-tycommon.Tpo -c -o tyls-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyls-tycommon.Tpo $(DEPDIR)/tyls-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='tyls-tycommon.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyls_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyls-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
+
+typop-tycommon.o: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(typop_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT typop-tycommon.o -MD -MP -MF $(DEPDIR)/typop-tycommon.Tpo -c -o typop-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/typop-tycommon.Tpo $(DEPDIR)/typop-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='typop-tycommon.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(typop_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o typop-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+
+typop-tycommon.obj: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(typop_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT typop-tycommon.obj -MD -MP -MF $(DEPDIR)/typop-tycommon.Tpo -c -o typop-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/typop-tycommon.Tpo $(DEPDIR)/typop-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='typop-tycommon.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(typop_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o typop-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
+
 typop-typop.o: typop.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(typop_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT typop-typop.o -MD -MP -MF $(DEPDIR)/typop-typop.Tpo -c -o typop-typop.o `test -f 'typop.c' || echo '$(srcdir)/'`typop.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/typop-typop.Tpo $(DEPDIR)/typop-typop.Po
@@ -1194,6 +1465,20 @@ typop-typop.obj: typop.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='typop.c' object='typop-typop.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(typop_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o typop-typop.obj `if test -f 'typop.c'; then $(CYGPATH_W) 'typop.c'; else $(CYGPATH_W) '$(srcdir)/typop.c'; fi`
+
+tyq-tycommon.o: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyq_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyq-tycommon.o -MD -MP -MF $(DEPDIR)/tyq-tycommon.Tpo -c -o tyq-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyq-tycommon.Tpo $(DEPDIR)/tyq-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='tyq-tycommon.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyq_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyq-tycommon.o `test -f 'tycommon.c' || echo '$(srcdir)/'`tycommon.c
+
+tyq-tycommon.obj: tycommon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyq_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyq-tycommon.obj -MD -MP -MF $(DEPDIR)/tyq-tycommon.Tpo -c -o tyq-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tyq-tycommon.Tpo $(DEPDIR)/tyq-tycommon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tycommon.c' object='tyq-tycommon.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyq_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tyq-tycommon.obj `if test -f 'tycommon.c'; then $(CYGPATH_W) 'tycommon.c'; else $(CYGPATH_W) '$(srcdir)/tycommon.c'; fi`
 
 tyq-tyq.o: tyq.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tyq_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tyq-tyq.o -MD -MP -MF $(DEPDIR)/tyq-tyq.Tpo -c -o tyq-tyq.o `test -f 'tyq.c' || echo '$(srcdir)/'`tyq.c

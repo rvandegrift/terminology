@@ -687,6 +687,7 @@ int LZ4_compress_limitedOutput(const char* source, char* dest, int inputSize, in
 void* LZ4_createStream()
 {
     void* lz4s = ALLOCATOR(4, LZ4_STREAMSIZE_U32);
+    if (!lz4s) return NULL;
     MEM_INIT(lz4s, 0, LZ4_STREAMSIZE);
     return lz4s;
 }
@@ -1077,6 +1078,7 @@ typedef struct
 void* LZ4_createStreamDecode()
 {
     void* lz4s = ALLOCATOR(sizeof(U32), LZ4_STREAMDECODESIZE_U32);
+    if (!lz4s) return NULL;
     MEM_INIT(lz4s, 0, LZ4_STREAMDECODESIZE);
     return lz4s;
 }
@@ -1195,6 +1197,7 @@ int LZ4_resetStreamState(void* state, const char* inputBuffer)
 void* LZ4_create (const char* inputBuffer)
 {
     void* lz4ds = ALLOCATOR(4, LZ4_STREAMSIZE_U32);
+    if (!lz4ds) return NULL;
     LZ4_init ((LZ4_stream_t_internal*)lz4ds, (const BYTE*)inputBuffer);
     return lz4ds;
 }

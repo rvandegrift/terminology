@@ -38,7 +38,9 @@ static enum option_mode {
 } _mode = 0;
 
 static void
-_cb_op(void *data, Evas_Object *obj EINA_UNUSED, void *event EINA_UNUSED)
+_cb_op(void *data,
+       Evas_Object *_obj EINA_UNUSED,
+       void *_event EINA_UNUSED)
 {
    enum option_mode mode = (intptr_t) data;
 
@@ -48,14 +50,14 @@ _cb_op(void *data, Evas_Object *obj EINA_UNUSED, void *event EINA_UNUSED)
 }
 
 static void
-_cb_op_tmp_chg(void *data, Evas_Object *obj EINA_UNUSED, void *event EINA_UNUSED)
+_cb_op_tmp_chg(void *data, Evas_Object *obj, void *_event EINA_UNUSED)
 {
    Config *config = data;
    config->temporary = elm_check_state_get(obj);
 }
 
 static Eina_Bool
-_cb_op_del_delay(void *data EINA_UNUSED)
+_cb_op_del_delay(void *_data EINA_UNUSED)
 {
    evas_object_del(op_opbox);
    evas_object_del(op_frame);
@@ -70,13 +72,19 @@ _cb_op_del_delay(void *data EINA_UNUSED)
 }
 
 static void
-_cb_mouse_down(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *ev EINA_UNUSED)
+_cb_mouse_down(void *data,
+               Evas *_e EINA_UNUSED,
+               Evas_Object *_obj EINA_UNUSED,
+               void *_ev EINA_UNUSED)
 {
    options_toggle(saved_win, saved_bg, data, op_donecb, op_donedata);
 }
 
 static void
-_cb_opdt_hide_done(void *data, Evas_Object *obj EINA_UNUSED, const char *sig EINA_UNUSED, const char *src EINA_UNUSED)
+_cb_opdt_hide_done(void *data,
+                   Evas_Object *_obj EINA_UNUSED,
+                   const char *_sig EINA_UNUSED,
+                   const char *_src EINA_UNUSED)
 {
    elm_box_clear(op_opbox);
    switch (_mode)
@@ -96,7 +104,10 @@ _cb_opdt_hide_done(void *data, Evas_Object *obj EINA_UNUSED, const char *sig EIN
 }
 
 static void
-_cb_opdt_hide_done2(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, const char *sig EINA_UNUSED, const char *src EINA_UNUSED)
+_cb_opdt_hide_done2(void *_data EINA_UNUSED,
+                    Evas_Object *_obj EINA_UNUSED,
+                    const char *_sig EINA_UNUSED,
+                    const char *_src EINA_UNUSED)
 {
    if (op_del_timer)
      {
@@ -152,7 +163,7 @@ options_toggle(Evas_Object *win, Evas_Object *bg, Evas_Object *term,
         evas_object_size_hint_align_set(o, 0.5, EVAS_HINT_FILL);
         elm_toolbar_horizontal_set(o, EINA_FALSE);
         elm_object_style_set(o, "item_horizontal");
-        elm_toolbar_icon_size_set(o, 16);
+        elm_toolbar_icon_size_set(o, 16 * elm_config_scale_get());
         elm_toolbar_shrink_mode_set(o, ELM_TOOLBAR_SHRINK_SCROLL);
         elm_toolbar_select_mode_set(o, ELM_OBJECT_SELECT_MODE_ALWAYS);
         elm_toolbar_menu_parent_set(o, win);
@@ -171,7 +182,7 @@ options_toggle(Evas_Object *win, Evas_Object *bg, Evas_Object *term,
         ITEM_APPEND("preferences-system", _("Behavior"), BEHAVIOR);
         ITEM_APPEND("preferences-desktop-keyboard-shortcuts", _("Keys"), KEYS);
         ITEM_APPEND("system-run", _("Helpers"), HELPERS);
-        ITEM_APPEND("apps", _("Toolkit"), ELM);
+        ITEM_APPEND("preferences-color", _("Toolkit"), ELM);
 #undef ITEM_APPEND
 
         elm_box_pack_end(op_tbox, o);
