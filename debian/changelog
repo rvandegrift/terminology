@@ -1,3 +1,12 @@
+terminology (1.0.0-1) experimental; urgency=medium
+
+  * debian/gbp.conf: import & build upstream tarballs
+  * debian/patches/use-system-lz4.patch: fixup, defuzz
+  * debian/patches/fix-del-backspace-key.patch: fixup, defuzz
+  * Build-Depend on EFL >= 1.18 and simplify package list (Closes: #848370)
+
+ -- Ross Vandegrift <ross@kallisti.us>  Fri, 13 Jan 2017 13:50:18 -0500
+
 terminology (0.9.1-1) unstable; urgency=high
 
   [ Ross Vandegrift ]
