@@ -134,9 +134,11 @@ struct _Termpty
         unsigned char charset;
         unsigned char charsetch;
         unsigned char chset[4];
-        int           scroll_y1, scroll_y2;
+        int           top_margin, bottom_margin;
+        int           left_margin, right_margin;
         int           had_cr_x, had_cr_y;
-        int           margin_top; // soon, more to come...
+        unsigned int  lr_margins : 1;
+        unsigned int  restrict_cursor : 1;
         unsigned int  multibyte : 1;
         unsigned int  alt_kp : 1;
         unsigned int  insert : 1;
@@ -236,6 +238,7 @@ Termcell  *termpty_cellrow_get(Termpty *ty, int y, ssize_t *wret);
 ssize_t termpty_row_length(Termpty *ty, int y);
 void       termpty_write(Termpty *ty, const char *input, int len);
 void       termpty_resize(Termpty *ty, int new_w, int new_h);
+void       termpty_resize_tabs(Termpty *ty, int old_w, int new_w);
 void       termpty_backlog_size_set(Termpty *ty, size_t size);
 ssize_t    termpty_backlog_length(Termpty *ty);
 void       termpty_backscroll_adjust(Termpty *ty, int *scroll);
@@ -244,14 +247,16 @@ pid_t      termpty_pid_get(const Termpty *ty);
 void       termpty_block_free(Termblock *tb);
 Termblock *termpty_block_new(Termpty *ty, int w, int h, const char *path, const char *link);
 void       termpty_block_insert(Termpty *ty, int ch, Termblock *blk);
-int        termpty_block_id_get(Termcell *cell, int *x, int *y);
-Termblock *termpty_block_get(Termpty *ty, int id);
+int        termpty_block_id_get(const Termcell *cell, int *x, int *y);
+Termblock *termpty_block_get(const Termpty *ty, int id);
 void       termpty_block_chid_update(Termpty *ty, Termblock *blk);
-Termblock *termpty_block_chid_get(Termpty *ty, const char *chid);
+Termblock *termpty_block_chid_get(const Termpty *ty, const char *chid);
 
 void       termpty_cell_copy(Termpty *ty, Termcell *src, Termcell *dst, int n);
 void       termpty_cell_fill(Termpty *ty, Termcell *src, Termcell *dst, int n);
 void       termpty_cell_codepoint_att_fill(Termpty *ty, Eina_Unicode codepoint, Termatt att, Termcell *dst, int n);
+void       termpty_cells_set_content(Termpty *ty, Termcell *cells,
+                          Eina_Unicode codepoint, int count);
 void       termpty_screen_swap(Termpty *ty);
 
 ssize_t termpty_line_length(const Termcell *cells, ssize_t nb_cells);

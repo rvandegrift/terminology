@@ -6,6 +6,7 @@
 #include "termio.h"
 #include "termiolink.h"
 #include "termpty.h"
+#include "termptyops.h"
 #include "termcmd.h"
 #include "termptydbl.h"
 #include "utf8.h"
@@ -301,7 +302,7 @@ termio_mouseover_suspend_pushpop(Evas_Object *obj, int dir)
 }
 
 void
-termio_size_get(Evas_Object *obj, int *w, int *h)
+termio_size_get(const Evas_Object *obj, int *w, int *h)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN(sd);
@@ -310,7 +311,7 @@ termio_size_get(Evas_Object *obj, int *w, int *h)
 }
 
 int
-termio_scroll_get(Evas_Object *obj)
+termio_scroll_get(const Evas_Object *obj)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN_VAL(sd, 0);
@@ -357,7 +358,7 @@ termio_scroll_top_backlog(Evas_Object *obj)
 }
 
 const char *
-termio_title_get(Evas_Object *obj)
+termio_title_get(const Evas_Object *obj)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN_VAL(sd, NULL);
@@ -381,7 +382,7 @@ termio_user_title_set(Evas_Object *obj, const char *title)
 }
 
 const char *
-termio_icon_name_get(Evas_Object *obj)
+termio_icon_name_get(const Evas_Object *obj)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN_VAL(sd, NULL);
@@ -427,7 +428,7 @@ termio_selection_exists(const Evas_Object *obj)
 }
 
 Termpty *
-termio_pty_get(Evas_Object *obj)
+termio_pty_get(const Evas_Object *obj)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN_VAL(sd, NULL);
@@ -436,7 +437,7 @@ termio_pty_get(Evas_Object *obj)
 }
 
 Evas_Object *
-termio_miniview_get(Evas_Object *obj)
+termio_miniview_get(const Evas_Object *obj)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN_VAL(sd, NULL);
@@ -445,7 +446,7 @@ termio_miniview_get(Evas_Object *obj)
 }
 
 Term*
-termio_term_get(Evas_Object *obj)
+termio_term_get(const Evas_Object *obj)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN_VAL(sd, NULL);
@@ -464,10 +465,28 @@ _font_size_set(Evas_Object *obj, int size)
 
    if (size < 5) size = 5;
    else if (size > 100) size = 100;
-   if (config && config->font.size != size)
+   if (config)
      {
         config->temporary = EINA_TRUE;
         config->font.size = size;
+        sd->noreqsize = 1;
+        termio_config_update(obj);
+        sd->noreqsize = 0;
+        evas_object_data_del(obj, "sizedone");
+     }
+}
+
+void
+termio_font_update(Evas_Object *obj)
+{
+   Termio *sd = evas_object_smart_data_get(obj);
+   Config *config;
+   EINA_SAFETY_ON_NULL_RETURN(sd);
+
+   config = sd->config;
+
+   if (config)
+     {
         sd->noreqsize = 1;
         termio_config_update(obj);
         sd->noreqsize = 0;
@@ -548,7 +567,7 @@ termio_cwd_get(const Evas_Object *obj, char *buf, size_t size)
 }
 
 Evas_Object *
-termio_textgrid_get(Evas_Object *obj)
+termio_textgrid_get(const Evas_Object *obj)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN_VAL(sd, NULL);
@@ -557,7 +576,7 @@ termio_textgrid_get(Evas_Object *obj)
 }
 
 Evas_Object *
-termio_win_get(Evas_Object *obj)
+termio_win_get(const Evas_Object *obj)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN_VAL(sd, NULL);
@@ -1205,13 +1224,6 @@ _update_link(Evas_Object *obj, Termio *sd,
      return;
 
    popup_exists = main_term_popup_exists(sd->term);
-   if ((!popup_exists) &&
-       ((sd->link.string[0] == '/') || (link_is_url(sd->link.string))))
-     {
-#ifdef HAVE_ELM_WIN_TEAMWORK
-        elm_win_teamwork_uri_show(win_evas_object_get(term_win_get(sd->term)), sd->link.string);
-#endif
-     }
    for (y = sd->link.y1; y <= sd->link.y2; y++)
      {
         o = elm_layout_add(sd->win);
@@ -1268,9 +1280,6 @@ _remove_links(Termio *sd, Evas_Object *obj)
 
    if (sd->link.string)
      {
-#ifdef HAVE_ELM_WIN_TEAMWORK
-        elm_win_teamwork_uri_hide(win_evas_object_get(term_win_get(sd->term)));
-#endif
         free(sd->link.string);
         sd->link.string = NULL;
      }
@@ -2068,7 +2077,8 @@ _mouse_in_selection(Termio *sd, int cx, int cy)
 
 
 char *
-termio_selection_get(Evas_Object *obj, int c1x, int c1y, int c2x, int c2y,
+termio_selection_get(const Evas_Object *obj,
+                     int c1x, int c1y, int c2x, int c2y,
                      size_t *lenp,
                      Eina_Bool rtrim)
 {
@@ -3518,7 +3528,8 @@ _smart_cb_focus_out(void *data,
    Termio *sd = evas_object_smart_data_get(data);
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
-   edje_object_signal_emit(sd->cursor.obj, "focus,out", "terminology");
+   if (!sd->config->disable_focus_visuals)
+     edje_object_signal_emit(sd->cursor.obj, "focus,out", "terminology");
    if (!sd->win) return;
    sd->pty->selection.last_click = 0;
    elm_win_keyboard_mode_set(sd->win, ELM_WIN_KEYBOARD_OFF);
@@ -3792,11 +3803,11 @@ _rep_mouse_up(Termio *sd, Evas_Event_Mouse_Up *ev, int cx, int cy)
 }
 
 static Eina_Bool
-_rep_mouse_move(Termio *sd, Evas_Event_Mouse_Move *ev, int cx, int cy)
+_rep_mouse_move(Termio *sd, int cx, int cy)
 {
    char buf[64];
    Eina_Bool ret = EINA_FALSE;
-   int btn, meta;
+   int btn;
 
    if ((sd->pty->mouse_mode == MOUSE_OFF) ||
        (sd->pty->mouse_mode == MOUSE_X10) ||
@@ -3807,18 +3818,16 @@ _rep_mouse_move(Termio *sd, Evas_Event_Mouse_Move *ev, int cx, int cy)
      return EINA_FALSE;
 
    btn = sd->mouse.button - 1;
-   meta = evas_key_modifier_is_set(ev->modifiers, "Alt") ? 8 : 0;
 
    switch (sd->pty->mouse_ext)
      {
       case MOUSE_EXT_NONE:
         if ((cx < (0xff - ' ')) && (cy < (0xff - ' ')))
           {
-             if (btn > 2) btn = 0;
              buf[0] = 0x1b;
              buf[1] = '[';
              buf[2] = 'M';
-             buf[3] = (btn | meta | 32) + ' ';
+             buf[3] = btn + 32 + ' ';
              buf[4] = cx + 1 + ' ';
              buf[5] = cy + 1 + ' ';
              buf[6] = 0;
@@ -3830,11 +3839,10 @@ _rep_mouse_move(Termio *sd, Evas_Event_Mouse_Move *ev, int cx, int cy)
           {
              int v, i;
 
-             if (btn > 2) btn = 0;
              buf[0] = 0x1b;
              buf[1] = '[';
              buf[2] = 'M';
-             buf[3] = (btn | meta | 32) + ' ';
+             buf[3] = btn + 32 + ' ';
              i = 4;
              v = cx + 1 + ' ';
              if (v <= 127) buf[i++] = v;
@@ -3858,16 +3866,15 @@ _rep_mouse_move(Termio *sd, Evas_Event_Mouse_Move *ev, int cx, int cy)
       case MOUSE_EXT_SGR: // ESC.[.<.NUM.;.NUM.;.NUM.M
           {
              snprintf(buf, sizeof(buf), "%c[<%i;%i;%iM", 0x1b,
-                      (btn | meta | 32), cx + 1, cy + 1);
+                      btn + 32, cx + 1, cy + 1);
              termpty_write(sd->pty, buf, strlen(buf));
              ret = EINA_TRUE;
           }
         break;
       case MOUSE_EXT_URXVT: // ESC.[.NUM.;.NUM.;.NUM.M
           {
-             if (btn > 2) btn = 0;
              snprintf(buf, sizeof(buf), "%c[%i;%i;%iM", 0x1b,
-                      (btn | meta | 32) + ' ',
+                      btn + 32  + ' ',
                       cx + 1, cy + 1);
              termpty_write(sd->pty, buf, strlen(buf));
              ret = EINA_TRUE;
@@ -4000,6 +4007,12 @@ _handle_mouse_down_single_click(Termio *sd,
         sd->pty->selection.end.x = cx;
         sd->pty->selection.end.y = cy;
         _selection_dbl_fix(sd);
+     }
+   else if (!shift && alt && !sd->pty->selection.is_active
+            && (sd->pty->mouse_mode == MOUSE_OFF))
+     {
+        /* move cursor to position */
+        termpty_move_cursor(sd->pty, cx, cy);
      }
    else if (!shift && !sd->pty->selection.is_active)
      {
@@ -4403,7 +4416,7 @@ _smart_cb_mouse_move(void *data,
    sd->mouse.cx = cx;
    sd->mouse.cy = cy;
    if (!shift && !ctrl)
-     if (_rep_mouse_move(sd, ev, cx, cy)) return;
+     if (_rep_mouse_move(sd, cx, cy)) return;
    if (sd->link.down.dnd)
      {
         sd->pty->selection.makesel = EINA_FALSE;
@@ -4481,9 +4494,6 @@ _smart_cb_mouse_out(void *data,
    if (sd->ctxpopup) return; /* ctxp triggers mouse out we should ignore */
 
    termio_mouseover_suspend_pushpop(data, 1);
-#ifdef HAVE_ELM_WIN_TEAMWORK
-   elm_win_teamwork_uri_hide(win_evas_object_get(term_win_get(sd->term)));
-#endif
    if ((ev->canvas.x == 0) || (ev->canvas.y == 0))
      {
         sd->mouse.cx = -1;
@@ -5092,8 +5102,11 @@ _smart_size(Evas_Object *obj, int w, int h, Eina_Bool force)
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
-   if (w <= 1) w = 80;
-   if (h <= 1) h = 24;
+   if ((w <= 1) || (h <= 1))
+     {
+        w = 80;
+        h = 24;
+     }
 
    if (!force)
      {

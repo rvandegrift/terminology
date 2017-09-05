@@ -10,7 +10,10 @@ typedef enum _Termpty_Clear
 
 void termpty_text_save_top(Termpty *ty, Termcell *cells, ssize_t w_max);
 void termpty_cells_copy(Termpty *ty, Termcell *cells, Termcell *dest, int count);
+void termpty_cells_fill(Termpty *ty, Eina_Unicode codepoint, Termcell *cells, int count);
 void termpty_cells_clear(Termpty *ty, Termcell *cells, int count);
+void termpty_cells_att_fill_preserve_colors(Termpty *ty, Termcell *cells,
+                                       Eina_Unicode codepoint, int count);
 void termpty_text_scroll(Termpty *ty, Eina_Bool clear);
 void termpty_text_scroll_rev(Termpty *ty, Eina_Bool clear);
 void termpty_text_scroll_test(Termpty *ty, Eina_Bool clear);
@@ -24,6 +27,8 @@ void termpty_reset_state(Termpty *ty);
 void termpty_cursor_copy(Termpty *ty, Eina_Bool save);
 void termpty_clear_tabs_on_screen(Termpty *ty);
 void termpty_clear_backlog(Termpty *ty);
+
+void termpty_move_cursor(Termpty *ty, int cx, int cy);
 
 #define _term_txt_write(ty, txt) termpty_write(ty, txt, sizeof(txt) - 1)
 
