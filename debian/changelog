@@ -1,3 +1,11 @@
+terminology (1.1.0-1) experimental; urgency=medium
+
+  * Team upload.
+  * New upstream release
+  * Update gbp.conf for experimental branch
+
+ -- Ross Vandegrift <ross@kallisti.us>  Mon, 04 Sep 2017 21:03:31 -0700
+
 terminology (1.0.0-1) experimental; urgency=medium
 
   * debian/gbp.conf: import & build upstream tarballs
