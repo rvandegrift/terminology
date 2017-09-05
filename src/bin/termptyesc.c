@@ -32,7 +32,7 @@
  * if not enough bytes could be read
  */
 
-static const char *ASCII_CHARS_TABLE[] =
+static const char *const ASCII_CHARS_TABLE[] =
 {
    "NUL", // '\0'
    "SOH", // '\001'
@@ -93,25 +93,43 @@ _csi_arg_get(Eina_Unicode **ptr)
    Eina_Unicode *b = *ptr;
    int sum = 0;
 
-   while ((*b) && (*b < '0' || *b > '9')) b++;
-   if (!*b)
+   if (!b)
+     goto error;
+
+   /* Skip potential '?', '>'.... */
+   while ((*b) && ( (*b) != ';' && ((*b) < '0' || (*b) > '9')))
+     b++;
+
+   if (*b == ';')
      {
-        *ptr = NULL;
-        return 0;
+        b++;
+        *ptr = b;
+        return -1;
      }
+
+   if (!*b)
+     goto error;
+
    while ((*b >= '0') && (*b <= '9'))
      {
         if (sum > INT32_MAX/10 )
-          {
-             *ptr = NULL;
-             return 0;
-          }
+          goto error;
         sum *= 10;
         sum += *b - '0';
         b++;
      }
+
+   if (*b == ';')
+     {
+        b++;
+     }
+
    *ptr = b;
    return sum;
+
+error:
+   *ptr = NULL;
+   return -1;
 }
 
 static void
@@ -193,6 +211,22 @@ _switch_to_alternative_screen(Termpty *ty, int mode)
 }
 
 static void
+_move_cursor_to_origin(Termpty *ty)
+{
+  if (ty->termstate.restrict_cursor)
+    {
+      ty->cursor_state.cx = ty->termstate.left_margin;
+      ty->cursor_state.cy = ty->termstate.top_margin;
+    }
+  else
+    {
+      ty->cursor_state.cx = 0;
+      ty->cursor_state.cy = 0;
+    }
+}
+
+
+static void
 _handle_esc_csi_reset_mode(Termpty *ty, Eina_Unicode cc, Eina_Unicode *b)
 {
    int mode = 0, priv = 0, arg;
@@ -249,17 +283,18 @@ _handle_esc_csi_reset_mode(Termpty *ty, Eina_Unicode cc, Eina_Unicode *b)
                         ty->termstate.reverse = mode;
                         break;
                      case 6:
+                        /* DECOM */
                         if (mode)
                           {
-                             ty->termstate.margin_top = ty->cursor_state.cy;
-                             ty->cursor_state.cx = 0;
+                             /* set, within margins */
+                             ty->termstate.restrict_cursor = 1;
                           }
                         else
                           {
-                             ty->cursor_state.cx = 0;
-                             ty->termstate.margin_top = 0;
+                             ty->termstate.restrict_cursor = 0;
                           }
-                        DBG("origin mode (%d): cursor is at 0,0"
+                        _move_cursor_to_origin(ty);
+                        DBG("DECOM: mode (%d): cursor is at 0,0"
                             " cursor limited to screen/start point"
                             " for line #'s depends on top margin",
                             mode);
@@ -326,6 +361,14 @@ _handle_esc_csi_reset_mode(Termpty *ty, Eina_Unicode cc, Eina_Unicode *b)
                      case 67:
                         ty->termstate.send_bs = mode;
                         DBG("backspace send bs not del = %i", mode);
+                        break;
+                     case 69:
+                        ty->termstate.lr_margins = mode;
+                        if (!mode)
+                          {
+                             ty->termstate.left_margin = 0;
+                             ty->termstate.right_margin = 0;
+                          }
                         break;
                      case 1000:
                         if (mode) ty->mouse_mode = MOUSE_NORMAL;
@@ -552,6 +595,8 @@ _handle_esc_csi_color_set(Termpty *ty, Eina_Unicode **ptr)
                         // then get next arg - should be color index 0-255
                         arg = _csi_arg_get(&b);
                         if (!b) ERR("Failed xterm 256 color fg esc val");
+                        else if (arg < 0 || arg > 255)
+                          ERR("Invalid fg color %d", arg);
                         else
                           {
                              ty->termstate.att.fg256 = 1;
@@ -586,6 +631,8 @@ _handle_esc_csi_color_set(Termpty *ty, Eina_Unicode **ptr)
                         // then get next arg - should be color index 0-255
                         arg = _csi_arg_get(&b);
                         if (!b) ERR("Failed xterm 256 color bg esc val");
+                        else if (arg < 0 || arg > 255)
+                          ERR("Invalid bg color %d", arg);
                         else
                           {
                              ty->termstate.att.bg256 = 1;
@@ -620,6 +667,8 @@ _handle_esc_csi_color_set(Termpty *ty, Eina_Unicode **ptr)
                         // then get next arg - should be color index 0-255
                         arg = _csi_arg_get(&b);
                         if (!b) ERR("Failed xterm 256 color fg esc val");
+                        else if (arg < 0 || arg > 255)
+                          ERR("Invalid fg color %d", arg);
                         else
                           {
                              ty->termstate.att.fg256 = 1;
@@ -654,6 +703,8 @@ _handle_esc_csi_color_set(Termpty *ty, Eina_Unicode **ptr)
                         // then get next arg - should be color index 0-255
                         arg = _csi_arg_get(&b);
                         if (!b) ERR("Failed xterm 256 color bg esc val");
+                        else if (arg < 0 || arg > 255)
+                          ERR("Invalid bg color %d", arg);
                         else
                           {
                              ty->termstate.att.bg256 = 1;
@@ -720,8 +771,211 @@ _handle_esc_csi_dsr(Termpty *ty, Eina_Unicode *b)
      }
 }
 
+static void
+_handle_esc_csi_decslrm(Termpty *ty, Eina_Unicode **b)
+{
+  int left = _csi_arg_get(b);
+  int right = _csi_arg_get(b);
+
+  DBG("DECSLRM (%d;%d) Set Left and Right Margins", left, right);
+
+  TERMPTY_RESTRICT_FIELD(left, 1, ty->w);
+  if (right < 1)
+    right = ty->w;
+  TERMPTY_RESTRICT_FIELD(right, 3, ty->w+1);
+
+  if (left >= right) goto bad;
+  if (right - left < 2) goto bad;
+
+  if (right == ty->w)
+    right = 0;
+
+  ty->termstate.left_margin = left  - 1;
+  ty->termstate.right_margin = right;
+  _move_cursor_to_origin(ty);
+
+  return;
+
+bad:
+  ty->termstate.left_margin = 0;
+  ty->termstate.right_margin = 0;
+}
+
+static void
+_handle_esc_csi_decstbm(Termpty *ty, Eina_Unicode **b)
+{
+  int top = _csi_arg_get(b);
+  int bottom = _csi_arg_get(b);
+
+  DBG("DECSTBM (%d;%d) Set Top and Bottom Margins", top, bottom);
+
+  TERMPTY_RESTRICT_FIELD(top, 1, ty->h);
+  TERMPTY_RESTRICT_FIELD(bottom, 1, ty->h+1);
+
+  if (top >= bottom) goto bad;
+
+  if (bottom == ty->h)
+    bottom = 0;
+
+  ty->termstate.top_margin = top - 1;
+  ty->termstate.bottom_margin = bottom;
+
+  _move_cursor_to_origin(ty);
+  return;
+
+bad:
+  ty->termstate.top_margin = 0;
+  ty->termstate.bottom_margin = 0;
+}
+
 static int
-_handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
+_clean_up_rect_coordinates(Termpty *ty,
+                           int *top_ptr,
+                           int *left_ptr,
+                           int *bottom_ptr,
+                           int *right_ptr)
+{
+   int top = *top_ptr;
+   int left = *left_ptr;
+   int bottom = *bottom_ptr;
+   int right = *right_ptr;
+
+   TERMPTY_RESTRICT_FIELD(top, 1, ty->h);
+   top--;
+   if (ty->termstate.restrict_cursor)
+     top += ty->termstate.top_margin;
+
+   TERMPTY_RESTRICT_FIELD(left, 1, ty->w);
+   left--;
+   if (ty->termstate.restrict_cursor)
+     left += ty->termstate.left_margin;
+
+   if (right < 1)
+     right = ty->w;
+   if (ty->termstate.restrict_cursor)
+     {
+        right += ty->termstate.left_margin;
+        if (ty->termstate.right_margin && right >= ty->termstate.right_margin)
+          right = ty->termstate.right_margin;
+     }
+   if (right > ty->w)
+     right = ty->w;
+
+   if (bottom < 1)
+     bottom = ty->h;
+   if (ty->termstate.restrict_cursor)
+     {
+        bottom += ty->termstate.top_margin;
+        if (ty->termstate.bottom_margin && bottom >= ty->termstate.bottom_margin)
+          bottom = ty->termstate.bottom_margin - 1;
+     }
+   bottom--;
+   if (bottom > ty->h)
+     bottom = ty->h;
+
+   if ((bottom < top) || (right < left))
+     return -1;
+
+   *top_ptr = top;
+   *left_ptr = left;
+   *bottom_ptr = bottom;
+   *right_ptr = right;
+
+   return 0;
+}
+
+static void
+_handle_esc_csi_decfra(Termpty *ty, Eina_Unicode **b)
+{
+   int c = _csi_arg_get(b);
+
+   int top = _csi_arg_get(b);
+   int left = _csi_arg_get(b);
+   int bottom = _csi_arg_get(b);
+   int right = _csi_arg_get(b);
+   int len;
+
+   DBG("DECFRA (%d; %d;%d;%d;%d) Fill Rectangular Area",
+       c, top, left, bottom, right);
+   if (! ((c >= 32 && c <= 126) || (c >= 160 && c <= 255)))
+     return;
+
+   if (_clean_up_rect_coordinates(ty, &top, &left, &bottom, &right) < 0)
+     return;
+
+   len = right - left;
+
+   for (; top <= bottom; top++)
+     {
+        Termcell *cells = &(TERMPTY_SCREEN(ty, left, top));
+        termpty_cells_att_fill_preserve_colors(ty, cells, c, len);
+     }
+}
+
+static void
+_handle_esc_csi_decera(Termpty *ty, Eina_Unicode **b)
+{
+   int top = _csi_arg_get(b);
+   int left = _csi_arg_get(b);
+   int bottom = _csi_arg_get(b);
+   int right = _csi_arg_get(b);
+   int len;
+
+   DBG("DECERA (%d;%d;%d;%d) Erase Rectangular Area",
+       top, left, bottom, right);
+
+   if (_clean_up_rect_coordinates(ty, &top, &left, &bottom, &right) < 0)
+     return;
+
+   len = right - left;
+   for (; top <= bottom; top++)
+     {
+        Termcell *cells = &(TERMPTY_SCREEN(ty, left, top));
+        termpty_cells_set_content(ty, cells, ' ', len);
+     }
+}
+
+static void
+_handle_esc_csi_cursor_pos_set(Termpty *ty, Eina_Unicode **b,
+                               const Eina_Unicode *cc)
+{
+   int cx = 0, cy = 0;
+   ty->termstate.wrapnext = 0;
+   cy = _csi_arg_get(b);
+   cx = _csi_arg_get(b);
+
+   DBG("cursor pos set (%s) (%d;%d)", (*cc == 'H') ? "CUP" : "HVP",
+       cx, cy);
+   cx--;
+   if (cx < 0)
+     cx = 0;
+   if (ty->termstate.restrict_cursor)
+     {
+        cx += ty->termstate.left_margin;
+        if (ty->termstate.right_margin && cx >= ty->termstate.right_margin)
+          cx = ty->termstate.right_margin - 1;
+     }
+   if (cx >= ty->w)
+     cx = ty->w -1;
+   ty->cursor_state.cx = cx;
+
+
+   cy--;
+   if (cy < 0)
+     cy = 0;
+   if (ty->termstate.restrict_cursor)
+     {
+        cy += ty->termstate.top_margin;
+        if (ty->termstate.bottom_margin && cy >= ty->termstate.bottom_margin)
+          cy = ty->termstate.bottom_margin - 1;
+     }
+   if (cy >= ty->h)
+     cy = ty->h - 1;
+   ty->cursor_state.cy = cy;
+}
+
+static int
+_handle_esc_csi(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
 {
    int arg, i;
    const Eina_Unicode *cc, *be;
@@ -753,7 +1007,7 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
         break;
       case '@': // insert N blank chars
         arg = _csi_arg_get(&b);
-        if (arg < 1) arg = 1;
+        TERMPTY_RESTRICT_FIELD(arg, 1, ty->w * ty->h);
         DBG("insert %d blank chars", arg);
           {
              int pi = ty->termstate.insert;
@@ -769,14 +1023,19 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
              TERMPTY_RESTRICT_FIELD(ty->cursor_state.cx, 0, ty->w);
           }
         break;
-      case 'A': // cursor up N
-      case 'e': // cursor up N
+      case 'A': // cursor up N CUU
+      case 'e': // cursor up N, VPR
         arg = _csi_arg_get(&b);
         if (arg < 1) arg = 1;
         DBG("cursor up %d", arg);
         ty->termstate.wrapnext = 0;
         ty->cursor_state.cy = MAX(0, ty->cursor_state.cy - arg);
         TERMPTY_RESTRICT_FIELD(ty->cursor_state.cy, 0, ty->h);
+        if (ty->termstate.restrict_cursor && (ty->termstate.top_margin != 0)
+            && (ty->cursor_state.cy < ty->termstate.top_margin))
+          {
+             ty->cursor_state.cy = ty->termstate.top_margin;
+          }
         break;
       case 'B': // cursor down N
         arg = _csi_arg_get(&b);
@@ -785,15 +1044,24 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
         ty->termstate.wrapnext = 0;
         ty->cursor_state.cy = MIN(ty->h - 1, ty->cursor_state.cy + arg);
         TERMPTY_RESTRICT_FIELD(ty->cursor_state.cy, 0, ty->h);
+        if (ty->termstate.restrict_cursor && (ty->termstate.bottom_margin != 0)
+            && (ty->cursor_state.cy >= ty->termstate.bottom_margin))
+          {
+             ty->cursor_state.cy = ty->termstate.bottom_margin - 1;
+          }
         break;
       case 'D': // cursor left N
         arg = _csi_arg_get(&b);
         if (arg < 1) arg = 1;
         DBG("cursor left %d", arg);
         ty->termstate.wrapnext = 0;
-        for (i = 0; i < arg; i++)
-          ty->cursor_state.cx--;
+        ty->cursor_state.cx -= arg;
         TERMPTY_RESTRICT_FIELD(ty->cursor_state.cx, 0, ty->w);
+        if (ty->termstate.restrict_cursor && (ty->termstate.left_margin != 0)
+            && (ty->cursor_state.cx < ty->termstate.left_margin))
+          {
+             ty->cursor_state.cx = ty->termstate.left_margin;
+          }
         break;
       case 'C': // cursor right N
       case 'a': // cursor right N
@@ -801,44 +1069,17 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
         if (arg < 1) arg = 1;
         DBG("cursor right %d", arg);
         ty->termstate.wrapnext = 0;
-        for (i = 0; i < arg; i++)
-          ty->cursor_state.cx++;
+        ty->cursor_state.cx += arg;
         TERMPTY_RESTRICT_FIELD(ty->cursor_state.cx, 0, ty->w);
+        if (ty->termstate.restrict_cursor && (ty->termstate.right_margin != 0)
+            && (ty->cursor_state.cx >= ty->termstate.right_margin))
+          {
+             ty->cursor_state.cx = ty->termstate.right_margin - 1;
+          }
         break;
-      case 'H': // cursor pos set
-      case 'f': // cursor pos set
-        DBG("cursor pos set");
-        ty->termstate.wrapnext = 0;
-        if (!*b)
-          {
-             ty->cursor_state.cx = 0;
-             ty->cursor_state.cy = 0;
-          }
-        else
-          {
-             arg = _csi_arg_get(&b);
-             if (arg < 1) arg = 1;
-             arg--;
-             if (arg >= ty->h) arg = ty->h - 1;
-             if (b)
-               {
-                  ty->cursor_state.cy = arg;
-                  TERMPTY_RESTRICT_FIELD(ty->cursor_state.cy, 0, ty->h);
-                  arg = _csi_arg_get(&b);
-                  if (arg < 1) arg = 1;
-                  arg--;
-               }
-             else arg = 0;
-
-             if (arg >= ty->w) arg = ty->w - 1;
-             if (b)
-               {
-                  ty->cursor_state.cx = arg;
-                  TERMPTY_RESTRICT_FIELD(ty->cursor_state.cx, 0, ty->w);
-               }
-          }
-        ty->cursor_state.cy += ty->termstate.margin_top;
-        TERMPTY_RESTRICT_FIELD(ty->cursor_state.cy, 0, ty->h);
+      case 'H': // cursor pos set (CUP)
+      case 'f': // cursor pos set (HVP)
+        _handle_esc_csi_cursor_pos_set(ty, &b, cc);
        break;
       case 'G': // to column N
         arg = _csi_arg_get(&b);
@@ -867,29 +1108,32 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
         break;
       case 'F': // up relative N rows, and to col 0
         arg = _csi_arg_get(&b);
-        if (arg < 1) arg = 1;
+        TERMPTY_RESTRICT_FIELD(arg, 1, ty->h);
         DBG("up relative %d rows, and to col 0", arg);
         ty->termstate.wrapnext = 0;
         ty->cursor_state.cy -= arg;
         TERMPTY_RESTRICT_FIELD(ty->cursor_state.cy, 0, ty->h);
         ty->cursor_state.cx = 0;
         break;
+      case 'x':
+        _handle_esc_csi_decfra(ty, &b);
+        break;
       case 'X': // erase N chars
         arg = _csi_arg_get(&b);
-        if (arg < 1) arg = 1;
-        DBG("erase %d chars", arg);
+        TERMPTY_RESTRICT_FIELD(arg, 1, ty->w);
+        DBG("ECH: erase %d chars", arg);
         termpty_clear_line(ty, TERMPTY_CLR_END, arg);
         break;
       case 'S': // scroll up N lines
         arg = _csi_arg_get(&b);
-        if (arg < 1) arg = 1;
+        TERMPTY_RESTRICT_FIELD(arg, 1, ty->h);
         DBG("scroll up %d lines", arg);
         for (i = 0; i < arg; i++)
           termpty_text_scroll(ty, EINA_TRUE);
         break;
       case 'T': // scroll down N lines
         arg = _csi_arg_get(&b);
-        if (arg < 1) arg = 1;
+        TERMPTY_RESTRICT_FIELD(arg, 1, ty->h);
         DBG("scroll down %d lines", arg);
         for (i = 0; i < arg; i++)
           termpty_text_scroll_rev(ty, EINA_TRUE);
@@ -897,23 +1141,26 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
       case 'M': // delete N lines - cy
       case 'L': // insert N lines - cy
         arg = _csi_arg_get(&b);
-        if (arg < 1) arg = 1;
+        TERMPTY_RESTRICT_FIELD(arg, 1, ty->h);
         DBG("%s %d lines", (*cc == 'M') ? "delete" : "insert", arg);
+        if ((ty->cursor_state.cy >= ty->termstate.top_margin) &&
+            ((ty->termstate.bottom_margin == 0) ||
+             (ty->cursor_state.cy < ty->termstate.bottom_margin)))
           {
              int sy1, sy2;
 
-             sy1 = ty->termstate.scroll_y1;
-             sy2 = ty->termstate.scroll_y2;
-             if (ty->termstate.scroll_y2 == 0)
+             sy1 = ty->termstate.top_margin;
+             sy2 = ty->termstate.bottom_margin;
+             if (ty->termstate.bottom_margin == 0)
                {
-                  ty->termstate.scroll_y1 = ty->cursor_state.cy;
-                  ty->termstate.scroll_y2 = ty->h;
+                  ty->termstate.top_margin = ty->cursor_state.cy;
+                  ty->termstate.bottom_margin = ty->h;
                }
              else
                {
-                  ty->termstate.scroll_y1 = ty->cursor_state.cy;
-                  if (ty->termstate.scroll_y2 <= ty->termstate.scroll_y1)
-                    ty->termstate.scroll_y2 = ty->termstate.scroll_y1 + 1;
+                  ty->termstate.top_margin = ty->cursor_state.cy;
+                  if (ty->termstate.bottom_margin <= ty->termstate.top_margin)
+                    ty->termstate.bottom_margin = ty->termstate.top_margin + 1;
                }
              for (i = 0; i < arg; i++)
                {
@@ -922,13 +1169,13 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
                   else
                     termpty_text_scroll_rev(ty, EINA_TRUE);
                }
-             ty->termstate.scroll_y1 = sy1;
-             ty->termstate.scroll_y2 = sy2;
+             ty->termstate.top_margin = sy1;
+             ty->termstate.bottom_margin = sy2;
           }
         break;
       case 'P': // erase and scrollback N chars
         arg = _csi_arg_get(&b);
-        if (arg < 1) arg = 1;
+        TERMPTY_RESTRICT_FIELD(arg, 1, ty->w);
         DBG("erase and scrollback %d chars", arg);
           {
              Termcell *cells;
@@ -1036,48 +1283,18 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
         _handle_esc_csi_reset_mode(ty, *cc, b);
         break;
       case 'r':
-        arg = _csi_arg_get(&b);
-        if (!b)
+        _handle_esc_csi_decstbm(ty, &b);
+        break;
+      case 's':
+        if (ty->termstate.lr_margins)
           {
-             WRN("no region args reset region");
-             ty->termstate.scroll_y1 = 0;
-             ty->termstate.scroll_y2 = 0;
+            _handle_esc_csi_decslrm(ty, &b);
           }
         else
           {
-             int arg2;
-
-             arg2 = _csi_arg_get(&b);
-             if (!b)
-               {
-                  WRN("failed to give 2 regions args reset region");
-                  ty->termstate.scroll_y1 = 0;
-                  ty->termstate.scroll_y2 = 0;
-               }
-             else
-               {
-                  if (arg > arg2)
-                    {
-                       DBG("scroll region beginning > end [%i %i]", arg, arg2);
-                       ty->termstate.scroll_y1 = 0;
-                       ty->termstate.scroll_y2 = 0;
-                    }
-                  else
-                    {
-                       DBG("2 regions args: %i %i", arg, arg2);
-                       if (arg >= ty->h) arg = ty->h - 1;
-                       if (arg == 0) arg = 1;
-                       if (arg2 > ty->h) arg2 = ty->h;
-                       ty->termstate.scroll_y1 = arg - 1;
-                       ty->termstate.scroll_y2 = arg2;
-                       if ((arg == 1) && (arg2 == ty->h))
-                          ty->termstate.scroll_y2 = 0;
-                    }
-               }
+            DBG("SCOSC: Save Current Cursor Position");
+            termpty_cursor_copy(ty, EINA_TRUE);
           }
-        break;
-      case 's': // store cursor pos
-        termpty_cursor_copy(ty, EINA_TRUE);
         break;
       case 't': // window manipulation
         arg = _csi_arg_get(&b);
@@ -1103,15 +1320,9 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
 /*
       case 'R': // report cursor
         break;
-      case 's':
-        break;
-      case 't':
-        break;
       case 'q': // set/clear led's
         break;
       case 'x': // request terminal parameters
-        break;
-      case 'r': // set top and bottom margins
         break;
       case 'y': // invoke confidence test
         break;
@@ -1139,8 +1350,7 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
 
              arg = _csi_arg_get(&b);
              DBG("Cursor Backward Tabulation (CBT): %d", arg);
-             if (arg < 1) arg = 1;
-
+             TERMPTY_RESTRICT_FIELD(arg, 1, ty->w);
              for (; arg > 0; arg--)
                {
                   do
@@ -1154,9 +1364,12 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
              TERMPTY_RESTRICT_FIELD(ty->cursor_state.cx, 0, ty->w);
           }
         break;
+      case 'z':
+        _handle_esc_csi_decera(ty, &b);
+        break;
       case 'I':
         arg = _csi_arg_get(&b);
-        if (arg < 1) arg = 1;
+        TERMPTY_RESTRICT_FIELD(arg, 1, ty->w);
         DBG("Cursor Forward Tabulation (CHT): %d", arg);
         _tab_forward(ty, arg);
         break;
@@ -1166,6 +1379,8 @@ _handle_esc_csi(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
    cc++;
    return cc - c;
 unhandled:
+#ifndef ENABLE_FUZZING
+   if (eina_log_domain_level_check(_termpty_log_dom, EINA_LOG_LEVEL_WARN))
      {
         Eina_Strbuf *bf = eina_strbuf_new();
 
@@ -1180,6 +1395,7 @@ unhandled:
         WRN("unhandled CSI '%s': %s", _safechar(*cc), eina_strbuf_string_get(bf));
         eina_strbuf_free(bf);
      }
+#endif
    cc++;
    return cc - c;
 }
@@ -1282,15 +1498,22 @@ _handle_xterm_50_command(Termpty *ty,
                          char *s,
                          int len)
 {
-  size_t i;
-  int size;
-  for (i = 0; i < (size_t)len - strlen(":size="); i++)
+  int pattern_len = strlen(":size=");
+  while (len > pattern_len)
     {
-       if (strncmp(s + i, ":size=", strlen(":size=")) == 0)
+       if (strncmp(s, ":size=", pattern_len) == 0)
          {
-            size = strtol(s + i + strlen(":size="), NULL, 10);
-            termio_font_size_set(ty->obj, size);
+            char *endptr = NULL;
+            int size;
+
+            s += pattern_len;
+            errno = 0;
+            size = strtol(s, &endptr, 10);
+            if (endptr != s && errno == 0)
+               termio_font_size_set(ty->obj, size);
          }
+       len--;
+       s++;
     }
 }
 
@@ -1342,7 +1565,7 @@ _handle_xterm_777_command(Termpty *_ty EINA_UNUSED,
 }
 
 static int
-_handle_esc_xterm(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
+_handle_esc_xterm(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
 {
    const Eina_Unicode *cc, *be;
    Eina_Unicode buf[4096], *p;
@@ -1474,7 +1697,7 @@ _handle_esc_xterm(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
           goto err;
         if (*p == '?')
           {
-             char bf[6];
+             char bf[7];
              Config *config = termio_config_get(ty->obj);
              TERMPTY_WRITE_STR("\033]10;#");
              snprintf(bf, sizeof(bf), "%.2X%.2X%.2X",
@@ -1686,7 +1909,7 @@ end:
 }
 
 static int
-_handle_esc(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
+_handle_esc(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
 {
    int len = ce - c;
 
@@ -1824,7 +2047,7 @@ _handle_esc(Termpty *ty, const Eina_Unicode *c, Eina_Unicode *ce)
 
 /* XXX: ce is excluded */
 int
-termpty_handle_seq(Termpty *ty, Eina_Unicode *c, Eina_Unicode *ce)
+termpty_handle_seq(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
 {
    Eina_Unicode *cc;
    int len = 0;

@@ -7,7 +7,7 @@
 #include "col.h"
 #include "utils.h"
 
-#define CONF_VER 14
+#define CONF_VER 16
 
 #define LIM(v, min, max) {if (v >= max) v = max; else if (v <= min) v = min;}
 
@@ -152,6 +152,9 @@ config_init(void)
      (edd_base, Config, "mouse_over_focus",
       mouse_over_focus, EET_T_UCHAR);
    EET_DATA_DESCRIPTOR_ADD_BASIC
+     (edd_base, Config, "disable_focus_visuals",
+      disable_focus_visuals, EET_T_UCHAR);
+   EET_DATA_DESCRIPTOR_ADD_BASIC
      (edd_base, Config, "colors_use", colors_use, EET_T_UCHAR);
    EET_DATA_DESCRIPTOR_ADD_ARRAY
      (edd_base, Config, "colors", colors, edd_color);
@@ -265,6 +268,7 @@ config_sync(const Config *config_src, Config *config)
    config->colors_use = config_src->colors_use;
    memcpy(config->colors, config_src->colors, sizeof(config->colors));
    config->mouse_over_focus = config_src->mouse_over_focus;
+   config->disable_focus_visuals = config_src->disable_focus_visuals;
    /* TODO: config->keys */
    config->gravatar = config_src->gravatar;
    config->notabs = config_src->notabs;
@@ -332,6 +336,10 @@ _add_default_keys(Config *config)
    ADD_KB("Home", 0, 1, 0, 0, "cmd_box");
    ADD_KB("w", 0, 1, 0, 0, "copy_primary");
    ADD_KB("Return", 0, 1, 0, 0, "paste_primary");
+   ADD_KB("Up", 0, 1, 0, 0, "term_up");
+   ADD_KB("Down", 0, 1, 0, 0, "term_down");
+   ADD_KB("Left", 0, 1, 0, 0, "term_left");
+   ADD_KB("Right", 0, 1, 0, 0, "term_right");
 
    /* Ctrl-Shift- */
    ADD_KB("Prior", 1, 0, 1, 0, "split_h");
@@ -512,6 +520,7 @@ config_new(void)
         config->drag_links = EINA_FALSE;
         config->login_shell = EINA_FALSE;
         config->mouse_over_focus = EINA_TRUE;
+        config->disable_focus_visuals = EINA_FALSE;
         config->colors_use = EINA_FALSE;
         config->gravatar = EINA_TRUE;
         config->notabs = EINA_FALSE;
@@ -535,6 +544,10 @@ config_new(void)
      }
    return config;
 }
+
+#ifndef EINA_FALLTHROUGH
+#define EINA_FALLTHROUGH
+#endif
 
 Config *
 config_load(const char *key)
@@ -563,6 +576,7 @@ config_load(const char *key)
                 case 0:
                 case 1:
                    _config_upgrade_to_v2(config);
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 2:
                   LIM(config->font.size, 3, 400);
@@ -573,6 +587,7 @@ config_load(const char *key)
                   /* upgrade to v3 */
                   config->active_links = EINA_TRUE;
                   config->bell_rings = EINA_TRUE;
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 3:
                   if (eina_list_count(config->keys) == 0)
@@ -580,38 +595,60 @@ config_load(const char *key)
                        _add_default_keys(config);
                     }
                   config->gravatar = EINA_TRUE;
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 4:
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 5:
                   config->ty_escapes = EINA_TRUE;
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 6:
                   config->changedir_to_current = EINA_TRUE;
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 7:
                   _add_key(config, "n", 1, 0, 1, 0, "term_new");
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 8:
                   _add_key(config, "t", 1, 1, 0, 0, "tab_title");
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 9:
                   /* actually do nothing */
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 10:
                   config->font.bolditalic = EINA_TRUE;
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 11:
                   _add_key(config, "Left", 0, 0, 1, 0, "term_prev");
                   _add_key(config, "Right", 0, 0, 1, 0, "term_next");
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 12:
                   _add_key(config, "Home", 0, 0, 1, 0, "top_backlog");
+                  EINA_FALLTHROUGH;
                   /*pass through*/
                 case 13:
                   _add_key(config, "End", 0, 0, 1, 0, "reset_scroll");
+                  EINA_FALLTHROUGH;
                   /*pass through*/
-                case CONF_VER: /* 13 */
+                case 14:
+                  config->disable_focus_visuals = EINA_FALSE;
+                  EINA_FALLTHROUGH;
+                  /*pass through*/
+                case 15:
+                  _add_key(config, "Up",    0, 1, 0, 0, "term_up");
+                  _add_key(config, "Down",  0, 1, 0, 0, "term_down");
+                  _add_key(config, "Left",  0, 1, 0, 0, "term_left");
+                  _add_key(config, "Right", 0, 1, 0, 0, "term_right");
+                  EINA_FALLTHROUGH;
+                  /*pass through*/
+                case CONF_VER: /* 16 */
                   config->version = CONF_VER;
                   break;
                 default:
@@ -642,7 +679,7 @@ config_load(const char *key)
 }
 
 Config *
-config_fork(Config *config)
+config_fork(const Config *config)
 {
    Config_Keys *key;
    Eina_List *l;
@@ -701,6 +738,7 @@ config_fork(Config *config)
    CPY(colors_use);
    memcpy(config2->colors, config->colors, sizeof(config->colors));
    CPY(mouse_over_focus);
+   CPY(disable_focus_visuals);
    CPY(temporary);
    SCPY(config_key);
    CPY(font_set);

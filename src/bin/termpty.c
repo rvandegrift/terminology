@@ -347,24 +347,24 @@ _limit_coord(Termpty *ty)
    TERMPTY_RESTRICT_FIELD(ty->cursor_save[1].cy, 0, ty->h);
 }
 
-static void
-_termpty_resize_tabs(Termpty *ty, int new_w)
+void
+termpty_resize_tabs(Termpty *ty, int old_w, int new_w)
 {
     unsigned int *new_tabs;
     int i;
-    size_t nb_elems;
+    size_t nb_elems, n;
 
-    if (new_w == ty->w && ty->tabs)
-        return;
+    if ((new_w == old_w) && ty->tabs) return;
 
-    nb_elems = DIV_ROUND_UP(new_w, sizeof(unsigned int) * 8);
+    nb_elems = ROUND_UP(new_w, 8);
     new_tabs = calloc(nb_elems, sizeof(unsigned int));
-    if (!new_tabs)
-        return;
+    if (!new_tabs) return;
 
     if (ty->tabs)
       {
-         memcpy(new_tabs, ty->tabs, nb_elems * sizeof(unsigned int));
+         n = old_w;
+         if (nb_elems < n) n = nb_elems;
+         if (n > 0) memcpy(new_tabs, ty->tabs, n * sizeof(unsigned int));
          free(ty->tabs);
       }
 
@@ -442,8 +442,7 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
         goto err;
      }
 
-   ty->tabs = NULL;
-   _termpty_resize_tabs(ty, w);
+   termpty_resize_tabs(ty, 0, w);
 
    termpty_reset_state(ty);
 
@@ -576,14 +575,34 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
    if (!ty->pid)
      {
         char buf[256];
+        int ret;
 
         if (cd)
           {
-             if (chdir(cd) != 0)
+             ret = chdir(cd);
+             if (ret != 0)
                {
                   ERR(_("Could not change current directory to '%s': %s"),
                         cd, strerror(errno));
-                  exit(127);
+                  cd = getenv("HOME");
+                  if (cd)
+                    {
+                       ret = chdir(cd);
+                       if (ret != 0)
+                         {
+                            ERR(_("Could not change current directory to '%s': %s"),
+                                cd, strerror(errno));
+                         }
+                    }
+                  if (ret != 0)
+                    {
+                       cd = "/";
+                       if (chdir(cd) != 0)
+                         {
+                            ERR(_("Could not change current directory to '%s': %s"),
+                                cd, strerror(errno));
+                         }
+                    }
                }
           }
 
@@ -783,7 +802,7 @@ termpty_line_length(const Termcell *cells, ssize_t nb_cells)
 
 
 static inline void
-verify_beacon(Termpty *ty EINA_UNUSED, int verbose EINA_UNUSED)
+verify_beacon(const Termpty *ty EINA_UNUSED, int verbose EINA_UNUSED)
 {
 #if 0
    Termsave *ts;
@@ -936,7 +955,7 @@ termpty_backlog_length(Termpty *ty)
    while (42)
      {
         int nb_lines;
-        Termsave *ts;
+        const Termsave *ts;
 
         ts = BACKLOG_ROW_GET(ty, backlog_y);
         if (!ts->cells || backlog_y >= (int)ty->backsize)
@@ -1253,7 +1272,7 @@ termpty_resize(Termpty *ty, int new_w, int new_h)
           }
      }
 
-   _termpty_resize_tabs(ty, new_w);
+   termpty_resize_tabs(ty, old_w, new_w);
 
    if (effective_old_h <= ty->cursor_state.cy)
      effective_old_h = ty->cursor_state.cy + 1;
@@ -1435,7 +1454,7 @@ termpty_block_insert(Termpty *ty, int ch, Termblock *blk)
 }
 
 int
-termpty_block_id_get(Termcell *cell, int *x, int *y)
+termpty_block_id_get(const Termcell *cell, int *x, int *y)
 {
    int id;
    
@@ -1447,7 +1466,7 @@ termpty_block_id_get(Termcell *cell, int *x, int *y)
 }
 
 Termblock *
-termpty_block_get(Termpty *ty, int id)
+termpty_block_get(const Termpty *ty, int id)
 {
    if (!ty->block.blocks) return NULL;
    return eina_hash_find(ty->block.blocks, &id);
@@ -1464,7 +1483,7 @@ termpty_block_chid_update(Termpty *ty, Termblock *blk)
 }
 
 Termblock *
-termpty_block_chid_get(Termpty *ty, const char *chid)
+termpty_block_chid_get(const Termpty *ty, const char *chid)
 {
    Termblock *tb;
    
@@ -1565,6 +1584,44 @@ termpty_cell_fill(Termpty *ty, Termcell *src, Termcell *dst, int n)
           }
      }
 }
+
+void
+termpty_cells_set_content(Termpty *ty, Termcell *cells,
+                          Eina_Unicode codepoint, int count)
+{
+   int i;
+   for (i = 0; i < count; i++)
+     {
+        _handle_block_codepoint_overwrite(ty, cells[i].codepoint, codepoint);
+        cells[i].codepoint = codepoint;
+     }
+}
+
+void
+termpty_cells_att_fill_preserve_colors(Termpty *ty, Termcell *cells,
+                                       Eina_Unicode codepoint, int count)
+{
+   int i;
+   Termcell local = { .codepoint = codepoint, .att = ty->termstate.att};
+
+   for (i = 0; i < count; i++)
+     {
+        Termatt att = cells[i].att;
+        _handle_block_codepoint_overwrite(ty, cells[i].codepoint, codepoint);
+        cells[i] = local;
+        if (ty->termstate.att.fg == 0 && ty->termstate.att.bg == 0)
+          {
+             cells[i].att.fg = att.fg;
+             cells[i].att.fg256 = att.fg256;
+             cells[i].att.fgintense = att.fgintense;
+
+             cells[i].att.bg = att.bg;
+             cells[i].att.bg256 = att.bg256;
+             cells[i].att.bgintense = att.bgintense;
+          }
+     }
+}
+
 
 void
 termpty_cell_codepoint_att_fill(Termpty *ty, Eina_Unicode codepoint,

@@ -49,6 +49,11 @@ termio_scroll(Evas_Object *obj EINA_UNUSED,
 {
 }
 
+void
+termio_font_size_set(Evas_Object *obj EINA_UNUSED,
+                     int size EINA_UNUSED)
+{
+}
 /* }}} */
 
 
@@ -60,6 +65,7 @@ _termpty_init(Termpty *ty)
    ty->w = 80;
    ty->h = 25;
    ty->backsize = 50;
+   termpty_resize_tabs(ty, 0, ty->w);
    termpty_reset_state(ty);
    ty->screen = calloc(1, sizeof(Termcell) * ty->w * ty->h);
    ty->screen2 = calloc(1, sizeof(Termcell) * ty->w * ty->h);
@@ -92,6 +98,12 @@ main(int argc EINA_UNUSED, char **argv EINA_UNUSED)
    _config = config_new();
 
    _termpty_init(&ty);
+
+   if (argc > 1)
+     {
+       ty.fd = open(argv[1], O_RDONLY);
+       assert(ty.fd >= 0);
+     }
 
    do
      {

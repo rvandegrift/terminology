@@ -72,6 +72,7 @@ struct _Config
    Eina_Bool         drag_links;
    Eina_Bool         login_shell;
    Eina_Bool         mouse_over_focus;
+   Eina_Bool         disable_focus_visuals;
    Eina_Bool         colors_use;
    Eina_Bool         gravatar;
    Eina_Bool         notabs;
@@ -91,7 +92,7 @@ void config_shutdown(void);
 void config_sync(const Config *config_src, Config *config);
 void config_save(Config *config, const char *key);
 Config *config_load(const char *key);
-Config *config_fork(Config *config);
+Config *config_fork(const Config *config);
 Config *config_new();
 void config_del(Config *config);
 void config_default_font_set(Config *config, Evas *evas);

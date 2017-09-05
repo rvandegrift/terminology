@@ -28,9 +28,6 @@
 /* define to 1 if ecore_con_url_head is available */
 #undef HAVE_ECORE_CON_URL_HEAD
 
-/* define to 1 if elm_win_teamwork_uri_show is available */
-#undef HAVE_ELM_WIN_TEAMWORK
-
 /* Define if the GNU gettext() function is already present or preinstalled. */
 #undef HAVE_GETTEXT
 
@@ -69,9 +66,6 @@
 
 /* Define to 1 if your compiler has __attribute__ */
 #undef HAVE___ATTRIBUTE__
-
-/* Define to 1 if your C compiler doesn't accept -c and -o together. */
-#undef NO_MINUS_C_MINUS_O
 
 /* Name of package */
 #undef PACKAGE

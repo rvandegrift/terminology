@@ -3,7 +3,7 @@ dnl Process this file with autoconf to produce a configure script.
 # get rid of that stupid cache mechanism
 rm -f config.cache
 
-AC_INIT([terminology], [1.0.0], [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([terminology], [1.1.0], [enlightenment-devel@lists.sourceforge.net])
 AC_PREREQ([2.60])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
@@ -18,7 +18,7 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_C___ATTRIBUTE__
 
-efl_version="1.7.0"
+efl_version="1.8.0"
 AC_SUBST(efl_version)
 
 
@@ -106,26 +106,6 @@ AC_LINK_IFELSE(
    [
      AC_MSG_RESULT([yes])
      AC_DEFINE([HAVE_ECORE_CON_URL_HEAD], [1], [define to 1 if ecore_con_url_head is available])
-   ],
-   [
-     AC_MSG_RESULT([no])
-   ]
-)
-AC_MSG_CHECKING([for elm_win_teamwork])
-AC_LINK_IFELSE(
-   [
-    AC_LANG_PROGRAM(
-      [[
-       #include <Elementary.h>
-      ]],
-     [[
-        elm_win_teamwork_uri_show(NULL);
-     ]])
-   ],
-   [
-     AC_MSG_RESULT([yes])
-     AC_DEFINE([HAVE_ELM_WIN_TEAMWORK], [1], [define to 1 if
-                elm_win_teamwork_uri_show is available])
    ],
    [
      AC_MSG_RESULT([no])

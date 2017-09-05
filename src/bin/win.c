@@ -186,7 +186,7 @@ static void _term_tabregion_free(Term *term);
 /* {{{ Solo */
 
 static Evas_Object *
-_solo_get_evas_object(Term_Container *tc)
+_solo_get_evas_object(const Term_Container *tc)
 {
    Solo *solo;
    assert (tc->type == TERM_CONTAINER_TYPE_SOLO);
@@ -196,7 +196,7 @@ _solo_get_evas_object(Term_Container *tc)
 }
 
 static Term *
-_solo_focused_term_get(Term_Container *container)
+_solo_focused_term_get(const Term_Container *container)
 {
    Solo *solo;
    assert (container->type == TERM_CONTAINER_TYPE_SOLO);
@@ -206,7 +206,7 @@ _solo_focused_term_get(Term_Container *container)
 }
 
 static Term *
-_solo_find_term_at_coords(Term_Container *tc,
+_solo_find_term_at_coords(const Term_Container *tc,
                           Evas_Coord _mx EINA_UNUSED,
                           Evas_Coord _my EINA_UNUSED)
 {
@@ -283,21 +283,49 @@ _solo_split(Term_Container *tc,
 }
 
 static Term *
-_solo_term_next(Term_Container *tc,
-                Term_Container *_child EINA_UNUSED)
+_solo_term_next(const Term_Container *tc,
+                const Term_Container *_child EINA_UNUSED)
 {
    return tc->parent->term_next(tc->parent, tc);
 }
 
 static Term *
-_solo_term_prev(Term_Container *tc,
-                Term_Container *_child EINA_UNUSED)
+_solo_term_prev(const Term_Container *tc,
+                const Term_Container *_child EINA_UNUSED)
 {
    return tc->parent->term_prev(tc->parent, tc);
 }
 
 static Term *
-_solo_term_first(Term_Container *tc)
+_solo_term_up(const Term_Container *tc,
+              const Term_Container *_child EINA_UNUSED)
+{
+   return tc->parent->term_up(tc->parent, tc);
+}
+
+static Term *
+_solo_term_down(const Term_Container *tc,
+                const Term_Container *_child EINA_UNUSED)
+{
+   return tc->parent->term_down(tc->parent, tc);
+}
+
+static Term *
+_solo_term_left(const Term_Container *tc,
+                const Term_Container *_child EINA_UNUSED)
+{
+   return tc->parent->term_left(tc->parent, tc);
+}
+
+static Term *
+_solo_term_right(const Term_Container *tc,
+                 const Term_Container *_child EINA_UNUSED)
+{
+   return tc->parent->term_right(tc->parent, tc);
+}
+
+static Term *
+_solo_term_first(const Term_Container *tc)
 {
    Solo *solo;
    assert (tc->type == TERM_CONTAINER_TYPE_SOLO);
@@ -306,7 +334,7 @@ _solo_term_first(Term_Container *tc)
 }
 
 static Term *
-_solo_term_last(Term_Container *tc)
+_solo_term_last(const Term_Container *tc)
 {
    Solo *solo;
    assert (tc->type == TERM_CONTAINER_TYPE_SOLO);
@@ -370,8 +398,11 @@ _solo_unfocus(Term_Container *tc, Term_Container *relative)
    if (tc->parent != relative)
      tc->parent->unfocus(tc->parent, tc);
 
-   edje_object_signal_emit(term->bg, "focus,out", "terminology");
-   edje_object_signal_emit(term->base, "focus,out", "terminology");
+   if (!term->config->disable_focus_visuals)
+     {
+        edje_object_signal_emit(term->bg, "focus,out", "terminology");
+        edje_object_signal_emit(term->base, "focus,out", "terminology");
+     }
 
    if (!tc->wn->cmdbox_up)
      elm_object_focus_set(term->termio, EINA_FALSE);
@@ -402,8 +433,16 @@ _solo_focus(Term_Container *tc, Term_Container *relative)
      tc->parent->focus(tc->parent, tc);
 
    tc->is_focused = EINA_TRUE;
-   edje_object_signal_emit(term->bg, "focus,in", "terminology");
-   edje_object_signal_emit(term->base, "focus,in", "terminology");
+   if (term->config->disable_focus_visuals)
+     {
+        edje_object_signal_emit(term->bg, "focused,set", "terminology");
+        edje_object_signal_emit(term->base, "focused,set", "terminology");
+     }
+   else
+     {
+        edje_object_signal_emit(term->bg, "focus,in", "terminology");
+        edje_object_signal_emit(term->base, "focus,in", "terminology");
+     }
    if (term->wn->cmdbox)
      elm_object_focus_set(term->wn->cmdbox, EINA_FALSE);
    elm_object_focus_set(term->termio, EINA_TRUE);
@@ -438,6 +477,10 @@ _solo_new(Term *term, Win *wn)
    tc = (Term_Container*)solo;
    tc->term_next = _solo_term_next;
    tc->term_prev = _solo_term_prev;
+   tc->term_up = _solo_term_up;
+   tc->term_down = _solo_term_down;
+   tc->term_left = _solo_term_left;
+   tc->term_right = _solo_term_right;
    tc->term_first = _solo_term_first;
    tc->term_last = _solo_term_last;
    tc->focused_term_get = _solo_focused_term_get;
@@ -498,8 +541,11 @@ _cb_win_focus_in(void *data,
           {
              if (term)
                {
-                  edje_object_signal_emit(term->bg, "focus,out", "terminology");
-                  edje_object_signal_emit(term->base, "focus,out", "terminology");
+                  if (!term->config->disable_focus_visuals)
+                    {
+                       edje_object_signal_emit(term->bg, "focus,out", "terminology");
+                       edje_object_signal_emit(term->base, "focus,out", "terminology");
+                    }
                   if (!wn->cmdbox_up)
                     elm_object_focus_set(term->termio, EINA_FALSE);
                }
@@ -567,23 +613,25 @@ bad:
 
 
 Evas_Object *
-win_base_get(Win *wn)
+win_base_get(const Win *wn)
 {
    return wn->base;
 }
 
-Config *win_config_get(Win *wn)
+Config *
+win_config_get(const Win *wn)
 {
    return wn->config;
 }
 
-Eina_List * win_terms_get(Win *wn)
+Eina_List *
+win_terms_get(const Win *wn)
 {
    return wn->terms;
 }
 
 Evas_Object *
-win_evas_object_get(Win *wn)
+win_evas_object_get(const Win *wn)
 {
    return wn->win;
 }
@@ -745,7 +793,7 @@ win_add(const char *name, const char *role,
 }
 
 static Evas_Object *
-_win_get_evas_object(Term_Container *tc)
+_win_get_evas_object(const Term_Container *tc)
 {
    Win *wn;
    assert (tc->type == TERM_CONTAINER_TYPE_WIN);
@@ -756,21 +804,49 @@ _win_get_evas_object(Term_Container *tc)
 }
 
 static Term *
-_win_term_next(Term_Container *_tc EINA_UNUSED,
-               Term_Container *child)
+_win_term_next(const Term_Container *_tc EINA_UNUSED,
+               const Term_Container *child)
 {
    return child->term_first(child);
 }
 
 static Term *
-_win_term_prev(Term_Container *_tc EINA_UNUSED,
-               Term_Container *child)
+_win_term_prev(const Term_Container *_tc EINA_UNUSED,
+               const Term_Container *child)
 {
    return child->term_last(child);
 }
 
 static Term *
-_win_term_first(Term_Container *tc)
+_win_term_up(const Term_Container *_tc EINA_UNUSED,
+             const Term_Container *child EINA_UNUSED)
+{
+   return NULL;
+}
+
+static Term *
+_win_term_down(const Term_Container *_tc EINA_UNUSED,
+               const Term_Container *child EINA_UNUSED)
+{
+   return NULL;
+}
+
+static Term *
+_win_term_left(const Term_Container *_tc EINA_UNUSED,
+               const Term_Container *child EINA_UNUSED)
+{
+   return NULL;
+}
+
+static Term *
+_win_term_right(const Term_Container *_tc EINA_UNUSED,
+                const Term_Container *child EINA_UNUSED)
+{
+   return NULL;
+}
+
+static Term *
+_win_term_first(const Term_Container *tc)
 {
    Win *wn;
    assert (tc->type == TERM_CONTAINER_TYPE_WIN);
@@ -780,7 +856,7 @@ _win_term_first(Term_Container *tc)
 }
 
 static Term *
-_win_term_last(Term_Container *tc)
+_win_term_last(const Term_Container *tc)
 {
    Win *wn;
    assert (tc->type == TERM_CONTAINER_TYPE_WIN);
@@ -790,7 +866,7 @@ _win_term_last(Term_Container *tc)
 }
 
 static Term *
-_win_focused_term_get(Term_Container *tc)
+_win_focused_term_get(const Term_Container *tc)
 {
    Win *wn;
    assert (tc->type == TERM_CONTAINER_TYPE_WIN);
@@ -801,7 +877,7 @@ _win_focused_term_get(Term_Container *tc)
 }
 
 static Term *
-_win_find_term_at_coords(Term_Container *tc,
+_win_find_term_at_coords(const Term_Container *tc,
                          Evas_Coord mx, Evas_Coord my)
 {
    Win *wn;
@@ -1044,6 +1120,10 @@ win_new(const char *name, const char *role, const char *title,
    tc = (Term_Container*) wn;
    tc->term_next = _win_term_next;
    tc->term_prev = _win_term_prev;
+   tc->term_up = _win_term_up;
+   tc->term_down = _win_term_down;
+   tc->term_left = _win_term_left;
+   tc->term_right = _win_term_right;
    tc->term_first = _win_term_first;
    tc->term_last = _win_term_last;
    tc->focused_term_get = _win_focused_term_get;
@@ -1130,7 +1210,7 @@ term_close(Evas_Object *win, Evas_Object *term, Eina_Bool hold_if_requested)
 /* {{{ Splits */
 
 static Term *
-_split_term_next(Term_Container *tc, Term_Container *child)
+_split_term_next(const Term_Container *tc, const Term_Container *child)
 {
    Split *split;
 
@@ -1144,7 +1224,7 @@ _split_term_next(Term_Container *tc, Term_Container *child)
 }
 
 static Term *
-_split_term_prev(Term_Container *tc, Term_Container *child)
+_split_term_prev(const Term_Container *tc, const Term_Container *child)
 {
    Split *split;
 
@@ -1158,7 +1238,67 @@ _split_term_prev(Term_Container *tc, Term_Container *child)
 }
 
 static Term *
-_split_term_first(Term_Container *tc)
+_split_term_up(const Term_Container *tc,
+               const Term_Container *child)
+{
+   Split *split;
+
+   assert (tc->type == TERM_CONTAINER_TYPE_SPLIT);
+   split = (Split*) tc;
+
+   if (child == split->tc2 && split->is_horizontal)
+     return split->tc1->term_last(split->tc1);
+   else
+     return tc->parent->term_up(tc->parent, tc);
+}
+
+static Term *
+_split_term_down(const Term_Container *tc,
+                 const Term_Container *child)
+{
+   Split *split;
+
+   assert (tc->type == TERM_CONTAINER_TYPE_SPLIT);
+   split = (Split*) tc;
+
+   if (child == split->tc1 && split->is_horizontal)
+     return split->tc2->term_first(split->tc2);
+   else
+     return tc->parent->term_down(tc->parent, tc);
+}
+
+static Term *
+_split_term_left(const Term_Container *tc,
+                 const Term_Container *child)
+{
+   Split *split;
+
+   assert (tc->type == TERM_CONTAINER_TYPE_SPLIT);
+   split = (Split*) tc;
+
+   if (child == split->tc2 && !split->is_horizontal)
+     return split->tc1->term_last(split->tc1);
+   else
+     return tc->parent->term_left(tc->parent, tc);
+}
+
+static Term *
+_split_term_right(const Term_Container *tc,
+                  const Term_Container *child)
+{
+   Split *split;
+
+   assert (tc->type == TERM_CONTAINER_TYPE_SPLIT);
+   split = (Split*) tc;
+
+   if (child == split->tc1 && !split->is_horizontal)
+     return split->tc2->term_first(split->tc2);
+   else
+     return tc->parent->term_right(tc->parent, tc);
+}
+
+static Term *
+_split_term_first(const Term_Container *tc)
 {
    Split *split;
 
@@ -1169,7 +1309,7 @@ _split_term_first(Term_Container *tc)
 }
 
 static Term *
-_split_term_last(Term_Container *tc)
+_split_term_last(const Term_Container *tc)
 {
    Split *split;
 
@@ -1180,7 +1320,7 @@ _split_term_last(Term_Container *tc)
 }
 
 static Evas_Object *
-_split_get_evas_object(Term_Container *tc)
+_split_get_evas_object(const Term_Container *tc)
 {
    Split *split;
 
@@ -1300,7 +1440,7 @@ _split_swallow(Term_Container *tc, Term_Container *orig,
 }
 
 static Term *
-_split_focused_term_get(Term_Container *tc)
+_split_focused_term_get(const Term_Container *tc)
 {
    Split *split;
 
@@ -1313,7 +1453,7 @@ _split_focused_term_get(Term_Container *tc)
 }
 
 static Term *
-_split_find_term_at_coords(Term_Container *tc,
+_split_find_term_at_coords(const Term_Container *tc,
                            Evas_Coord mx, Evas_Coord my)
 {
    Split *split;
@@ -1529,6 +1669,10 @@ _split_new(Term_Container *tc1, Term_Container *tc2,
    tc = (Term_Container*)split;
    tc->term_next = _split_term_next;
    tc->term_prev = _split_term_prev;
+   tc->term_up = _split_term_up;
+   tc->term_down = _split_term_down;
+   tc->term_left = _split_term_left;
+   tc->term_right = _split_term_right;
    tc->term_first = _split_term_first;
    tc->term_last = _split_term_last;
    tc->focused_term_get = _split_focused_term_get;
@@ -1718,6 +1862,17 @@ _cb_tab_close(void *data,
 }
 
 static void
+_cb_tab_title(void *data,
+              Evas_Object *_obj EINA_UNUSED,
+              const char *_sig EINA_UNUSED,
+              const char *_src EINA_UNUSED)
+{
+   Term *term = data;
+
+   term_set_title(term);
+}
+
+static void
 _tabbar_fill(Tabs *tabs)
 {
    Eina_List *l;
@@ -1797,6 +1952,8 @@ _tabbar_fill(Tabs *tabs)
                                              _cb_tab_activate, tab_item);
              edje_object_signal_callback_add(o, "tab,close", "terminology",
                                              _cb_tab_close, term);
+             edje_object_signal_callback_add(o, "tab,title", "terminology",
+                                             _cb_tab_title, term);
           }
         j++;
      }
@@ -2072,7 +2229,7 @@ _cb_select(void *data,
 
 
 static Evas_Object *
-_tabs_get_evas_object(Term_Container *container)
+_tabs_get_evas_object(const Term_Container *container)
 {
    Tabs *tabs;
    Term_Container *tc;
@@ -2089,7 +2246,7 @@ _tabs_get_evas_object(Term_Container *container)
 }
 
 static Term *
-_tabs_focused_term_get(Term_Container *tc)
+_tabs_focused_term_get(const Term_Container *tc)
 {
    Tabs *tabs;
 
@@ -2103,7 +2260,7 @@ _tabs_focused_term_get(Term_Container *tc)
 }
 
 static Term *
-_tabs_find_term_at_coords(Term_Container *container,
+_tabs_find_term_at_coords(const Term_Container *container,
                           Evas_Coord mx,
                           Evas_Coord my)
 {
@@ -2123,16 +2280,24 @@ _tabs_size_eval(Term_Container *container, Sizeinfo *info)
 {
    Tabs *tabs;
    Term_Container *tc;
+   Config *config;
 
    assert (container->type == TERM_CONTAINER_TYPE_TABS);
    tabs = (Tabs*)container;
 
    tc = tabs->current->tc;
+   config = tc->wn->config;
    tc->size_eval(tc, info);
+   /* Current sizing code does not take the tab area correctly into account */
+   if (!config->notabs)
+     {
+        info->step_x = 1;
+        info->step_y = 1;
+     }
 }
 
 static Eina_List *
-_tab_item_find(Tabs *tabs, Term_Container *child)
+_tab_item_find(const Tabs *tabs, const Term_Container *child)
 {
    Eina_List *l;
    Tab_Item *tab_item;
@@ -2256,7 +2421,7 @@ _tabs_update(Term_Container *tc)
 }
 
 static Term *
-_tabs_term_next(Term_Container *tc, Term_Container *child)
+_tabs_term_next(const Term_Container *tc, const Term_Container *child)
 {
    Tabs *tabs;
    Tab_Item *tab_item;
@@ -2279,7 +2444,7 @@ _tabs_term_next(Term_Container *tc, Term_Container *child)
 }
 
 static Term *
-_tabs_term_prev(Term_Container *tc, Term_Container *child)
+_tabs_term_prev(const Term_Container *tc, const Term_Container *child)
 {
    Tabs *tabs;
    Tab_Item *tab_item;
@@ -2302,7 +2467,35 @@ _tabs_term_prev(Term_Container *tc, Term_Container *child)
 }
 
 static Term *
-_tabs_term_first(Term_Container *tc)
+_tabs_term_up(const Term_Container *tc,
+              const Term_Container *_child EINA_UNUSED)
+{
+   return tc->parent->term_up(tc->parent, tc);
+}
+
+static Term *
+_tabs_term_down(const Term_Container *tc,
+                const Term_Container *_child EINA_UNUSED)
+{
+   return tc->parent->term_down(tc->parent, tc);
+}
+
+static Term *
+_tabs_term_left(const Term_Container *tc,
+                const Term_Container *_child EINA_UNUSED)
+{
+   return tc->parent->term_left(tc->parent, tc);
+}
+
+static Term *
+_tabs_term_right(const Term_Container *tc,
+                 const Term_Container *_child EINA_UNUSED)
+{
+   return tc->parent->term_right(tc->parent, tc);
+}
+
+static Term *
+_tabs_term_first(const Term_Container *tc)
 {
    Tabs *tabs;
    Tab_Item *tab_item;
@@ -2317,7 +2510,7 @@ _tabs_term_first(Term_Container *tc)
 }
 
 static Term *
-_tabs_term_last(Term_Container *tc)
+_tabs_term_last(const Term_Container *tc)
 {
    Tabs *tabs;
    Tab_Item *tab_item;
@@ -2775,6 +2968,10 @@ _tabs_new(Term_Container *child, Term_Container *parent)
    tc = (Term_Container*)tabs;
    tc->term_next = _tabs_term_next;
    tc->term_prev = _tabs_term_prev;
+   tc->term_up = _tabs_term_up;
+   tc->term_down = _tabs_term_down;
+   tc->term_left = _tabs_term_left;
+   tc->term_right = _tabs_term_right;
    tc->term_first = _tabs_term_first;
    tc->term_last = _tabs_term_last;
    tc->focused_term_get = _tabs_focused_term_get;
@@ -2946,61 +3143,110 @@ term_unfocus(Term *term)
    tc->unfocus(tc, tc);
 }
 
-Term *
-term_prev_get(Term *term)
-{
-   Term_Container *tc = term->container;
+enum term_to_direction {
+     TERM_TO_PREV,
+     TERM_TO_NEXT,
+     TERM_TO_UP,
+     TERM_TO_DOWN,
+     TERM_TO_LEFT,
+     TERM_TO_RIGHT,
+};
 
-   return tc->term_prev(tc, tc);
-}
-
-void term_prev(Term *term)
+static void
+term_go_to(Term *from, enum term_to_direction dir)
 {
    Term *new_term, *focused_term;
-   Win *wn = term->wn;
+   Win *wn = from->wn;
    Term_Container *tc;
 
    tc = (Term_Container *) wn;
 
    focused_term = tc->focused_term_get(tc);
    if (!focused_term)
-     focused_term = term;
+     focused_term = from;
    tc = focused_term->container;
-   new_term = tc->term_prev(tc, tc);
+
+   switch (dir)
+     {
+      case TERM_TO_PREV:
+         new_term = tc->term_prev(tc, tc);
+         break;
+      case TERM_TO_NEXT:
+         new_term = tc->term_next(tc, tc);
+         break;
+      case TERM_TO_UP:
+         new_term = tc->term_up(tc, tc);
+         break;
+      case TERM_TO_DOWN:
+         new_term = tc->term_down(tc, tc);
+         break;
+      case TERM_TO_LEFT:
+         new_term = tc->term_left(tc, tc);
+         break;
+      case TERM_TO_RIGHT:
+         new_term = tc->term_right(tc, tc);
+         break;
+     }
+
    if (new_term && new_term != focused_term)
      _term_focus(new_term);
 
    /* TODO: get rid of it? */
-   _term_miniview_check(term);
+   _term_miniview_check(from);
+}
+
+void
+term_prev(Term *term)
+{
+   term_go_to(term, TERM_TO_PREV);
+}
+
+void
+term_next(Term *term)
+{
+   term_go_to(term, TERM_TO_NEXT);
+}
+
+void
+term_up(Term *term)
+{
+   term_go_to(term, TERM_TO_UP);
+}
+
+void
+term_down(Term *term)
+{
+   term_go_to(term, TERM_TO_DOWN);
+}
+
+void
+term_left(Term *term)
+{
+   term_go_to(term, TERM_TO_LEFT);
+}
+
+void
+term_right(Term *term)
+{
+   term_go_to(term, TERM_TO_RIGHT);
 }
 
 Term *
-term_next_get(Term *term)
+term_prev_get(const Term *term)
+{
+   Term_Container *tc = term->container;
+
+   return tc->term_prev(tc, tc);
+}
+
+Term *
+term_next_get(const Term *term)
 {
    Term_Container *tc = term->container;
 
    return tc->term_next(tc, tc);
 }
 
-void term_next(Term *term)
-{
-   Term *new_term, *focused_term;
-   Win *wn = term->wn;
-   Term_Container *tc;
-
-   tc = (Term_Container*) wn;
-
-   focused_term = tc->focused_term_get(tc);
-   if (!focused_term)
-     focused_term = term;
-   tc = focused_term->container;
-   new_term = tc->term_next(tc, tc);
-   if (new_term && new_term != focused_term)
-     _term_focus(new_term);
-
-   /* TODO: get rid of it? */
-   _term_miniview_check(term);
-}
 
 static void
 _cb_popmedia_del(void *data,
@@ -3059,9 +3305,6 @@ _popmedia_show(Term *term, const char *src, Media_Type type)
    Config *config = termio_config_get(term->termio);
 
    EINA_SAFETY_ON_NULL_RETURN(config);
-#ifdef HAVE_ELM_WIN_TEAMWORK
-   elm_win_teamwork_uri_hide(term->wn->win);
-#endif
    if (term->popmedia)
      {
         const char *s;
@@ -4025,6 +4268,8 @@ _term_bg_config(Term *term)
                                    _cb_tabcount_next, term);
    edje_object_signal_callback_add(term->bg, "tab,close", "terminology",
                                    _cb_tab_close, term);
+   edje_object_signal_callback_add(term->bg, "tab,title", "terminology",
+                                   _cb_tab_title, term);
    edje_object_part_swallow(term->base, "terminology.content", term->termio);
    edje_object_part_swallow(term->bg, "terminology.content", term->base);
    edje_object_part_swallow(term->bg, "terminology.miniview", term->miniview);
@@ -4079,8 +4324,16 @@ _term_bg_config(Term *term)
    DBG("is focused? tc:%p", term->container);
    if (_term_is_focused(term) && (_win_is_focused(term->wn)))
      {
-        edje_object_signal_emit(term->bg, "focus,in", "terminology");
-        edje_object_signal_emit(term->base, "focus,in", "terminology");
+        if (term->config->disable_focus_visuals)
+          {
+             edje_object_signal_emit(term->bg, "focused,set", "terminology");
+             edje_object_signal_emit(term->base, "focused,set", "terminology");
+          }
+        else
+          {
+             edje_object_signal_emit(term->bg, "focus,in", "terminology");
+             edje_object_signal_emit(term->base, "focus,in", "terminology");
+          }
         if (term->wn->cmdbox)
           elm_object_focus_set(term->wn->cmdbox, EINA_FALSE);
         elm_object_focus_set(term->termio, EINA_TRUE);
@@ -4140,20 +4393,20 @@ main_term_popup_exists(const Term *term)
 }
 
 Win *
-term_win_get(Term *term)
+term_win_get(const Term *term)
 {
    return term->wn;
 }
 
 
 Evas_Object *
-term_termio_get(Term *term)
+term_termio_get(const Term *term)
 {
    return term->termio;
 }
 
 Evas_Object *
-term_miniview_get(Term *term)
+term_miniview_get(const Term *term)
 {
    if (term)
      return term->miniview;
@@ -4366,6 +4619,21 @@ void
 win_font_size_set(Win *wn, int new_size)
 {
    for_each_term_do(wn, &_font_size_set, (void*)(intptr_t)new_size);
+}
+
+static Eina_Bool
+_font_update(Term *term, void *_data EINA_UNUSED)
+{
+   termio_font_update(term->termio);
+
+   return ECORE_CALLBACK_PASS_ON;
+}
+
+void
+win_font_update(Term *term)
+{
+   Win *wn = term->wn;
+   for_each_term_do(wn, &_font_update, NULL);
 }
 
 void
