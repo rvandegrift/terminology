@@ -2,53 +2,55 @@ Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Source: http://http://download.enlightenment.org/rel/apps/terminology/
 
 Files: *
-Copyright: 2012-2014 Carsten Haitzler <raster@rasterman.com>
-		2012-2014 Boris Faure <billiob@gmail.com>
-		2012-2014 Gustavo Sverzut Barbieri <barbieri@gmail.com>
-		2012-2014 Cedric BAIL <cedric.bail@free.fr>
-		2012-2014 Sebastian Dransfeld <sd@tango.flipp.net>
+Copyright: 2012-2017 Carsten Haitzler <raster@rasterman.com>
+                2012-2017 Boris Faure <billiob@gmail.com>
+                2012-2014 Gustavo Sverzut Barbieri <barbieri@gmail.com>
+                2012-2015 Cedric BAIL <cedric.bail@free.fr>
+                2012-2014 Sebastian Dransfeld <sd@tango.flipp.net>
                 2012-2014 Wonguk Jeong <wonguk.jeong@samsung.com>
-		2012-2014 Daniel Juyung Seo <seojuyung2@gmail.com>
-		2012-2014 Christopher Michael <devilhorns@comcast.net>
+                2012-2014 Daniel Juyung Seo <seojuyung2@gmail.com>
+                2012-2016 Christopher Michael <devilhorns@comcast.net>
                 2012-2014 Panagiotis Galatsanos <galatsanosp@gmail.com>
                 2012-2014 Aleksandar Popadić <aleksandar.popadic@siol.net>
-		2012-2014 Mike Blumenkrantz <michael.blumenkrantz@gmail.com>
-		2012-2014 Davide Andreoli <dave@gurumeditation.it>
-		2012-2014 Gustavo Lima Chaves <glima@profusion.mobi>
-		2012-2014 Stefan Schmidt <stefan@datenfreihafen.org>
-		2012-2014 Tom Hacohen <tom@stosb.com>
+                2012-2017 Mike Blumenkrantz <michael.blumenkrantz@gmail.com>
+                2012-2014 Davide Andreoli <dave@gurumeditation.it>
+                2012-2014 Gustavo Lima Chaves <glima@profusion.mobi>
+                2012-2016 Stefan Schmidt <stefan@datenfreihafen.org>
+                2012-2015 Tom Hacohen <tom@stosb.com>
                 2012-2014 Alex-P. Natsios <drakevr@2f30.org>
                 2012-2014 Massimo Maiurana <maiurana@gmail.com>
                 2012-2014 Gwang O Lee <pu8046@gmail.com>
-                2012-2014 Jean-Philippe ANDRÉ <jpeg@videolan.org>
-		2012-2014 Jihoon Kim <imfine98@gmail.com>
-		2012-2014 Mike McCormack <mike@atratus.org>
+                2012-2015 Jean-Philippe ANDRÉ <jpeg@videolan.org>
+                2012-2014 Jihoon Kim <imfine98@gmail.com>
+                2012-2014 Mike McCormack <mike@atratus.org>
                 2012-2014 Iván Briano <ivan.briano@intel.com>
-                2012-2014 Jean Guyomarc'h <jean.guyomarch@gmail.com>
-		2012-2014 Jerome Pinot <ngc891@gmail.com>
-		2012-2014 José Roberto de Souza <zehortigoza@profusion.mobi>
-                2012-2014 Kai Huuhko <kai.huuhko@gmail.com>
-		2012-2014 Leandro Pereira <leandro@profusion.mobi>
-		2012-2014 Leif Middelschulte <leif.middelschulte@gmail.com>
-		2012-2014 Markus Törnqvist <mjt@fadconsulting.com>
-		2012-2014 Lucas De Marchi <lucas.demarchi@profusion.mobi>
-		2012-2014 Marcel Hollerbach <marcel-hollerbach@t-online.de>
+                2012-2017 Jean Guyomarc'h <jean.guyomarch@gmail.com>
+                2012-2016 Jerome Pinot <ngc891@gmail.com>
+                2012-2016 José Roberto de Souza <zehortigoza@profusion.mobi>
+                2012-2015 Kai Huuhko <kai.huuhko@gmail.com>
+                2012-2014 Leandro Pereira <leandro@profusion.mobi>
+                2012-2014 Leif Middelschulte <leif.middelschulte@gmail.com>
+                2012-2014 Markus Törnqvist <mjt@fadconsulting.com>
+                2012-2014 Lucas De Marchi <lucas.demarchi@profusion.mobi>
+                2012-2016 Marcel Hollerbach <marcel-hollerbach@t-online.de>
                 2012-2014 Anisse Astier <anisse@astier.eu>
-		2012-2014 Doug Newgard <scimmia22@outlook.com>
-		2012-2014 Flavio Vinicius Alvares Ceolin <flavio.ceolin@profusion.mobi>
-		2012-2014 Samuel F. Baggen <thanatermesis@gmail.com>
-		2012-2014 Amitesh Singh <amitesh.sh@samsung.com>
-		2012-2014 Bruno Dilly <bdilly@profusion.mobi>
-		2012-2014 Daniel Zaoui <daniel.zaoui@samsung.com>
-		2012-2014 Eduardo Lima <eduardo.lima@intel.com>
-		2012-2014 Flavio Ceolin <flavio.ceolin@intel.com>
-		2012-2014 Jason L. Cook <jason.lewis.cook@gmail.com>
-		2012-2014 Michael BOUCHAUD <michael.bouchaud@gmail.com>
-		2012-2014 Michael Jennings <mej@kainx.org>
-		2012-2014 Nicholas Hughart <mekius@mekius.net>
-		2012-2014 Rafael Antognolli <antognolli@gmail.com>
-		2012-2014 Rui Seabra <rms@1407.org>
-		2012-2014 Vincent Torri <vincent.torri@gmail.com>
+                2012-2014 Doug Newgard <scimmia22@outlook.com>
+                2012-2014 Flavio Vinicius Alvares Ceolin <flavio.ceolin@profusion.mobi>
+                2012-2014 Samuel F. Baggen <thanatermesis@gmail.com>
+                2012-2014 Amitesh Singh <amitesh.sh@samsung.com>
+                2012-2014 Bruno Dilly <bdilly@profusion.mobi>
+                2012-2015 Daniel Zaoui <daniel.zaoui@samsung.com>
+                2012-2014 Eduardo Lima <eduardo.lima@intel.com>
+                2012-2014 Flavio Ceolin <flavio.ceolin@intel.com>
+                2012-2014 Jason L. Cook <jason.lewis.cook@gmail.com>
+                2012-2014 Michael BOUCHAUD <michael.bouchaud@gmail.com>
+                2012-2014 Michael Jennings <mej@kainx.org>
+                2012-2014 Nicholas Hughart <mekius@mekius.net>
+                2012-2014 Rafael Antognolli <antognolli@gmail.com>
+                2012-2014 Rui Seabra <rms@1407.org>
+                2012-2014 Vincent Torri <vincent.torri@gmail.com>
+                2015 Daniel Kolesa <d.kolesa@osg.samsung.com>
+                2017 Sanjeev BA <iamsanjeev@gmail.com>
 License: BSD-2
 
 Files: po/ca.po 
@@ -103,6 +105,34 @@ Copyright: 2014 Саша Петровић <salepetronije@gmail.com>
 		2014 Rosetta Contributors and Canonical Ltd
 License: BSD-2
 
+Files: po/hi.po
+License: BSD-2
+Copyright: 2014 Sanjeev BA <iamsanjeev@gmail.com>
+
+Files: po/da.po
+License: BSD-2
+Copyright: 2017 Terminology development team
+	   2017 scootergrisen
+
+Files: po/sl.po
+License: BSD-2
+Copyright: 2016 Rosetta Contributors and Canonical Ltd
+
+Files: po/vi.po
+License: BSD-2
+Copyright: 2015 Terminology development team
+	   2015 Thiep Ha <thiepha@gmail.com>
+
+Files: po/es.po
+License: BSD-2
+Copyright: 2014 Terminology development team
+	   2015 Adrián Arévalo <adri58@gmail.com>
+	   2015 Roy Reese <waterbearer54@gmx.com>
+
+Files: po/tr.po
+License: BSD-2
+Copyright: 2014 Rosetta Contributors and Canonical Ltd
+
 Files: debian/*
 Copyright: 2014 Anthony F McInerney <afm404@gmail.com>
 License: BSD-2
@@ -112,8 +142,8 @@ Copyright: 2011-2014, Yann Collet
 License: New-BSD
 
 Files: data/fonts/*.pcf
-Copyright: Various - See License
 License: Various
+Copyright: Various - See License
 
 Files: data/fonts/terminus*
 Copyright: 2011 Dimitar Toshkov Zhekov, with Reserved Font Name "Terminus Font"
