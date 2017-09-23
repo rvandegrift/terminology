@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: terminology 0.8.99\n"
 "Report-Msgid-Bugs-To: enlightenment-devel@lists.sourceforge.net\n"
-"POT-Creation-Date: 2017-08-16 22:34+0200\n"
+"POT-Creation-Date: 2017-09-02 17:36+0200\n"
 "PO-Revision-Date: 2015-10-05 02:10+0900\n"
 "Last-Translator: Thiep Ha <thiepha@gmail.com>\n"
 "Language-Team: \n"
@@ -44,7 +44,7 @@ msgstr "Miniview"
 msgid "Set title"
 msgstr "Đặt tiêu đề cho cửa sổ."
 
-#: src/bin/controls.c:331 src/bin/termio.c:1032 src/bin/termio.c:4147
+#: src/bin/controls.c:331 src/bin/termio.c:1036 src/bin/termio.c:4153
 msgid "Copy"
 msgstr "Sao Chép"
 
@@ -265,66 +265,66 @@ msgstr "Biểu diễn lịch sử miniview"
 msgid "Display the command box"
 msgstr "Biểu diễn hộp mệnh lệnh"
 
-#: src/bin/main.c:218 src/bin/main.c:900
+#: src/bin/main.c:218 src/bin/main.c:902
 msgid "Could not create window."
 msgstr "Không thể tạo cửa sổ mới."
 
-#: src/bin/main.c:287 src/bin/main.c:911
+#: src/bin/main.c:288 src/bin/main.c:913
 msgid "Could not create terminal widget."
 msgstr "Không thể tạo terminal widget."
 
-#: src/bin/main.c:326
+#: src/bin/main.c:327
 #, c-format
 msgid "(C) 2012-%d Carsten Haitzler and others"
 msgstr "(C) 2012-%d Carsten Haitzler và những người khác"
 
-#: src/bin/main.c:328
+#: src/bin/main.c:329
 msgid "Terminal emulator written with Enlightenment Foundation Libraries."
 msgstr ""
 "Bộ mô phỏng terminal được viết bằng Enlightenment Foundation Libraries."
 
-#: src/bin/main.c:336
+#: src/bin/main.c:337
 msgid "Command to execute. Defaults to $SHELL (or passwd shell or /bin/sh)"
 msgstr ""
 "Mệnh lệnh để thực thi. Mặc định là $SHELL (hoặc passwd shell hoặc /bin/sh)"
 
-#: src/bin/main.c:338
+#: src/bin/main.c:339
 msgid "Change to directory for execution of terminal command."
 msgstr "Thay đổi thư mục cho việc thực thi lệnh terminal."
 
-#: src/bin/main.c:340
+#: src/bin/main.c:341
 msgid "Use the named edje theme or path to theme file."
 msgstr "Sử dụng tên của edje theme hoặc đường dẫn đến tập tin theme."
 
-#: src/bin/main.c:342
+#: src/bin/main.c:343
 msgid "Use the named file as a background wallpaper."
 msgstr "Sử dụng tên thư mục như là màn hình nền."
 
-#: src/bin/main.c:344
+#: src/bin/main.c:345
 msgid "Terminal geometry to use (eg 80x24 or 80x24+50+20 etc.)."
 msgstr "Sử dụng kích thước terminal (ví dụ 80x24 hoặc 80x24+50+20 vân vân)."
 
-#: src/bin/main.c:346
+#: src/bin/main.c:347
 msgid "Set window name."
 msgstr "Đặt tên cho cửa sổ."
 
-#: src/bin/main.c:348
+#: src/bin/main.c:349
 msgid "Set window role."
 msgstr "Đặt nhiệm vụ cho cửa sổ."
 
-#: src/bin/main.c:350
+#: src/bin/main.c:351
 msgid "Set window title."
 msgstr "Đặt tiêu đề cho cửa sổ."
 
-#: src/bin/main.c:352
+#: src/bin/main.c:353
 msgid "Set icon name."
 msgstr "Đặt biểu tượng cho cửa sổ."
 
-#: src/bin/main.c:354
+#: src/bin/main.c:355
 msgid "Set font (NAME/SIZE for scalable, NAME for bitmap."
 msgstr "Đặt phông (TÊN/KÍCH THƯỚC cho scalable, TÊN cho bimap)."
 
-#: src/bin/main.c:356
+#: src/bin/main.c:357
 msgid ""
 "Split the terminal window. 'v' for vertical and 'h' for horizontal. Can be "
 "used multiple times. eg -S vhvv or --split hv More description available on "
@@ -334,105 +334,105 @@ msgstr ""
 "dụng nhiều lần. Ví dụ - S vhvv hoặc --split hv. Mô tả cụ thể có thể được tìm "
 "thấy trong trang man."
 
-#: src/bin/main.c:361
+#: src/bin/main.c:362
 msgid "Set emotion module to use."
 msgstr "Đặt mô-đun cảm xúc để sử dụng."
 
-#: src/bin/main.c:364
+#: src/bin/main.c:365
 msgid "Run the shell as a login shell."
 msgstr "Chạy shell giống với shell đăng nhập."
 
-#: src/bin/main.c:366
+#: src/bin/main.c:367
 msgid "Set mute mode for video playback."
 msgstr "Đặt chế độ yên lặng cho việc chơi video."
 
-#: src/bin/main.c:368
+#: src/bin/main.c:369
 msgid "Set cursor blink mode."
 msgstr "Đặt chế độ nhấp nháy của con trỏ."
 
-#: src/bin/main.c:370
+#: src/bin/main.c:371
 msgid "Set visual bell mode."
 msgstr "Đặt chế độ chuông trực quan."
 
-#: src/bin/main.c:372
+#: src/bin/main.c:373
 msgid "Go into the fullscreen mode from the start."
 msgstr "Dùng chế độ toàn màn hình khi khởi động."
 
-#: src/bin/main.c:374
+#: src/bin/main.c:375
 msgid "Go into an iconic state from the start."
 msgstr "Dùng chế độ biểu tượng khi khởi động."
 
-#: src/bin/main.c:376
+#: src/bin/main.c:377
 msgid "Become a borderless managed window."
 msgstr "Trở thành cửa sổ được quản lý không viền."
 
-#: src/bin/main.c:378
+#: src/bin/main.c:379
 msgid "Become an override-redirect window."
 msgstr "Trở thành cửa sổ chuyển đổi tái thiết lập."
 
-#: src/bin/main.c:380
+#: src/bin/main.c:381
 msgid "Become maximized from the start."
 msgstr "Trở thành cực đại lúc khởi động."
 
-#: src/bin/main.c:382
+#: src/bin/main.c:383
 msgid "Terminology is run without a window manager."
 msgstr "Terminology đang được chạy mà không có bộ quản lý cửa sổ."
 
-#: src/bin/main.c:384
+#: src/bin/main.c:385
 msgid "Do not exit when the command process exits."
 msgstr "Không thoát ra khi có lệnh đang chạy."
 
-#: src/bin/main.c:386
+#: src/bin/main.c:387
 msgid "Force single executable if multi-instance is enabled."
 msgstr "Ép thực thi đơn nếu đa thực thể khả dụng."
 
-#: src/bin/main.c:388
+#: src/bin/main.c:389
 msgid "Set TERM to 'xterm-256color' instead of 'xterm'."
 msgstr "Đặt TERM 'xterm-256color' thay vì 'xterm'."
 
-#: src/bin/main.c:390
+#: src/bin/main.c:391
 msgid "Highlight links."
 msgstr "Nổi bật các liên kết."
 
-#: src/bin/main.c:419
+#: src/bin/main.c:420
 msgid "show program version."
 msgstr "Hiển thị phiên bản của chương trình."
 
-#: src/bin/main.c:422
+#: src/bin/main.c:423
 msgid "show copyright."
 msgstr "Hiển thị bản quyền."
 
-#: src/bin/main.c:425
+#: src/bin/main.c:426
 msgid "show license."
 msgstr "Hiển thị giấy phép."
 
-#: src/bin/main.c:428
+#: src/bin/main.c:429
 msgid "show this message."
 msgstr "Hiển thị thông điệp này."
 
-#: src/bin/main.c:588 src/bin/miniview.c:38
+#: src/bin/main.c:589 src/bin/miniview.c:38
 #, c-format
 msgid "Could not create logging domain '%s'."
 msgstr "Không thể tạo miền nhật ký '%s'."
 
-#: src/bin/main.c:598
+#: src/bin/main.c:599
 msgid "Could not initialize key bindings."
 msgstr "Không thể khởi tạo phép gán phím."
 
-#: src/bin/main.c:610
+#: src/bin/main.c:611
 msgid "Could not parse command line options."
 msgstr "Không thể phân tích các tùy chọn dòng lệnh."
 
-#: src/bin/main.c:624
+#: src/bin/main.c:625
 #, c-format
 msgid "option %s requires an argument!"
 msgstr "Tùy chọn %s yêu cầu một đối số!"
 
-#: src/bin/main.c:625
+#: src/bin/main.c:626
 msgid "invalid options found. See --help."
 msgstr "Tìm thấy các tùy chọn không hợp lệ. Xem --help."
 
-#: src/bin/main.c:954
+#: src/bin/main.c:956
 msgid "invalid argument found for option -S/--split. See --help."
 msgstr "phát hiện đối số không hợp lệ cho tùy chọn -S/--split. Xem --help."
 
@@ -441,8 +441,8 @@ msgstr "phát hiện đối số không hợp lệ cho tùy chọn -S/--split. X
 msgid "Could not Initialize the emotion module '%s'"
 msgstr "Không thể khởi tạo mô-đun cảm xúc '%s'"
 
-#: src/bin/media.c:1348 src/bin/termpty.c:503 src/bin/termpty.c:508
-#: src/bin/termpty.c:512
+#: src/bin/media.c:1348 src/bin/termpty.c:504 src/bin/termpty.c:509
+#: src/bin/termpty.c:513
 #, c-format
 msgid "Function %s failed: %s"
 msgstr "Hàm %s thất bại: %s"
@@ -855,46 +855,46 @@ msgstr "Không thể đọc tập tin hình nền: %s"
 msgid "Unknown command: %s"
 msgstr "Lệnh chưa biết: %s"
 
-#: src/bin/termio.c:542
+#: src/bin/termio.c:546
 #, c-format
 msgid "Could not get working directory of pid %i: %s"
 msgstr "Không thể lấy thư mục làm việc của pid %i: %s"
 
-#: src/bin/termio.c:556
+#: src/bin/termio.c:560
 #, c-format
 msgid "Could not load working directory %s: %s"
 msgstr "Không thể tải thư mục làm việc %s: %s"
 
-#: src/bin/termio.c:1011
+#: src/bin/termio.c:1015
 msgid "Preview"
 msgstr "Xem Trước"
 
-#: src/bin/termio.c:1014
+#: src/bin/termio.c:1018
 msgid "Open"
 msgstr "Mở"
 
-#: src/bin/termio.c:1025
+#: src/bin/termio.c:1029
 msgid "Copy relative path"
 msgstr ""
 
-#: src/bin/termio.c:1027
+#: src/bin/termio.c:1031
 msgid "Copy full path"
 msgstr ""
 
-#: src/bin/termio.c:2465
+#: src/bin/termio.c:2469
 #, c-format
 msgid "unsupported selection format '%s'"
 msgstr "không hỗ trợ định dạng chọn '%s'"
 
-#: src/bin/termio.c:4149
+#: src/bin/termio.c:4155
 msgid "Open as URL"
 msgstr "Mở như là URL"
 
-#: src/bin/termio.c:5357
+#: src/bin/termio.c:5363
 msgid "Ecore IMF failed"
 msgstr "Ecore IMF thất bại"
 
-#: src/bin/termio.c:6078
+#: src/bin/termio.c:6084
 msgid "Could not allocate termpty"
 msgstr "Không thể cấp phát termpty"
 
@@ -908,32 +908,32 @@ msgstr "memerr: %s"
 msgid "Size set ioctl failed: %s"
 msgstr "Ioctrl thiết lập kích thước thất bại: %s"
 
-#: src/bin/termpty.c:479
+#: src/bin/termpty.c:480
 #, c-format
 msgid "Could not find shell, falling back to %s"
 msgstr "Không thể tìm thấy shell, quay lại với %s"
 
-#: src/bin/termpty.c:519
+#: src/bin/termpty.c:520
 #, c-format
 msgid "open() of pty '%s' failed: %s"
 msgstr "open() của pty '%s' thất bại: %s"
 
-#: src/bin/termpty.c:526 src/bin/termpty.c:532
+#: src/bin/termpty.c:527 src/bin/termpty.c:533
 #, c-format
 msgid "fcntl() on pty '%s' failed: %s"
 msgstr "fcntl() trên pty '%s' thất bại: %s"
 
-#: src/bin/termpty.c:541
+#: src/bin/termpty.c:542
 #, c-format
 msgid "ioctl() on pty '%s' failed: %s"
 msgstr "ioctl() trên pty '%s' thất bại: %s"
 
-#: src/bin/termpty.c:585 src/bin/termpty.c:593 src/bin/termpty.c:602
+#: src/bin/termpty.c:586 src/bin/termpty.c:594 src/bin/termpty.c:603
 #, c-format
 msgid "Could not change current directory to '%s': %s"
 msgstr "Không thể thay đổi thư mục hiện hành đến '%s': %s"
 
-#: src/bin/termpty.c:1126
+#: src/bin/termpty.c:1131
 #, c-format
 msgid "Could not write to file descriptor %d: %s"
 msgstr "Không thể viết vào mô tả tập tin %d: %s"
@@ -956,6 +956,6 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: src/bin/win.c:4530
+#: src/bin/win.c:4531
 msgid "Couldn't find terminology theme! Forgot 'make install'?"
 msgstr "Không thể tìm thấy terminology theme! Quên 'make install'?"

@@ -84,7 +84,7 @@ struct _Termpty
       } change, set_title, set_icon, cancel_sel, exited, bell, command;
    } cb;
    struct {
-      const char *title, *icon, *user_title;
+      const char *title, *icon;
    } prop;
    const char *cur_cmd;
    Termcell *screen, *screen2;
@@ -146,7 +146,6 @@ struct _Termpty
         unsigned int  wrap : 1;
         unsigned int  wrapnext : 1;
         unsigned int  crlf : 1;
-        unsigned int  had_cr : 1;
         unsigned int  send_bs : 1;
         unsigned int  kbd_lock : 1;
         unsigned int  reverse : 1;
@@ -228,7 +227,8 @@ void       termpty_shutdown(void);
 
 Termpty   *termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
                       int w, int h, int backscroll, Eina_Bool xterm_256color,
-                      Eina_Bool erase_is_del, const char *emotion_mod);
+                      Eina_Bool erase_is_del, const char *emotion_mod,
+                      const char *title);
 void       termpty_free(Termpty *ty);
 
 void       termpty_backlog_lock(void);
@@ -268,8 +268,6 @@ extern int _termpty_log_dom;
 
 #define TERMPTY_SCREEN(Tpty, X, Y) \
   Tpty->screen[X + (((Y + Tpty->circular_offset) % Tpty->h) * Tpty->w)]
-#define TERMPTY_FMTCLR(Tatt) \
-   (Tatt).autowrapped = (Tatt).newline = 0
 
 #define TERMPTY_RESTRICT_FIELD(Field, Min, Max) \
    do {                                         \

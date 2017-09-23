@@ -98,7 +98,7 @@ main_ipc_new(Ipc_Instance *inst)
      }
    if (inst->title)
      {
-        nargv[i++] = "-t";
+        nargv[i++] = "-T";
         nargv[i++] = (char *)inst->title;
      }
    if (inst->font)
@@ -281,7 +281,8 @@ main_ipc_new(Ipc_Instance *inst)
    if (inst->w <= 0) inst->w = 80;
    if (inst->h <= 0) inst->h = 24;
    term = term_new(wn, config, inst->cmd, inst->login_shell,
-                   inst->cd, inst->w, inst->h, inst->hold);
+                   inst->cd, inst->w, inst->h, inst->hold,
+                   inst->title);
    if (!term)
      {
         CRITICAL(_("Could not create terminal widget."));
@@ -636,10 +637,11 @@ elm_main(int argc, char **argv)
           {
              Eina_Strbuf *strb;
              strb = eina_strbuf_new();
-             for(i = args; i < argc; i++)
+             eina_strbuf_append(strb, argv[args]);
+             for(i = args+1; i < argc -1; i++)
                {
-                  eina_strbuf_append(strb, argv[i]);
                   eina_strbuf_append_char(strb, ' ');
+                  eina_strbuf_append(strb, argv[i]);
                }
              cmd = eina_strbuf_string_steal(strb);
              eina_strbuf_free(strb);
@@ -905,7 +907,7 @@ remote:
    config = win_config_get(wn);
 
    term = term_new(wn, config, cmd, login_shell, cd,
-                   size_w, size_h, hold);
+                   size_w, size_h, hold, title);
    if (!term)
      {
         CRITICAL(_("Could not create terminal widget."));

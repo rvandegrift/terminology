@@ -134,8 +134,17 @@ termpty_text_scroll_test(Termpty *ty, Eina_Bool clear)
 {
    int e = ty->h;
 
-   if (ty->termstate.bottom_margin != 0) e = ty->termstate.bottom_margin;
-   if (ty->cursor_state.cy >= e)
+   if (ty->termstate.bottom_margin != 0)
+     {
+        e = ty->termstate.bottom_margin;
+        if (ty->cursor_state.cy == e)
+          {
+             termpty_text_scroll(ty, clear);
+             ty->cursor_state.cy = e - 1;
+             TERMPTY_RESTRICT_FIELD(ty->cursor_state.cy, 0, ty->h);
+          }
+     }
+   else if (ty->cursor_state.cy >= ty->h)
      {
         termpty_text_scroll(ty, clear);
         ty->cursor_state.cy = e - 1;
@@ -217,7 +226,7 @@ termpty_text_append(Termpty *ty, const Eina_Unicode *codepoints, int len)
         cells[ty->cursor_state.cx].att.dblwidth = _termpty_is_dblwidth_get(ty, g);
         if (EINA_UNLIKELY((cells[ty->cursor_state.cx].att.dblwidth) && (ty->cursor_state.cx < (max_right - 1))))
           {
-             TERMPTY_FMTCLR(cells[ty->cursor_state.cx].att);
+             cells[ty->cursor_state.cx].att.newline = 0;
              termpty_cell_codepoint_att_fill(ty, 0, cells[ty->cursor_state.cx].att,
                                              &(cells[ty->cursor_state.cx + 1]), 1);
           }
@@ -371,7 +380,6 @@ termpty_clear_screen(Termpty *ty, Termpty_Clear mode)
       case TERMPTY_CLR_ALL:
         ty->circular_offset = 0;
         termpty_cells_clear(ty, ty->screen, ty->w * ty->h);
-        ty->termstate.bottom_margin = 0;
         if (ty->cb.cancel_sel.func)
           ty->cb.cancel_sel.func(ty->cb.cancel_sel.data);
         break;
@@ -440,7 +448,6 @@ termpty_reset_state(Termpty *ty)
    ty->termstate.wrap = 1;
    ty->termstate.wrapnext = 0;
    ty->termstate.crlf = 0;
-   ty->termstate.had_cr = 0;
    ty->termstate.send_bs = 0;
    ty->termstate.reverse = 0;
    ty->termstate.no_autorepeat = 0;
