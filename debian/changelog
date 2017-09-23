@@ -1,3 +1,11 @@
+terminology (1.1.1-1) experimental; urgency=medium
+
+  * Team upload.
+  * New upstream release
+  * debian/copyright: update for recent contributions
+
+ -- Ross Vandegrift <ross@kallisti.us>  Fri, 22 Sep 2017 20:06:26 -0700
+
 terminology (1.1.0-1) experimental; urgency=medium
 
   * Team upload.
