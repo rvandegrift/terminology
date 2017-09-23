@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: terminology 0.7.99\n"
 "Report-Msgid-Bugs-To: enlightenment-devel@lists.sourceforge.net\n"
-"POT-Creation-Date: 2017-08-16 22:34+0200\n"
+"POT-Creation-Date: 2017-09-02 17:36+0200\n"
 "PO-Revision-Date: 2014-10-14 08:20+0900\n"
 "Last-Translator: Sanjeev <as2902.b@samsung.com>\n"
 "Language-Team: Hindi\n"
@@ -42,7 +42,7 @@ msgstr "मिनी व्यू"
 msgid "Set title"
 msgstr "विंडो शीर्षक सेट करें"
 
-#: src/bin/controls.c:331 src/bin/termio.c:1032 src/bin/termio.c:4147
+#: src/bin/controls.c:331 src/bin/termio.c:1036 src/bin/termio.c:4153
 msgid "Copy"
 msgstr "कॉपी"
 
@@ -262,169 +262,169 @@ msgstr "मिनी व्यू  इतिहास प्रदर्शि�
 msgid "Display the command box"
 msgstr "कमांड बॉक्स को दिखाने"
 
-#: src/bin/main.c:218 src/bin/main.c:900
+#: src/bin/main.c:218 src/bin/main.c:902
 msgid "Could not create window."
 msgstr ""
 
-#: src/bin/main.c:287 src/bin/main.c:911
+#: src/bin/main.c:288 src/bin/main.c:913
 msgid "Could not create terminal widget."
 msgstr ""
 
-#: src/bin/main.c:326
+#: src/bin/main.c:327
 #, c-format
 msgid "(C) 2012-%d Carsten Haitzler and others"
 msgstr "(C) 2012-%d कार्स्टन हाइट्ज़लर और अन्य लोग"
 
-#: src/bin/main.c:328
+#: src/bin/main.c:329
 msgid "Terminal emulator written with Enlightenment Foundation Libraries."
 msgstr "Enlightenment Foundation Libraries द्वारा लिखित टर्मिनल एमुलेटर "
 
-#: src/bin/main.c:336
+#: src/bin/main.c:337
 msgid "Command to execute. Defaults to $SHELL (or passwd shell or /bin/sh)"
 msgstr "अमल करने के कमांड.  (passwd shell या /bin/sh)  में मूलभूत"
 
-#: src/bin/main.c:338
+#: src/bin/main.c:339
 msgid "Change to directory for execution of terminal command."
 msgstr "टर्मिनल कमांड के अमल के लिए डायरेक्ट्री बदले"
 
-#: src/bin/main.c:340
+#: src/bin/main.c:341
 msgid "Use the named edje theme or path to theme file."
 msgstr "नामित edje थीम या थीम का पथ उपयोग करें"
 
-#: src/bin/main.c:342
+#: src/bin/main.c:343
 msgid "Use the named file as a background wallpaper."
 msgstr "नामित फ़ाइल या फ़ाइल का पथ उपयोग करें"
 
-#: src/bin/main.c:344
+#: src/bin/main.c:345
 msgid "Terminal geometry to use (eg 80x24 or 80x24+50+20 etc.)."
 msgstr "प्रयोग की जाने वाली टर्मिनल रेखागणित ( 80x24 या  80x24+50+20)."
 
-#: src/bin/main.c:346
+#: src/bin/main.c:347
 msgid "Set window name."
 msgstr "विंडो नाम  सेट करें"
 
-#: src/bin/main.c:348
+#: src/bin/main.c:349
 msgid "Set window role."
 msgstr "विंडो भूमिका सेट करें"
 
-#: src/bin/main.c:350
+#: src/bin/main.c:351
 msgid "Set window title."
 msgstr "विंडो शीर्षक सेट करें"
 
-#: src/bin/main.c:352
+#: src/bin/main.c:353
 msgid "Set icon name."
 msgstr "आइकन नाम सेट करें"
 
-#: src/bin/main.c:354
+#: src/bin/main.c:355
 msgid "Set font (NAME/SIZE for scalable, NAME for bitmap."
 msgstr "फ़ॉन्ट  सेट करें"
 
-#: src/bin/main.c:356
+#: src/bin/main.c:357
 msgid ""
 "Split the terminal window. 'v' for vertical and 'h' for horizontal. Can be "
 "used multiple times. eg -S vhvv or --split hv More description available on "
 "the man page."
 msgstr ""
 
-#: src/bin/main.c:361
+#: src/bin/main.c:362
 msgid "Set emotion module to use."
 msgstr "emotion मॉड्यूल सेट करें"
 
-#: src/bin/main.c:364
+#: src/bin/main.c:365
 msgid "Run the shell as a login shell."
 msgstr "लॉगिन शेल के रूप में शेल चलाएं"
 
-#: src/bin/main.c:366
+#: src/bin/main.c:367
 msgid "Set mute mode for video playback."
 msgstr "वीडियो प्लेबैक के लिए मूक मोड सेट करें"
 
-#: src/bin/main.c:368
+#: src/bin/main.c:369
 msgid "Set cursor blink mode."
 msgstr "कर्सर झपकी मोड में सेट करें"
 
-#: src/bin/main.c:370
+#: src/bin/main.c:371
 msgid "Set visual bell mode."
 msgstr "विजुअल घंटी मोड सेट करें"
 
-#: src/bin/main.c:372
+#: src/bin/main.c:373
 msgid "Go into the fullscreen mode from the start."
 msgstr "शुरू से ही फुल स्क्रीन मोड में जाना"
 
-#: src/bin/main.c:374
+#: src/bin/main.c:375
 msgid "Go into an iconic state from the start."
 msgstr "शुरू से ही iconic state में जाना"
 
-#: src/bin/main.c:376
+#: src/bin/main.c:377
 msgid "Become a borderless managed window."
 msgstr "अनवधि प्रबंधित विंडों बनें"
 
-#: src/bin/main.c:378
+#: src/bin/main.c:379
 msgid "Become an override-redirect window."
 msgstr ""
 
-#: src/bin/main.c:380
+#: src/bin/main.c:381
 msgid "Become maximized from the start."
 msgstr "शुरू से ही अधिकतम किए बनें"
 
-#: src/bin/main.c:382
+#: src/bin/main.c:383
 msgid "Terminology is run without a window manager."
 msgstr ""
 
-#: src/bin/main.c:384
+#: src/bin/main.c:385
 msgid "Do not exit when the command process exits."
 msgstr ""
 
-#: src/bin/main.c:386
+#: src/bin/main.c:387
 msgid "Force single executable if multi-instance is enabled."
 msgstr ""
 
-#: src/bin/main.c:388
+#: src/bin/main.c:389
 msgid "Set TERM to 'xterm-256color' instead of 'xterm'."
 msgstr ""
 
-#: src/bin/main.c:390
+#: src/bin/main.c:391
 msgid "Highlight links."
 msgstr "लिंक हाइलाइट करें"
 
-#: src/bin/main.c:419
+#: src/bin/main.c:420
 msgid "show program version."
 msgstr "प्रोग्राम संस्करण दिखा"
 
-#: src/bin/main.c:422
+#: src/bin/main.c:423
 msgid "show copyright."
 msgstr "कॉपीराइट दिखा"
 
-#: src/bin/main.c:425
+#: src/bin/main.c:426
 msgid "show license."
 msgstr "लाइसेंस दिखा"
 
-#: src/bin/main.c:428
+#: src/bin/main.c:429
 msgid "show this message."
 msgstr "इस संदेश को दिखा"
 
-#: src/bin/main.c:588 src/bin/miniview.c:38
+#: src/bin/main.c:589 src/bin/miniview.c:38
 #, c-format
 msgid "Could not create logging domain '%s'."
 msgstr ""
 
-#: src/bin/main.c:598
+#: src/bin/main.c:599
 msgid "Could not initialize key bindings."
 msgstr ""
 
-#: src/bin/main.c:610
+#: src/bin/main.c:611
 msgid "Could not parse command line options."
 msgstr ""
 
-#: src/bin/main.c:624
+#: src/bin/main.c:625
 #, c-format
 msgid "option %s requires an argument!"
 msgstr ""
 
-#: src/bin/main.c:625
+#: src/bin/main.c:626
 msgid "invalid options found. See --help."
 msgstr ""
 
-#: src/bin/main.c:954
+#: src/bin/main.c:956
 msgid "invalid argument found for option -S/--split. See --help."
 msgstr ""
 
@@ -433,8 +433,8 @@ msgstr ""
 msgid "Could not Initialize the emotion module '%s'"
 msgstr ""
 
-#: src/bin/media.c:1348 src/bin/termpty.c:503 src/bin/termpty.c:508
-#: src/bin/termpty.c:512
+#: src/bin/media.c:1348 src/bin/termpty.c:504 src/bin/termpty.c:509
+#: src/bin/termpty.c:513
 #, c-format
 msgid "Function %s failed: %s"
 msgstr ""
@@ -846,46 +846,46 @@ msgstr "पृष्ठभूमि फ़ाइल पढ़ा नहीं �
 msgid "Unknown command: %s"
 msgstr "अज्ञात कमांड: %s"
 
-#: src/bin/termio.c:542
+#: src/bin/termio.c:546
 #, c-format
 msgid "Could not get working directory of pid %i: %s"
 msgstr ""
 
-#: src/bin/termio.c:556
+#: src/bin/termio.c:560
 #, c-format
 msgid "Could not load working directory %s: %s"
 msgstr ""
 
-#: src/bin/termio.c:1011
+#: src/bin/termio.c:1015
 msgid "Preview"
 msgstr "पूर्वावलोकन"
 
-#: src/bin/termio.c:1014
+#: src/bin/termio.c:1018
 msgid "Open"
 msgstr "ओपन"
 
-#: src/bin/termio.c:1025
+#: src/bin/termio.c:1029
 msgid "Copy relative path"
 msgstr ""
 
-#: src/bin/termio.c:1027
+#: src/bin/termio.c:1031
 msgid "Copy full path"
 msgstr ""
 
-#: src/bin/termio.c:2465
+#: src/bin/termio.c:2469
 #, c-format
 msgid "unsupported selection format '%s'"
 msgstr "'%s' असमर्थित चयन प्रारूप."
 
-#: src/bin/termio.c:4149
+#: src/bin/termio.c:4155
 msgid "Open as URL"
 msgstr ""
 
-#: src/bin/termio.c:5357
+#: src/bin/termio.c:5363
 msgid "Ecore IMF failed"
 msgstr ""
 
-#: src/bin/termio.c:6078
+#: src/bin/termio.c:6084
 msgid "Could not allocate termpty"
 msgstr ""
 
@@ -899,32 +899,32 @@ msgstr "मेमोरी त्रुटि: %s"
 msgid "Size set ioctl failed: %s"
 msgstr ""
 
-#: src/bin/termpty.c:479
+#: src/bin/termpty.c:480
 #, c-format
 msgid "Could not find shell, falling back to %s"
 msgstr ""
 
-#: src/bin/termpty.c:519
+#: src/bin/termpty.c:520
 #, c-format
 msgid "open() of pty '%s' failed: %s"
 msgstr ""
 
-#: src/bin/termpty.c:526 src/bin/termpty.c:532
+#: src/bin/termpty.c:527 src/bin/termpty.c:533
 #, c-format
 msgid "fcntl() on pty '%s' failed: %s"
 msgstr ""
 
-#: src/bin/termpty.c:541
+#: src/bin/termpty.c:542
 #, c-format
 msgid "ioctl() on pty '%s' failed: %s"
 msgstr ""
 
-#: src/bin/termpty.c:585 src/bin/termpty.c:593 src/bin/termpty.c:602
+#: src/bin/termpty.c:586 src/bin/termpty.c:594 src/bin/termpty.c:603
 #, c-format
 msgid "Could not change current directory to '%s': %s"
 msgstr ""
 
-#: src/bin/termpty.c:1126
+#: src/bin/termpty.c:1131
 #, c-format
 msgid "Could not write to file descriptor %d: %s"
 msgstr ""
@@ -947,7 +947,7 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: src/bin/win.c:4530
+#: src/bin/win.c:4531
 msgid "Couldn't find terminology theme! Forgot 'make install'?"
 msgstr "टेर्मिनोलजी थीम नहीं मिल सका!  'make install' भूल गए ?"
 

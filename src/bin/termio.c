@@ -362,21 +362,25 @@ termio_title_get(const Evas_Object *obj)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN_VAL(sd, NULL);
-   if (sd->pty->prop.user_title)
-     return sd->pty->prop.user_title;
    return sd->pty->prop.title;
 }
 
 void
-termio_user_title_set(Evas_Object *obj, const char *title)
+termio_title_set(Evas_Object *obj, const char *title)
 {
     Termio *sd = evas_object_smart_data_get(obj);
+    size_t len = 0;
     EINA_SAFETY_ON_NULL_RETURN(sd);
 
-    if (sd->pty->prop.user_title)
-      eina_stringshare_del(sd->pty->prop.user_title);
+    if (sd->pty->prop.title)
+      eina_stringshare_del(sd->pty->prop.title);
 
-    sd->pty->prop.user_title = eina_stringshare_add(title);
+    if (title)
+      len = strlen(title);
+    if (len)
+      {
+         sd->pty->prop.title = eina_stringshare_add_length(title, len);
+      }
     if (sd->pty->cb.set_title.func)
       sd->pty->cb.set_title.func(sd->pty->cb.set_title.data);
 }
@@ -2494,6 +2498,7 @@ _sel_line(Termio *sd, int cy)
    sd->pty->selection.end.x = sd->grid.w - 1;
    sd->pty->selection.end.y = cy;
 
+   /* check lines above */
    y = cy;
    for (;;)
      {
@@ -2505,6 +2510,7 @@ _sel_line(Termio *sd, int cy)
    sd->pty->selection.start.y = y;
    y = cy;
 
+   /* check lines below */
    for (;;)
      {
         cells = termpty_cellrow_get(sd->pty, y, &w);
@@ -5536,7 +5542,6 @@ _smart_pty_title(void *data)
    EINA_SAFETY_ON_NULL_RETURN(sd);
    if (!sd->win) return;
    evas_object_smart_callback_call(obj, "title,change", NULL);
-//   elm_win_title_set(sd->win, sd->pty->prop.title);
 }
 
 static void
@@ -6010,7 +6015,7 @@ _smart_cb_drop(void *data,
 Evas_Object *
 termio_add(Evas_Object *win, Config *config,
            const char *cmd, Eina_Bool login_shell, const char *cd,
-           int w, int h, Term *term)
+           int w, int h, Term *term, const char *title)
 {
    Evas *e;
    Evas_Object *obj, *g;
@@ -6072,7 +6077,8 @@ termio_add(Evas_Object *win, Config *config,
 #endif
 
    sd->pty = termpty_new(cmd, login_shell, cd, w, h, config->scrollback,
-                         config->xterm_256color, config->erase_is_del, mod);
+                         config->xterm_256color, config->erase_is_del, mod,
+                         title);
    if (!sd->pty)
      {
         ERR(_("Could not allocate termpty"));

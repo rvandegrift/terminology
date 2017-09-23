@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: terminology 0.8.0\n"
 "Report-Msgid-Bugs-To: enlightenment-devel@lists.sourceforge.net\n"
-"POT-Creation-Date: 2017-08-16 22:34+0200\n"
+"POT-Creation-Date: 2017-09-02 17:36+0200\n"
 "PO-Revision-Date: 2015-05-02 13:22+0100\n"
 "Last-Translator: Adrián Arévalo <adri58@gmail.com>\n"
 "Language-Team: none\n"
@@ -43,7 +43,7 @@ msgstr "Minivista"
 msgid "Set title"
 msgstr "Establecer título de la ventana."
 
-#: src/bin/controls.c:331 src/bin/termio.c:1032 src/bin/termio.c:4147
+#: src/bin/controls.c:331 src/bin/termio.c:1036 src/bin/termio.c:4153
 msgid "Copy"
 msgstr "Copiar"
 
@@ -267,66 +267,66 @@ msgstr "Mostrar minivista del historial"
 msgid "Display the command box"
 msgstr "Mostrar el cuadro de comandos"
 
-#: src/bin/main.c:218 src/bin/main.c:900
+#: src/bin/main.c:218 src/bin/main.c:902
 msgid "Could not create window."
 msgstr "No se pudo crear la ventana."
 
-#: src/bin/main.c:287 src/bin/main.c:911
+#: src/bin/main.c:288 src/bin/main.c:913
 msgid "Could not create terminal widget."
 msgstr "No se pudo crear el widget de la terminal."
 
-#: src/bin/main.c:326
+#: src/bin/main.c:327
 #, c-format
 msgid "(C) 2012-%d Carsten Haitzler and others"
 msgstr "(C) 2012-%d Carsten Haitzler y otros"
 
-#: src/bin/main.c:328
+#: src/bin/main.c:329
 msgid "Terminal emulator written with Enlightenment Foundation Libraries."
 msgstr ""
 "Emulador de terminal escrito con las Enlightenment Foundation Libraries"
 
-#: src/bin/main.c:336
+#: src/bin/main.c:337
 msgid "Command to execute. Defaults to $SHELL (or passwd shell or /bin/sh)"
 msgstr "Comando a ejecutar. Por defecto $SHELL (o shell passwd o /bin/sh)"
 
-#: src/bin/main.c:338
+#: src/bin/main.c:339
 msgid "Change to directory for execution of terminal command."
 msgstr "Cambiar al directorio para ejecutar comandos de la terminal."
 
-#: src/bin/main.c:340
+#: src/bin/main.c:341
 msgid "Use the named edje theme or path to theme file."
 msgstr "Use el tema edje o la ruta al archivo del tema."
 
-#: src/bin/main.c:342
+#: src/bin/main.c:343
 msgid "Use the named file as a background wallpaper."
 msgstr "Use el archivo de este nombre para el fondo."
 
-#: src/bin/main.c:344
+#: src/bin/main.c:345
 msgid "Terminal geometry to use (eg 80x24 or 80x24+50+20 etc.)."
 msgstr "Geometría de la terminal (ej. 80x24 o 80x24+50+20 etc.)"
 
 # RR: Quizás hay que usar traducciones más cortas. No encuentro donde aparecen estas cadenas que en realidad explican algunos de los comandos de Terminology. Tampoco se si sería mejor dicho "asignar".
-#: src/bin/main.c:346
+#: src/bin/main.c:347
 msgid "Set window name."
 msgstr "Establecer nombre de ventana."
 
-#: src/bin/main.c:348
+#: src/bin/main.c:349
 msgid "Set window role."
 msgstr "Establecer rol de la ventana."
 
-#: src/bin/main.c:350
+#: src/bin/main.c:351
 msgid "Set window title."
 msgstr "Establecer título de la ventana."
 
-#: src/bin/main.c:352
+#: src/bin/main.c:353
 msgid "Set icon name."
 msgstr "Establecer el nombre del icono."
 
-#: src/bin/main.c:354
+#: src/bin/main.c:355
 msgid "Set font (NAME/SIZE for scalable, NAME for bitmap."
 msgstr "Establecer fuente (NOMBRE/TAMAÑO para expansible; NOMBRE para bitmap)."
 
-#: src/bin/main.c:356
+#: src/bin/main.c:357
 msgid ""
 "Split the terminal window. 'v' for vertical and 'h' for horizontal. Can be "
 "used multiple times. eg -S vhvv or --split hv More description available on "
@@ -336,105 +336,105 @@ msgstr ""
 "puede usar múltiples veces. Ej., -S vhvv o --split hv. Hay más información "
 "en la página man."
 
-#: src/bin/main.c:361
+#: src/bin/main.c:362
 msgid "Set emotion module to use."
 msgstr "Establecer el módulo \"emotion\" a usar."
 
-#: src/bin/main.c:364
+#: src/bin/main.c:365
 msgid "Run the shell as a login shell."
 msgstr "Ejecutar el shell como shell de inicio."
 
-#: src/bin/main.c:366
+#: src/bin/main.c:367
 msgid "Set mute mode for video playback."
 msgstr "Establecer modo mudo para reproducción de vídeos."
 
-#: src/bin/main.c:368
+#: src/bin/main.c:369
 msgid "Set cursor blink mode."
 msgstr "Establecer modo intermitente del puntero."
 
-#: src/bin/main.c:370
+#: src/bin/main.c:371
 msgid "Set visual bell mode."
 msgstr "Establecer modo visual de timbre."
 
-#: src/bin/main.c:372
+#: src/bin/main.c:373
 msgid "Go into the fullscreen mode from the start."
 msgstr "Pantalla completa desde el principio."
 
-#: src/bin/main.c:374
+#: src/bin/main.c:375
 msgid "Go into an iconic state from the start."
 msgstr "Minimizar desde el principio."
 
-#: src/bin/main.c:376
+#: src/bin/main.c:377
 msgid "Become a borderless managed window."
 msgstr "Convertirse en ventana gestionada sin borde."
 
-#: src/bin/main.c:378
+#: src/bin/main.c:379
 msgid "Become an override-redirect window."
 msgstr "Convertirse en ventana de override-redirect."
 
-#: src/bin/main.c:380
+#: src/bin/main.c:381
 msgid "Become maximized from the start."
 msgstr "Maximizada desde el principio."
 
-#: src/bin/main.c:382
+#: src/bin/main.c:383
 msgid "Terminology is run without a window manager."
 msgstr "Terminology se ejecuta sin un gestor de ventanas."
 
-#: src/bin/main.c:384
+#: src/bin/main.c:385
 msgid "Do not exit when the command process exits."
 msgstr "No salir al finalizar el comando."
 
-#: src/bin/main.c:386
+#: src/bin/main.c:387
 msgid "Force single executable if multi-instance is enabled."
 msgstr "Forzar un solo ejecutable si el modo multi-instancia está habilitado."
 
-#: src/bin/main.c:388
+#: src/bin/main.c:389
 msgid "Set TERM to 'xterm-256color' instead of 'xterm'."
 msgstr "TERM= 'xterm-256 colores' en lugar de 'xterm'."
 
-#: src/bin/main.c:390
+#: src/bin/main.c:391
 msgid "Highlight links."
 msgstr "Resaltar enlaces."
 
-#: src/bin/main.c:419
+#: src/bin/main.c:420
 msgid "show program version."
 msgstr "Mostrar la versión del programa."
 
-#: src/bin/main.c:422
+#: src/bin/main.c:423
 msgid "show copyright."
 msgstr "Mostrar información del copyright."
 
-#: src/bin/main.c:425
+#: src/bin/main.c:426
 msgid "show license."
 msgstr "Mostrar la licencia."
 
-#: src/bin/main.c:428
+#: src/bin/main.c:429
 msgid "show this message."
 msgstr "Mostrar este mensaje."
 
-#: src/bin/main.c:588 src/bin/miniview.c:38
+#: src/bin/main.c:589 src/bin/miniview.c:38
 #, c-format
 msgid "Could not create logging domain '%s'."
 msgstr "No se pudo crear el dominio de logging '%s'"
 
-#: src/bin/main.c:598
+#: src/bin/main.c:599
 msgid "Could not initialize key bindings."
 msgstr "No se pudieron inicializar los atajos de teclado."
 
-#: src/bin/main.c:610
+#: src/bin/main.c:611
 msgid "Could not parse command line options."
 msgstr "No se pudieron analizar las opciones de la línea de comando."
 
-#: src/bin/main.c:624
+#: src/bin/main.c:625
 #, c-format
 msgid "option %s requires an argument!"
 msgstr "La opción %s requiere un parámetro!"
 
-#: src/bin/main.c:625
+#: src/bin/main.c:626
 msgid "invalid options found. See --help."
 msgstr "Se encontraron opciones inválidas. Ver --help."
 
-#: src/bin/main.c:954
+#: src/bin/main.c:956
 msgid "invalid argument found for option -S/--split. See --help."
 msgstr "Parámetro inválido encontrado para la opción -S/--split. Ver --help."
 
@@ -443,8 +443,8 @@ msgstr "Parámetro inválido encontrado para la opción -S/--split. Ver --help."
 msgid "Could not Initialize the emotion module '%s'"
 msgstr "No se pudo iniciar el módulo \"emotion\" '%s'"
 
-#: src/bin/media.c:1348 src/bin/termpty.c:503 src/bin/termpty.c:508
-#: src/bin/termpty.c:512
+#: src/bin/media.c:1348 src/bin/termpty.c:504 src/bin/termpty.c:509
+#: src/bin/termpty.c:513
 #, c-format
 msgid "Function %s failed: %s"
 msgstr "Falló la función %s: %s"
@@ -862,46 +862,46 @@ msgstr "No se pudo leer el archivo del fondo: %s"
 msgid "Unknown command: %s"
 msgstr "Comando desconocido: %s"
 
-#: src/bin/termio.c:542
+#: src/bin/termio.c:546
 #, c-format
 msgid "Could not get working directory of pid %i: %s"
 msgstr "No se pudo obtener el directorio de trabajo del pid %i: %s"
 
-#: src/bin/termio.c:556
+#: src/bin/termio.c:560
 #, c-format
 msgid "Could not load working directory %s: %s"
 msgstr "No se pudo cargar el directorio de trabajo %s: %s"
 
-#: src/bin/termio.c:1011
+#: src/bin/termio.c:1015
 msgid "Preview"
 msgstr "Previsualización"
 
-#: src/bin/termio.c:1014
+#: src/bin/termio.c:1018
 msgid "Open"
 msgstr "Abrir"
 
-#: src/bin/termio.c:1025
+#: src/bin/termio.c:1029
 msgid "Copy relative path"
 msgstr ""
 
-#: src/bin/termio.c:1027
+#: src/bin/termio.c:1031
 msgid "Copy full path"
 msgstr ""
 
-#: src/bin/termio.c:2465
+#: src/bin/termio.c:2469
 #, c-format
 msgid "unsupported selection format '%s'"
 msgstr "Formato de selección no admitido '%s'"
 
-#: src/bin/termio.c:4149
+#: src/bin/termio.c:4155
 msgid "Open as URL"
 msgstr ""
 
-#: src/bin/termio.c:5357
+#: src/bin/termio.c:5363
 msgid "Ecore IMF failed"
 msgstr "Falló Ecore IMF"
 
-#: src/bin/termio.c:6078
+#: src/bin/termio.c:6084
 msgid "Could not allocate termpty"
 msgstr "No se pudo asignar \"termpty\""
 
@@ -915,32 +915,32 @@ msgstr "Error de memoria: %s"
 msgid "Size set ioctl failed: %s"
 msgstr "Fallo al establecer tamaño ioctl: %s"
 
-#: src/bin/termpty.c:479
+#: src/bin/termpty.c:480
 #, c-format
 msgid "Could not find shell, falling back to %s"
 msgstr "No se pudo encontrar la shell, regresando a %s"
 
-#: src/bin/termpty.c:519
+#: src/bin/termpty.c:520
 #, c-format
 msgid "open() of pty '%s' failed: %s"
 msgstr "open() de pty '%s' falló: %s"
 
-#: src/bin/termpty.c:526 src/bin/termpty.c:532
+#: src/bin/termpty.c:527 src/bin/termpty.c:533
 #, c-format
 msgid "fcntl() on pty '%s' failed: %s"
 msgstr "fcntl() en pty '%s' falló: %s"
 
-#: src/bin/termpty.c:541
+#: src/bin/termpty.c:542
 #, c-format
 msgid "ioctl() on pty '%s' failed: %s"
 msgstr "ioctl() en pty '%s' falló: %s"
 
-#: src/bin/termpty.c:585 src/bin/termpty.c:593 src/bin/termpty.c:602
+#: src/bin/termpty.c:586 src/bin/termpty.c:594 src/bin/termpty.c:603
 #, c-format
 msgid "Could not change current directory to '%s': %s"
 msgstr "No se pudo cambiar el directorio actual a %s: %s"
 
-#: src/bin/termpty.c:1126
+#: src/bin/termpty.c:1131
 #, c-format
 msgid "Could not write to file descriptor %d: %s"
 msgstr "No se pudo escribir al descriptor del fichero %d: %s"
@@ -963,7 +963,7 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: src/bin/win.c:4530
+#: src/bin/win.c:4531
 msgid "Couldn't find terminology theme! Forgot 'make install'?"
 msgstr ""
 "¡No pudo encontrar un tema para terminology! ¿Se le olvidó el comando 'make "

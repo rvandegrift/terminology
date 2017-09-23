@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: enlightenment\n"
 "Report-Msgid-Bugs-To: enlightenment-devel@lists.sourceforge.net\n"
-"POT-Creation-Date: 2017-08-16 22:34+0200\n"
+"POT-Creation-Date: 2017-09-02 17:36+0200\n"
 "PO-Revision-Date: 2015-01-31 13:52+0100\n"
 "Last-Translator: Саша Петровић <salepetronije@gmail.com>\n"
 "Language-Team: српски <xfce4@xfce4.org>\n"
@@ -47,7 +47,7 @@ msgstr "Мали преглед"
 msgid "Set title"
 msgstr "Постави наслов прозора"
 
-#: src/bin/controls.c:331 src/bin/termio.c:1032 src/bin/termio.c:4147
+#: src/bin/controls.c:331 src/bin/termio.c:1036 src/bin/termio.c:4153
 msgid "Copy"
 msgstr "Умножи"
 
@@ -268,67 +268,67 @@ msgstr "Прикажи мали преглед скорашњих"
 msgid "Display the command box"
 msgstr "Прикажи наредбену кућицу"
 
-#: src/bin/main.c:218 src/bin/main.c:900
+#: src/bin/main.c:218 src/bin/main.c:902
 #, fuzzy
 msgid "Could not create window."
 msgstr "Нисам успео да направим област за пријаву „%s“."
 
-#: src/bin/main.c:287 src/bin/main.c:911
+#: src/bin/main.c:288 src/bin/main.c:913
 #, fuzzy
 msgid "Could not create terminal widget."
 msgstr "Нисам успео да доделим меморију термптију"
 
-#: src/bin/main.c:326
+#: src/bin/main.c:327
 #, c-format
 msgid "(C) 2012-%d Carsten Haitzler and others"
 msgstr "(C) 2012-%d Карстен Хедзла (Carsten Haitzler) и остали"
 
-#: src/bin/main.c:328
+#: src/bin/main.c:329
 msgid "Terminal emulator written with Enlightenment Foundation Libraries."
 msgstr "Опонашач терминала написан по билиотекама задужбине Просвећења"
 
-#: src/bin/main.c:336
+#: src/bin/main.c:337
 msgid "Command to execute. Defaults to $SHELL (or passwd shell or /bin/sh)"
 msgstr ""
 "Наредба за извршење. Подразумевано је $SHELL (или passwd shell или /bin/sh)"
 
-#: src/bin/main.c:338
+#: src/bin/main.c:339
 msgid "Change to directory for execution of terminal command."
 msgstr "Промени фасциклу ради извршења наредбе терминала у њој."
 
-#: src/bin/main.c:340
+#: src/bin/main.c:341
 msgid "Use the named edje theme or path to theme file."
 msgstr "Користи именовану едје тему или путању до датотеке теме."
 
-#: src/bin/main.c:342
+#: src/bin/main.c:343
 msgid "Use the named file as a background wallpaper."
 msgstr "Користи именовану датотеку као слику позадине."
 
-#: src/bin/main.c:344
+#: src/bin/main.c:345
 msgid "Terminal geometry to use (eg 80x24 or 80x24+50+20 etc.)."
 msgstr "Размера терминала (нпр. 80x24 или 80x24+50+20 итд.)."
 
-#: src/bin/main.c:346
+#: src/bin/main.c:347
 msgid "Set window name."
 msgstr "Постави име прозору"
 
-#: src/bin/main.c:348
+#: src/bin/main.c:349
 msgid "Set window role."
 msgstr "Постави улогу прозора"
 
-#: src/bin/main.c:350
+#: src/bin/main.c:351
 msgid "Set window title."
 msgstr "Постави наслов прозора"
 
-#: src/bin/main.c:352
+#: src/bin/main.c:353
 msgid "Set icon name."
 msgstr "Постави име иконице"
 
-#: src/bin/main.c:354
+#: src/bin/main.c:355
 msgid "Set font (NAME/SIZE for scalable, NAME for bitmap."
 msgstr "Постави словни лик (ИМЕ/ВЕЛИЧИНА за променљив, ИМЕ за битмапу)."
 
-#: src/bin/main.c:356
+#: src/bin/main.c:357
 msgid ""
 "Split the terminal window. 'v' for vertical and 'h' for horizontal. Can be "
 "used multiple times. eg -S vhvv or --split hv More description available on "
@@ -338,105 +338,105 @@ msgstr ""
 "коришћено више пута. НПР. -S vhvv или --split hv . Више описа је доступно на "
 "man страници."
 
-#: src/bin/main.c:361
+#: src/bin/main.c:362
 msgid "Set emotion module to use."
 msgstr "Подеси која јединица емоушна ће да се користи."
 
-#: src/bin/main.c:364
+#: src/bin/main.c:365
 msgid "Run the shell as a login shell."
 msgstr "Покрећи љуску као љуску за пријаву"
 
-#: src/bin/main.c:366
+#: src/bin/main.c:367
 msgid "Set mute mode for video playback."
 msgstr "Постави извођење видеа без звука."
 
-#: src/bin/main.c:368
+#: src/bin/main.c:369
 msgid "Set cursor blink mode."
 msgstr "Постави да трепће показивач."
 
-#: src/bin/main.c:370
+#: src/bin/main.c:371
 msgid "Set visual bell mode."
 msgstr "Укључи видно звоно."
 
-#: src/bin/main.c:372
+#: src/bin/main.c:373
 msgid "Go into the fullscreen mode from the start."
 msgstr "Покрећи  у приказу преко целог екрана."
 
-#: src/bin/main.c:374
+#: src/bin/main.c:375
 msgid "Go into an iconic state from the start."
 msgstr "Покрећи у умањеном стању."
 
-#: src/bin/main.c:376
+#: src/bin/main.c:377
 msgid "Become a borderless managed window."
 msgstr "Начини прозор без оквира."
 
-#: src/bin/main.c:378
+#: src/bin/main.c:379
 msgid "Become an override-redirect window."
 msgstr "Начини прозор као преусмерени прозор."
 
-#: src/bin/main.c:380
+#: src/bin/main.c:381
 msgid "Become maximized from the start."
 msgstr "Покрећи као увећан прозор."
 
-#: src/bin/main.c:382
+#: src/bin/main.c:383
 msgid "Terminology is run without a window manager."
 msgstr "Терминологија је покренута без управника прозора."
 
-#: src/bin/main.c:384
+#: src/bin/main.c:385
 msgid "Do not exit when the command process exits."
 msgstr "Не излази када се изврши наредба."
 
-#: src/bin/main.c:386
+#: src/bin/main.c:387
 msgid "Force single executable if multi-instance is enabled."
 msgstr "Приморај на једну извршну датотеку ако је омогућено више примерака."
 
-#: src/bin/main.c:388
+#: src/bin/main.c:389
 msgid "Set TERM to 'xterm-256color' instead of 'xterm'."
 msgstr "Постави TERM на „xterm-256color“ уместо на „xterm“."
 
-#: src/bin/main.c:390
+#: src/bin/main.c:391
 msgid "Highlight links."
 msgstr "Истакни везе."
 
-#: src/bin/main.c:419
+#: src/bin/main.c:420
 msgid "show program version."
 msgstr "прикажи издање програма."
 
-#: src/bin/main.c:422
+#: src/bin/main.c:423
 msgid "show copyright."
 msgstr "прикажи права умножавања"
 
-#: src/bin/main.c:425
+#: src/bin/main.c:426
 msgid "show license."
 msgstr "Прикажи дозволу."
 
-#: src/bin/main.c:428
+#: src/bin/main.c:429
 msgid "show this message."
 msgstr "прикажи ову поруку."
 
-#: src/bin/main.c:588 src/bin/miniview.c:38
+#: src/bin/main.c:589 src/bin/miniview.c:38
 #, c-format
 msgid "Could not create logging domain '%s'."
 msgstr "Нисам успео да направим област за пријаву „%s“."
 
-#: src/bin/main.c:598
+#: src/bin/main.c:599
 msgid "Could not initialize key bindings."
 msgstr "Нисам успео да покренем пречице."
 
-#: src/bin/main.c:610
+#: src/bin/main.c:611
 msgid "Could not parse command line options."
 msgstr "Нисам успео да рашчланим могућности наредбене линије."
 
-#: src/bin/main.c:624
+#: src/bin/main.c:625
 #, c-format
 msgid "option %s requires an argument!"
 msgstr "могућност %s захтева примедбу!"
 
-#: src/bin/main.c:625
+#: src/bin/main.c:626
 msgid "invalid options found. See --help."
 msgstr "неисправна могућност. Погледајте --help."
 
-#: src/bin/main.c:954
+#: src/bin/main.c:956
 msgid "invalid argument found for option -S/--split. See --help."
 msgstr "неисправна примедба за могућност  -S/--split. Погледајте --help."
 
@@ -445,8 +445,8 @@ msgstr "неисправна примедба за могућност  -S/--spli
 msgid "Could not Initialize the emotion module '%s'"
 msgstr "Нисам успео на покренем јединицу емоушна „%s“"
 
-#: src/bin/media.c:1348 src/bin/termpty.c:503 src/bin/termpty.c:508
-#: src/bin/termpty.c:512
+#: src/bin/media.c:1348 src/bin/termpty.c:504 src/bin/termpty.c:509
+#: src/bin/termpty.c:513
 #, c-format
 msgid "Function %s failed: %s"
 msgstr "Радња %s није успела: %s"
@@ -862,46 +862,46 @@ msgstr "Нисам успео да прочитам позадинску дат�
 msgid "Unknown command: %s"
 msgstr "Непозната наредба: %s"
 
-#: src/bin/termio.c:542
+#: src/bin/termio.c:546
 #, c-format
 msgid "Could not get working directory of pid %i: %s"
 msgstr "Нисам успео да добавим радну фасциклу за пид %i: %s"
 
-#: src/bin/termio.c:556
+#: src/bin/termio.c:560
 #, c-format
 msgid "Could not load working directory %s: %s"
 msgstr "Нисам успео да учитам радну фасциклу %s: %s"
 
-#: src/bin/termio.c:1011
+#: src/bin/termio.c:1015
 msgid "Preview"
 msgstr "Преглед"
 
-#: src/bin/termio.c:1014
+#: src/bin/termio.c:1018
 msgid "Open"
 msgstr "Отвори"
 
-#: src/bin/termio.c:1025
+#: src/bin/termio.c:1029
 msgid "Copy relative path"
 msgstr ""
 
-#: src/bin/termio.c:1027
+#: src/bin/termio.c:1031
 msgid "Copy full path"
 msgstr ""
 
-#: src/bin/termio.c:2465
+#: src/bin/termio.c:2469
 #, c-format
 msgid "unsupported selection format '%s'"
 msgstr "облик избора „%s“ није подржан"
 
-#: src/bin/termio.c:4149
+#: src/bin/termio.c:4155
 msgid "Open as URL"
 msgstr ""
 
-#: src/bin/termio.c:5357
+#: src/bin/termio.c:5363
 msgid "Ecore IMF failed"
 msgstr "Неуспех ИМФ екора"
 
-#: src/bin/termio.c:6078
+#: src/bin/termio.c:6084
 msgid "Could not allocate termpty"
 msgstr "Нисам успео да доделим меморију термптију"
 
@@ -915,32 +915,32 @@ msgstr "гршкмем: %s"
 msgid "Size set ioctl failed: %s"
 msgstr "Поставка величине иоцтл није успела: %s"
 
-#: src/bin/termpty.c:479
+#: src/bin/termpty.c:480
 #, c-format
 msgid "Could not find shell, falling back to %s"
 msgstr "Нисам успео да пронађем љуску, замењујем је са %s"
 
-#: src/bin/termpty.c:519
+#: src/bin/termpty.c:520
 #, c-format
 msgid "open() of pty '%s' failed: %s"
 msgstr "отварање() птипсилон „%s“ није успело: %s"
 
-#: src/bin/termpty.c:526 src/bin/termpty.c:532
+#: src/bin/termpty.c:527 src/bin/termpty.c:533
 #, c-format
 msgid "fcntl() on pty '%s' failed: %s"
 msgstr "фнцтл() на припсилон „%s“ није успело: %s"
 
-#: src/bin/termpty.c:541
+#: src/bin/termpty.c:542
 #, fuzzy, c-format
 msgid "ioctl() on pty '%s' failed: %s"
 msgstr "фнцтл() на припсилон „%s“ није успело: %s"
 
-#: src/bin/termpty.c:585 src/bin/termpty.c:593 src/bin/termpty.c:602
+#: src/bin/termpty.c:586 src/bin/termpty.c:594 src/bin/termpty.c:603
 #, c-format
 msgid "Could not change current directory to '%s': %s"
 msgstr "Нисам успео да пређем са тренутне фасцикле на „%s“: %s"
 
-#: src/bin/termpty.c:1126
+#: src/bin/termpty.c:1131
 #, c-format
 msgid "Could not write to file descriptor %d: %s"
 msgstr "Нисам успео да пишем у опису датотеке %d: %s"
@@ -963,7 +963,7 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: src/bin/win.c:4530
+#: src/bin/win.c:4531
 msgid "Couldn't find terminology theme! Forgot 'make install'?"
 msgstr ""
 "Нисам успео да пронађем тему Терминологије! Да нисте заборавили да урадите "
