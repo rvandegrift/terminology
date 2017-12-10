@@ -8,6 +8,7 @@ terminology (1.1.1-2) UNRELEASED; urgency=medium
   * d/copyright: use https links for Format, Source
   * Use fake_home.sh from efl for build, edje_cc writes to $HOME (Closes:
     #884019)
+  * d/watch: use https in watch url
 
  -- Ross Vandegrift <ross@kallisti.us>  Sun, 10 Dec 2017 12:22:59 -0800
 
