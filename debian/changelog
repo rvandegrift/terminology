@@ -1,3 +1,9 @@
+terminology (1.1.1-2) UNRELEASED; urgency=medium
+
+  * d/control: drop Build-Dep on libelementary-dev, it's in libefl-all-dev now
+
+ -- Ross Vandegrift <ross@kallisti.us>  Sun, 10 Dec 2017 12:22:59 -0800
+
 terminology (1.1.1-1) experimental; urgency=medium
 
   * Team upload.
