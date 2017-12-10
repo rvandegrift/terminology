@@ -1,4 +1,4 @@
-terminology (1.1.1-2) UNRELEASED; urgency=medium
+terminology (1.1.1-2) experimental; urgency=low
 
   * d/control:
     + drop Build-Dep on libelementary-dev, it's in libefl-all-dev now
@@ -10,7 +10,7 @@ terminology (1.1.1-2) UNRELEASED; urgency=medium
     #884019)
   * d/watch: use https in watch url
 
- -- Ross Vandegrift <ross@kallisti.us>  Sun, 10 Dec 2017 12:22:59 -0800
+ -- Ross Vandegrift <ross@kallisti.us>  Sun, 10 Dec 2017 12:52:34 -0800
 
 terminology (1.1.1-1) experimental; urgency=medium
 
