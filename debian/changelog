@@ -9,6 +9,7 @@ terminology (1.1.1-3) unstable; urgency=low
     fix-manpage-invalid-newline-charater.patch
     fix-terminology-desktop-keywords.patch
   * Upload to unstable.
+  * Add myself to uploaders.
 
  -- Andreas Metzler <ametzler@debian.org>  Mon, 16 Apr 2018 19:20:18 +0200
 
