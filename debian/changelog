@@ -5,6 +5,7 @@ terminology (1.2.0-1) UNRELEASED; urgency=medium
   * d/control:
     + Bump Standards-Version to 4.1.4, no changes required.
     + Add branch name to Vcs-Git to fix vcswatch.
+  * Upgrade to debhelper 11.
 
  -- Ross Vandegrift <ross@kallisti.us>  Thu, 26 Apr 2018 19:11:32 -0700
 

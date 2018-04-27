@@ -4,8 +4,7 @@ Priority: optional
 Maintainer: Debian Pkg-e Team <pkg-e-devel@lists.alioth.debian.org>
 Uploaders: Ross Vandegrift <ross@kallisti.us>,
            Andreas Metzler <ametzler@debian.org>
-Build-Depends: debhelper (>= 9),
-               dh-autoreconf,
+Build-Depends: debhelper (>= 11),
                libefl-all-dev (>= 1.18),
                liblz4-dev
 Standards-Version: 4.1.4
