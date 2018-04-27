@@ -1,4 +1,3 @@
-#include "private.h"
 #include <Eina.h>
 #include <Ecore.h>
 #include <Evas.h>
@@ -12,6 +11,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fnmatch.h>
+#include "private.h"
 #include "tycommon.h"
 
 // this code sucks. just letting you know... in advance... in case you
@@ -745,9 +745,7 @@ main(int argc, char **argv)
    ARGUMENT_ENTRY_CHECK(argc, argv, print_usage);
 
    eina_init();
-#if (ECORE_VERSION_MAJOR > 1) || (ECORE_VERSION_MINOR >= 8)
    ecore_app_no_system_modules();
-#endif
    ecore_init();
    ecore_file_init();
    evas_init();
@@ -765,7 +763,7 @@ main(int argc, char **argv)
         echo_off();
         snprintf(buf, sizeof(buf), "%c}qs", 0x1b);
         len = strlen(buf);
-        if (write(0, buf, len + 1) < (signed)len + 1) perror("write");
+        if (write(1, buf, len + 1) < (signed)len + 1) perror("write");
         if ((scanf("%i;%i;%i;%i", &tw, &th, &cw, &ch) != 4)
             || (tw <= 0) || (th <= 0) || (cw <= 1) || (ch <= 1))
           {

@@ -1,11 +1,10 @@
-#include "private.h"
 #include <stdio.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 
-#include <Eina.h>
+#include "private.h"
 #include "tycommon.h"
 
 static void
@@ -39,7 +38,7 @@ main(int argc, char **argv)
         path = argv[i];
         if (realpath(path, buf)) path = buf;
         snprintf(tbuf, sizeof(tbuf), "%c}pq%s", 0x1b, path);
-        if (write(0, tbuf, strlen(tbuf) + 1) != (signed)(strlen(tbuf) + 1)) perror("write");
+        if (write(1, tbuf, strlen(tbuf) + 1) != (signed)(strlen(tbuf) + 1)) perror("write");
      }
    return 0;
 }

@@ -7,7 +7,7 @@
 #include "col.h"
 #include "utils.h"
 
-#define CONF_VER 16
+#define CONF_VER 19
 
 #define LIM(v, min, max) {if (v >= max) v = max; else if (v <= min) v = min;}
 
@@ -119,6 +119,8 @@ config_init(void)
    EET_DATA_DESCRIPTOR_ADD_BASIC
      (edd_base, Config, "disable_cursor_blink", disable_cursor_blink, EET_T_UCHAR);
    EET_DATA_DESCRIPTOR_ADD_BASIC
+     (edd_base, Config, "cursor_shape", cursor_shape, EET_T_INT);
+   EET_DATA_DESCRIPTOR_ADD_BASIC
      (edd_base, Config, "disable_visual_bell", disable_visual_bell, EET_T_UCHAR);
    EET_DATA_DESCRIPTOR_ADD_BASIC
      (edd_base, Config, "active_links", active_links, EET_T_UCHAR);
@@ -172,6 +174,8 @@ config_init(void)
      (edd_base, Config, "ty_escapes", ty_escapes, EET_T_UCHAR);
    EET_DATA_DESCRIPTOR_ADD_BASIC
      (edd_base, Config, "changedir_to_current", changedir_to_current, EET_T_UCHAR);
+   EET_DATA_DESCRIPTOR_ADD_BASIC
+     (edd_base, Config, "shine", shine, EET_T_INT);
 }
 
 void
@@ -251,6 +255,7 @@ config_sync(const Config *config_src, Config *config)
    config->jump_on_change = config_src->jump_on_change;
    config->flicker_on_key = config_src->flicker_on_key;
    config->disable_cursor_blink = config_src->disable_cursor_blink;
+   config->cursor_shape = config_src->cursor_shape;
    config->disable_visual_bell = config_src->disable_visual_bell;
    config->bell_rings = config_src->bell_rings;
    config->active_links = config_src->active_links;
@@ -275,6 +280,7 @@ config_sync(const Config *config_src, Config *config)
    config->mv_always_show = config_src->mv_always_show;
    config->ty_escapes = config_src->ty_escapes;
    config->changedir_to_current = config_src->changedir_to_current;
+   config->shine = config_src->shine;
 }
 
 static void
@@ -340,6 +346,7 @@ _add_default_keys(Config *config)
    ADD_KB("Down", 0, 1, 0, 0, "term_down");
    ADD_KB("Left", 0, 1, 0, 0, "term_left");
    ADD_KB("Right", 0, 1, 0, 0, "term_right");
+   ADD_KB("g", 0, 1, 0, 0, "visible_group");
 
    /* Ctrl-Shift- */
    ADD_KB("Prior", 1, 0, 1, 0, "split_h");
@@ -374,6 +381,9 @@ _add_default_keys(Config *config)
    ADD_KB("Right", 0, 0, 1, 0, "term_next");
    ADD_KB("Home", 0, 0, 1, 0, "top_backlog");
    ADD_KB("End", 0, 0, 1, 0, "reset_scroll");
+
+   /* Alt-Shift */
+   ADD_KB("g", 0, 1, 1, 0, "all_group");
 }
 
 void
@@ -506,6 +516,7 @@ config_new(void)
         config->jump_on_keypress = EINA_TRUE;
         config->flicker_on_key = EINA_FALSE;
         config->disable_cursor_blink = EINA_FALSE;
+        config->cursor_shape = CURSOR_SHAPE_BLOCK;
         config->disable_visual_bell = EINA_FALSE;
         config->bell_rings = EINA_TRUE;
         config->active_links = EINA_TRUE;
@@ -541,13 +552,11 @@ config_new(void)
                }
           }
         _add_default_keys(config);
+        config->shine = 255;
      }
    return config;
 }
 
-#ifndef EINA_FALLTHROUGH
-#define EINA_FALLTHROUGH
-#endif
 
 Config *
 config_load(const char *key)
@@ -648,7 +657,20 @@ config_load(const char *key)
                   _add_key(config, "Right", 0, 1, 0, 0, "term_right");
                   EINA_FALLTHROUGH;
                   /*pass through*/
-                case CONF_VER: /* 16 */
+                case 16:
+                  config->shine = 255;
+                  EINA_FALLTHROUGH;
+                  /*pass through*/
+                case 17:
+                  _add_key(config, "g", 0, 1, 0, 0, "visible_group");
+                  _add_key(config, "g", 0, 1, 1, 0, "all_group");
+                  EINA_FALLTHROUGH;
+                  /*pass through*/
+                case 18:
+                  config->cursor_shape = CURSOR_SHAPE_BLOCK;
+                  EINA_FALLTHROUGH;
+                  /*pass through*/
+                case CONF_VER: /* 19 */
                   config->version = CONF_VER;
                   break;
                 default:
@@ -720,6 +742,7 @@ config_fork(const Config *config)
    CPY(jump_on_keypress);
    CPY(flicker_on_key);
    CPY(disable_cursor_blink);
+   CPY(cursor_shape);
    CPY(disable_visual_bell);
    CPY(bell_rings);
    CPY(active_links);
@@ -747,6 +770,7 @@ config_fork(const Config *config)
    CPY(mv_always_show);
    CPY(ty_escapes);
    CPY(changedir_to_current);
+   CPY(shine);
 
    EINA_LIST_FOREACH(config->keys, l, key)
      {

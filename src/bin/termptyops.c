@@ -142,9 +142,10 @@ termpty_text_scroll_test(Termpty *ty, Eina_Bool clear)
              termpty_text_scroll(ty, clear);
              ty->cursor_state.cy = e - 1;
              TERMPTY_RESTRICT_FIELD(ty->cursor_state.cy, 0, ty->h);
+             return;
           }
      }
-   else if (ty->cursor_state.cy >= ty->h)
+   if (ty->cursor_state.cy >= ty->h)
      {
         termpty_text_scroll(ty, clear);
         ty->cursor_state.cy = e - 1;
@@ -417,12 +418,19 @@ termpty_reset_att(Termatt *att)
    att->autowrapped = 0;
    att->newline = 0;
    att->fraktur = 0;
+   att->framed = 0;
+   att->encircled = 0;
+   att->overlined = 0;
 }
 
 void
 termpty_reset_state(Termpty *ty)
 {
    int i;
+   Config *config = NULL;
+
+   if (ty->obj)
+     config = termio_config_get(ty->obj);
 
    ty->cursor_state.cx = 0;
    ty->cursor_state.cy = 0;
@@ -463,6 +471,8 @@ termpty_reset_state(Termpty *ty)
      {
         TAB_SET(ty, i);
      }
+   if (config && ty->obj)
+     termio_set_cursor_shape(ty->obj, config->cursor_shape);
 }
 
 void
@@ -476,7 +486,9 @@ termpty_cursor_copy(Termpty *ty, Eina_Bool save)
    else
      {
         ty->cursor_state.cx = ty->cursor_save[ty->altbuf].cx;
+        TERMPTY_RESTRICT_FIELD(ty->cursor_state.cx, 0, ty->w);
         ty->cursor_state.cy = ty->cursor_save[ty->altbuf].cy;
+        TERMPTY_RESTRICT_FIELD(ty->cursor_state.cy, 0, ty->h);
      }
 }
 

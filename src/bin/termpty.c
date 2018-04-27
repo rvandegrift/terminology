@@ -1,10 +1,14 @@
 #include "private.h"
 #include <Elementary.h>
+#include <Ecore_Input.h>
+#include <Ecore_IMF.h>
+#include <Ecore_IMF_Evas.h>
 #include "termpty.h"
 #include "termptyesc.h"
 #include "termptyops.h"
 #include "termptysave.h"
 #include "termio.h"
+#include "keyin.h"
 #include <sys/types.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -54,10 +58,30 @@ termpty_shutdown(void)
    _termpty_log_dom = -1;
 }
 
+
+Eina_Bool
+termpty_can_handle_key(const Termpty *ty,
+                       const Keys_Handler *khdl,
+                       const Evas_Event_Key_Down *ev)
+{
+   // if term app asked for kbd lock - dont handle here
+   if (ty->termstate.kbd_lock)
+     return EINA_FALSE;
+   // if app asked us to not do autorepeat - ignore press if is it is the same
+   // timestamp as last one
+   if ((ty->termstate.no_autorepeat) &&
+       (ev->timestamp == khdl->last_keyup))
+     return EINA_FALSE;
+   return EINA_TRUE;
+}
+
+
+
+
 void
 termpty_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len)
 {
-   Eina_Unicode *c, *ce, *b;
+   Eina_Unicode *c, *ce, *c2, *b, *d;
    int n, bytes;
 
    c = (Eina_Unicode *)codepoints;
@@ -65,6 +89,7 @@ termpty_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len)
 
    if (ty->buf)
      {
+        if (!ty->buf) ty->buf_have_zero = EINA_FALSE;
         bytes = (ty->buflen + len + 1) * sizeof(int);
         b = realloc(ty->buf, bytes);
         if (!b)
@@ -73,8 +98,26 @@ termpty_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len)
              return;
           }
         DBG("realloc add %i + %i", (int)(ty->buflen * sizeof(int)), (int)(len * sizeof(int)));
-        bytes = len * sizeof(Eina_Unicode);
-        memcpy(&(b[ty->buflen]), codepoints, bytes);
+        if (!ty->buf_have_zero)
+          {
+             d = &(b[ty->buflen]);
+             ce = (Eina_Unicode *)codepoints + len;
+             for (c = (Eina_Unicode *)codepoints; c < ce; c++, d++)
+               {
+                  *d = *c;
+                  if (*c == 0x0)
+                    {
+                       ty->buf_have_zero = EINA_TRUE;
+                       break;
+                    }
+               }
+             for (; c < ce; c++, d++) *d = *c;
+          }
+        else
+          {
+             bytes = len * sizeof(Eina_Unicode);
+             memcpy(&(b[ty->buflen]), codepoints, bytes);
+          }
         ty->buf = b;
         ty->buflen += len;
         ty->buf[ty->buflen] = 0;
@@ -96,8 +139,18 @@ termpty_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len)
                        ERR(_("memerr: %s"), strerror(errno));
                        return;
                     }
+                  ty->buf_have_zero = EINA_FALSE;
+                  for (d = ty->buf, c2 = c; c2 < ce; c2++, d++)
+                    {
+                       *d = *c2;
+                       if (*c2 == 0x0)
+                         {
+                            ty->buf_have_zero = EINA_TRUE;
+                            break;
+                         }
+                    }
+                  for (; c2 < ce; c2++, d++) *d = *c2;
                   bytes = (char *)ce - (char *)c;
-                  memcpy(ty->buf, c, bytes);
                   ty->buflen = bytes / sizeof(Eina_Unicode);
                   ty->buf[ty->buflen] = 0;
                   free(tmp);
@@ -109,6 +162,7 @@ termpty_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len)
           {
              if (ty->buf)
                {
+                  ty->buf_have_zero = EINA_FALSE;
                   free(ty->buf);
                   ty->buf = NULL;
                }
@@ -117,12 +171,14 @@ termpty_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len)
      }
    else
      {
+        ty->buf_have_zero = EINA_TRUE;
         while (c < ce)
           {
              n = termpty_handle_seq(ty, c, ce);
              if (n == 0)
                {
                   bytes = ((char *)ce - (char *)c) + sizeof(Eina_Unicode);
+                  ty->buf_have_zero = EINA_FALSE;
                   ty->buf = malloc(bytes);
                   DBG("malloc %i", (int)(bytes - sizeof(Eina_Unicode)));
                   if (!ty->buf)
@@ -131,8 +187,18 @@ termpty_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len)
                     }
                   else
                     {
+                       ty->buf_have_zero = EINA_FALSE;
+                       for (d = ty->buf, c2 = c; c2 < ce; c2++, d++)
+                         {
+                            *d = *c2;
+                            if (*c2 == 0x0)
+                              {
+                                 ty->buf_have_zero = EINA_TRUE;
+                                 break;
+                              }
+                         }
+                       for (; c2 < ce; c2++, d++) *d = *c2;
                        bytes = (char *)ce - (char *)c;
-                       memcpy(ty->buf, c, bytes);
                        ty->buflen = bytes / sizeof(Eina_Unicode);
                        ty->buf[ty->buflen] = 0;
                     }
@@ -166,16 +232,23 @@ _fd_read_do(Termpty *ty, Ecore_Fd_Handler *fd_handler, Eina_Bool false_on_empty)
    if (ecore_main_fd_handler_active_get(fd_handler, ECORE_FD_ERROR))
      {
         ERR("error while reading from tty slave fd");
+        ty->hand_fd = NULL;
         return ECORE_CALLBACK_CANCEL;
      }
    if (ty->fd == -1)
-     return ECORE_CALLBACK_CANCEL;
+     {
+        ty->hand_fd = NULL;
+        return ECORE_CALLBACK_CANCEL;
+     }
 
 /* it seems the BSDs can not read from this side of the pair if the other side
  * is closed */
 #if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__OpenBSD__) || defined(__NetBSD__)
    if (ty->pid == -1)
-       return ECORE_CALLBACK_CANCEL;
+     {
+        ty->hand_fd = NULL;
+        return ECORE_CALLBACK_CANCEL;
+     }
 #endif
 
    // read up to 64 * 4096 bytes
@@ -234,15 +307,9 @@ _fd_read_do(Termpty *ty, Ecore_Fd_Handler *fd_handler, Eina_Bool false_on_empty)
 
              if (buf[i])
                {
-#if (EINA_VERSION_MAJOR > 1) || (EINA_VERSION_MINOR >= 8)
                   g = eina_unicode_utf8_next_get(buf, &i);
                   if ((0xdc80 <= g) && (g <= 0xdcff) &&
                       (len - prev_i) <= (int)sizeof(ty->oldbuf))
-#else
-                  i = evas_string_char_next_get(buf, i, &g);
-                  if (i < 0 &&
-                      (len - prev_i) <= (int)sizeof(ty->oldbuf))
-#endif
                     {
                        for (k = 0;
                             (k < (int)sizeof(ty->oldbuf)) && 

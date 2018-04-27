@@ -64,11 +64,14 @@ struct _Termatt
    unsigned short autowrapped : 1;
    unsigned short newline : 1;
    unsigned short fraktur : 1;
+   unsigned short framed : 1;
+   unsigned short encircled : 1;
+   unsigned short overlined : 1;
 #if defined(SUPPORT_80_132_COLUMNS)
    unsigned short is_80_132_mode_allowed : 1;
-   unsigned short bit_padding : 14;
+   unsigned short bit_padding : 11;
 #else
-   unsigned short bit_padding : 15;
+   unsigned short bit_padding : 12;
 #endif
 };
 
@@ -93,6 +96,8 @@ struct _Termpty
    int circular_offset2;
    Eina_Unicode *buf;
    size_t buflen;
+   Eina_Unicode last_char;
+   Eina_Bool buf_have_zero;
    unsigned char oldbuf[4];
    Termsave *back;
    size_t backsize, backpos;
