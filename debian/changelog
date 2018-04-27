@@ -1,5 +1,6 @@
-terminology (1.1.1-4) UNRELEASED; urgency=medium
+terminology (1.2.0-1) UNRELEASED; urgency=medium
 
+  * New upstream release (Closes: #896930)
   * d/gbp.conf: point gbp to debian/sid branch
 
  -- Ross Vandegrift <ross@kallisti.us>  Thu, 26 Apr 2018 19:11:32 -0700
