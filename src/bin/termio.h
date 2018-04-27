@@ -44,10 +44,22 @@ const char  *termio_icon_name_get(const Evas_Object *obj);
 void         termio_media_mute_set(Evas_Object *obj, Eina_Bool mute);
 void         termio_media_visualize_set(Evas_Object *obj, Eina_Bool visualize);
 void         termio_config_set(Evas_Object *obj, Config *config);
+void         termio_set_cursor_shape(Evas_Object *obj, Cursor_Shape shape);
 Config      *termio_config_get(const Evas_Object *obj);
+Eina_Bool    termio_file_send_ok(const Evas_Object *obj, const char *file);
+void         termio_file_send_cancel(const Evas_Object *obj);
+double       termio_file_send_progress_get(const Evas_Object *obj);
+
+void
+termio_imf_cursor_set(Evas_Object *obj, Ecore_IMF_Context *imf);
 
 Termpty *termio_pty_get(const Evas_Object *obj);
 Evas_Object * termio_miniview_get(const Evas_Object *obj);
 Term* termio_term_get(const Evas_Object *obj);
+
+void termio_key_down(Evas_Object *termio, const Evas_Event_Key_Down *ev,
+                     Eina_Bool action_handled);
+void termio_focus_in(Evas_Object *termio);
+void termio_focus_out(Evas_Object *termio);
 
 #endif

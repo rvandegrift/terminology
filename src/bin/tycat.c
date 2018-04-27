@@ -1,4 +1,3 @@
-#include "private.h"
 #include <Eina.h>
 #include <Ecore.h>
 #include <Evas.h>
@@ -11,7 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-
+#include "private.h"
 #include "tycommon.h"
 
 enum {
@@ -97,7 +96,7 @@ prnt(const char *path, int w, int h, int mode)
      snprintf(buf, sizeof(buf), "%c}if#%i;%i;%s", 0x1b, w, h, path);
    else
      snprintf(buf, sizeof(buf), "%c}is#%i;%i;%s", 0x1b, w, h, path);
-   if (write(0, buf, strlen(buf) + 1) < 0) perror("write");
+   if (write(1, buf, strlen(buf) + 1) < 0) perror("write");
    i = 0;
    line[i++] = 0x1b;
    line[i++] = '}';
@@ -113,7 +112,7 @@ prnt(const char *path, int w, int h, int mode)
    line[i++] = '\n';
    for (y = 0; y < h; y++)
      {
-        if (write(0, line, i) < 0) perror("write");
+        if (write(1, line, i) < 0) perror("write");
      }
    free(line);
 }
@@ -321,9 +320,7 @@ main(int argc, char **argv)
      }
 
    eina_init();
-#if (ECORE_VERSION_MAJOR > 1) || (ECORE_VERSION_MINOR >= 8)
    ecore_app_no_system_modules();
-#endif
    ecore_init();
    ecore_file_init();
    evas_init();
@@ -336,7 +333,7 @@ main(int argc, char **argv)
    evas = ecore_evas_get(ee);
    echo_off();
    snprintf(buf, sizeof(buf), "%c}qs", 0x1b);
-   if (write(0, buf, strlen(buf) + 1) < 0) perror("write");
+   if (write(1, buf, strlen(buf) + 1) < 0) perror("write");
    if (scanf("%i;%i;%i;%i", &tw, &th, &cw, &ch) != 4 ||
        ((tw <= 0) || (th <= 0) || (cw <= 1) || (ch <= 1)))
      {

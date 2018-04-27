@@ -1,0 +1,21 @@
+=================
+Terminology 1.2.0
+=================
+
+Changes since 1.1.1:
+--------------------
+
+  * In group "terminology/background", "message" with id 2 requires an INT to
+  specify the amount of shine
+  * Add parts "terminology.sendfile.progress" and
+  "terminology.sendfile.request" in "terminology/background". See default.edc
+  for more details.
+  * Add groups "terminology/cursor_bar" and "terminology/cursor_underline"
+
+Changes since 0.9.1:
+--------------------
+
+  * In group "terminology/background", add signal "tab,close" with emitter set
+    to "terminology" to close the current tab
+  * In group "terminology/tabbar_back", add signal "tab,close" with emitter
+    set to "terminology" to close a tab in the background
