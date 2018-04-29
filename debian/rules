@@ -5,9 +5,5 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 %:
 	dh $@ --without autoreconf --buildsystem=meson
 
-override_dh_auto_configure:
-	rm -rf src/bin/lz4
-	dh_auto_configure
-
 override_dh_auto_build:
 	$(CURDIR)/debian/fake_home.sh dh_auto_build --verbose
