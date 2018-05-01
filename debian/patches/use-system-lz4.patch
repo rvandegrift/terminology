@@ -1,4 +1,8 @@
-use debian library version of liblz4 rather than the embedded copy
+Description: use debian library version of liblz4 rather than the embedded copy
+ Currently this is almost a no-op since lz4 support is disabled.
+Author: Anthony F McInerney <afm404@gmail.com>, Andreas Metzler <ametzler@debian.org>
+Last-Update: 2018-05-01
+
 --- a/src/bin/termptysave.c
 +++ b/src/bin/termptysave.c
 @@ -2,7 +2,7 @@
@@ -20,21 +24,3 @@ use debian library version of liblz4 rather than the embedded copy
                         'md5/md5.c', 'md5/md5.h',
                         'utf8.c', 'utf8.h',
                         'win.c', 'win.h',
-@@ -41,6 +40,8 @@ terminology_sources = ['private.h', 'cov
-                        'tty_keys.h',
-                        'sb.c', 'sb.h']
- 
-+lz4lib = dependency('liblz4')
-+
- tybg_sources = ['tycommon.c', 'tycommon.h', 'tybg.c']
- tyalpha_sources = ['tycommon.c', 'tycommon.h', 'tyalpha.c']
- typop_sources = ['tycommon.c', 'tycommon.h', 'typop.c']
-@@ -64,7 +65,7 @@ executable('terminology',
-            edj_targets,
-            install: true,
-            include_directories: config_dir,
--           dependencies: terminology_dependencies)
-+           dependencies: [terminology_dependencies, lz4lib])
- executable('tybg',
-            tybg_sources,
-            install: true,
