@@ -1,3 +1,9 @@
+terminology (1.2.1-1) unstable; urgency=medium
+
+  * New upstream release (Closes: #898384)
+
+ -- Ross Vandegrift <ross@kallisti.us>  Mon, 14 May 2018 19:49:50 -0700
+
 terminology (1.2.0-1) unstable; urgency=medium
 
   * New upstream release (Closes: #896930)
