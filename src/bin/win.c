@@ -995,6 +995,7 @@ _win_focus(Term_Container *tc, Term_Container *relative)
        tc, tc->is_focused, wn->child == relative);
    if (relative != wn->child)
      {
+        DBG("focus tc:%p", tc);
         wn->child->focus(wn->child, tc);
         elm_win_keyboard_mode_set(wn->win, ELM_WIN_KEYBOARD_TERMINAL);
         if (wn->khdl.imf)
@@ -1542,6 +1543,10 @@ _cb_win_mouse_down(void *data,
    if (wn->on_popover || wn->group_input)
      return;
 
+   /* Focus In event will handle that */
+   if (!tc->is_focused)
+     return;
+
    term_mouse = tc->find_term_at_coords(tc, ev->canvas.x, ev->canvas.y);
    term = tc->focused_term_get(tc);
    if (term_mouse == term)
@@ -1554,6 +1559,7 @@ _cb_win_mouse_down(void *data,
      }
 
    tc_child = term_mouse->container;
+   DBG("focus tc_child:%p", tc_child);
    tc_child->focus(tc_child, tc);
 }
 
@@ -1569,7 +1575,7 @@ _cb_win_mouse_move(void *data,
    Term_Container *tc = (Term_Container*) wn;
    Term_Container *tc_child = NULL;
 
-   if (wn->on_popover || wn->group_input)
+   if (wn->on_popover || wn->group_input || !tc->is_focused)
      return;
 
    if (!wn->config->mouse_over_focus)
@@ -4278,7 +4284,7 @@ _set_title_ok_cb(void *data,
    if (!title || !strlen(title))
      title = NULL;
 
-   termio_title_set(term->termio, title);
+   termio_user_title_set(term->termio, title);
    elm_object_focus_set(entry, EINA_FALSE);
    elm_popup_dismiss(popup);
 }
@@ -4315,6 +4321,7 @@ term_set_title(Term *term)
    Evas_Object *o;
    Evas_Object *popup;
    Term_Container *tc = term->container;
+   const char *prev_title;
 
    EINA_SAFETY_ON_NULL_RETURN(term);
    term->wn->on_popover++;
@@ -4341,6 +4348,13 @@ term_set_title(Term *term)
 
    o = elm_entry_add(popup);
    elm_entry_single_line_set(o, EINA_TRUE);
+   elm_entry_editable_set(o, EINA_TRUE);
+   prev_title = termio_user_title_get(term->termio);
+   if (prev_title)
+     {
+        elm_entry_entry_set(o, prev_title);
+        elm_entry_cursor_pos_set(o, strlen(prev_title));
+     }
    evas_object_smart_callback_add(o, "activated", _set_title_ok_cb, popup);
    evas_object_smart_callback_add(o, "aborted", _set_title_cancel_cb, popup);
    elm_object_content_set(popup, o);
