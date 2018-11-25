@@ -6,7 +6,6 @@ Uploaders: Ross Vandegrift <ross@kallisti.us>,
            Andreas Metzler <ametzler@debian.org>
 Build-Depends: debhelper (>= 11),
                libefl-all-dev (>= 1.18),
-               liblz4-dev,
                meson
 Standards-Version: 4.1.4
 Homepage: https://www.enlightenment.org/p.php?p=about/terminology
