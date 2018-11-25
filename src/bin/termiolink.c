@@ -1,5 +1,6 @@
 #include "private.h"
 #include <Elementary.h>
+#include "termiolink.h"
 #include "termio.h"
 #include "sb.h"
 #include "utf8.h"
@@ -84,7 +85,7 @@ _txt_at(Termpty *ty, int *x, int *y, char *txt, int *txtlenp)
         cell = cells[*x];
      }
 
-   if (cell.codepoint == 0)
+   if ((cell.codepoint == 0) || (cell.att.link_id))
      goto empty;
 
    *txtlenp = codepoint_to_utf8(cell.codepoint, txt);
@@ -145,7 +146,7 @@ _txt_prev_at(Termpty *ty, int *x, int *y, char *txt, int *txtlenp)
         cell = cells[*x];
      }
 
-   if (cell.codepoint == 0)
+   if ((cell.codepoint == 0) || (cell.att.link_id))
      goto empty;
 
    *txtlenp = codepoint_to_utf8(cell.codepoint, txt);
@@ -209,7 +210,7 @@ _txt_next_at(Termpty *ty, int *x, int *y, char *txt, int *txtlenp)
      }
 
    cell = cells[*x];
-   if (cell.codepoint == 0)
+   if ((cell.codepoint == 0) || (cell.att.link_id))
      goto empty;
 
    *txtlenp = codepoint_to_utf8(cell.codepoint, txt);
@@ -234,7 +235,9 @@ termio_link_find(const Evas_Object *obj, int cx, int cy,
    char *s = NULL;
    char endmatch = 0;
    int x1, x2, y1, y2, w = 0, h = 0, sc;
-   Eina_Bool goback = EINA_TRUE, goforward = EINA_FALSE, escaped = EINA_FALSE;
+   Eina_Bool goback = EINA_TRUE,
+             goforward = EINA_FALSE,
+             escaped = EINA_FALSE;
    struct ty_sb sb = {.buf = NULL, .gap = 0, .len = 0, .alloc = 0};
    Termpty *ty = termio_pty_get(obj);
    int res;

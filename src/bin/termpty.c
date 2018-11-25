@@ -89,7 +89,6 @@ termpty_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len)
 
    if (ty->buf)
      {
-        if (!ty->buf) ty->buf_have_zero = EINA_FALSE;
         bytes = (ty->buflen + len + 1) * sizeof(int);
         b = realloc(ty->buf, bytes);
         if (!b)
@@ -510,6 +509,16 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
         goto err;
      }
 
+   ty->hl.bitmap = calloc(1, HL_LINKS_MAX / 8); /* bit map for 1 << 16 elements */
+   if (!ty->hl.bitmap)
+     {
+        ERR("Allocation of %d bytes failed: %s",
+            HL_LINKS_MAX / 8, strerror(errno));
+        goto err;
+     }
+   /* Mark id 0 as set */
+   ty->hl.bitmap[0] = 1;
+
    termpty_resize_tabs(ty, 0, w);
 
    termpty_reset_state(ty);
@@ -740,6 +749,7 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
 err:
    free(ty->screen);
    free(ty->screen2);
+   free(ty->hl.bitmap);
    if (ty->fd >= 0) close(ty->fd);
    if (ty->slavefd >= 0) close(ty->slavefd);
    free(ty);
@@ -807,11 +817,24 @@ termpty_free(Termpty *ty)
         size_t i;
 
         for (i = 0; i < ty->backsize; i++)
-          termpty_save_free(&ty->back[i]);
+          termpty_save_free(ty, &ty->back[i]);
         free(ty->back);
      }
    free(ty->screen);
    free(ty->screen2);
+   if (ty->hl.links)
+     {
+        uint16_t i;
+
+        for (i = 0; i < ty->hl.size; i++)
+          {
+             Term_Link *l = ty->hl.links + i;
+
+             term_link_free(ty, l);
+          }
+       free(ty->hl.links);
+     }
+   free(ty->hl.bitmap);
    free(ty->buf);
    free(ty->tabs);
    free(ty);
@@ -925,7 +948,7 @@ static void
 _backlog_remove_latest_nolock(Termpty *ty)
 {
    Termsave *ts;
-   if (ty->backsize <= 0)
+   if (ty->backsize == 0)
      return;
    ts = BACKLOG_ROW_GET(ty, 1);
 
@@ -939,7 +962,7 @@ _backlog_remove_latest_nolock(Termpty *ty)
    ty->backlog_beacon.backlog_y = 0;
    verify_beacon(ty, 0);
 
-   termpty_save_free(ts);
+   termpty_save_free(ty, ts);
 }
 
 
@@ -949,7 +972,7 @@ termpty_text_save_top(Termpty *ty, Termcell *cells, ssize_t w_max)
    Termsave *ts;
    ssize_t w, i;
 
-   if (ty->backsize <= 0)
+   if (ty->backsize == 0)
      return;
    assert(ty->back);
 
@@ -961,7 +984,7 @@ termpty_text_save_top(Termpty *ty, Termcell *cells, ssize_t w_max)
      {
         cells[i].att.autowrapped = 1;
      }
-   if (ty->backsize >= 1)
+   if (ty->backsize > 0)
      {
         ts = BACKLOG_ROW_GET(ty, 1);
         if (!ts->cells)
@@ -970,7 +993,7 @@ termpty_text_save_top(Termpty *ty, Termcell *cells, ssize_t w_max)
         if (ts->w && ts->cells[ts->w - 1].att.autowrapped)
           {
              int old_len = ts->w;
-             termpty_save_expand(ts, cells, w);
+             termpty_save_expand(ty, ts, cells, w);
              ty->backlog_beacon.screen_y += (ts->w + ty->w - 1) / ty->w
                                           - (old_len + ty->w - 1) / ty->w;
              verify_beacon(ty, 0);
@@ -980,10 +1003,10 @@ termpty_text_save_top(Termpty *ty, Termcell *cells, ssize_t w_max)
 
 add_new_ts:
    ts = BACKLOG_ROW_GET(ty, 0);
-   ts = termpty_save_new(ts, w);
+   ts = termpty_save_new(ty, ts, w);
    if (!ts)
      return;
-   termpty_cell_copy(ty, cells, ts->cells, w);
+   TERMPTY_CELL_COPY(ty, cells, ts->cells, w);
    ty->backpos++;
    if (ty->backpos >= ty->backsize)
      ty->backpos = 0;
@@ -1023,23 +1046,23 @@ termpty_backlog_length(Termpty *ty)
      return 0;
    verify_beacon(ty, 0);
 
-   backlog_y++;
-   while (42)
+   for (backlog_y++; backlog_y < (int)ty->backsize; backlog_y++)
      {
         int nb_lines;
         const Termsave *ts;
 
         ts = BACKLOG_ROW_GET(ty, backlog_y);
-        if (!ts->cells || backlog_y >= (int)ty->backsize)
-          return ty->backlog_beacon.screen_y;
+        if (!ts->cells)
+          goto end;
 
         nb_lines = (ts->w == 0) ? 1 : (ts->w + ty->w - 1) / ty->w;
         screen_y += nb_lines;
         ty->backlog_beacon.screen_y = screen_y;
         ty->backlog_beacon.backlog_y = backlog_y;
         verify_beacon(ty, 0);
-        backlog_y++;
      }
+end:
+     return ty->backlog_beacon.screen_y;
 }
 
 void
@@ -1049,7 +1072,7 @@ termpty_backscroll_adjust(Termpty *ty, int *scroll)
    int screen_y = ty->backlog_beacon.screen_y;
 
    verify_beacon(ty, 0);
-   if (!ty->backsize || *scroll <= 0)
+   if ((ty->backsize == 0) || (*scroll <= 0))
      {
         *scroll = 0;
         return;
@@ -1186,6 +1209,30 @@ termpty_cellrow_get(Termpty *ty, int y_requested, ssize_t *wret)
    return _termpty_cellrow_from_beacon_get(ty, y_requested, wret);
 }
 
+/* @requested_y unit is in visual lines on the screen */
+Termcell *
+termpty_cell_get(Termpty *ty, int y_requested, int x_requested)
+{
+   ssize_t wret = 0;
+   Termcell *cells;
+
+   if (y_requested >= 0)
+     {
+        if (y_requested >= ty->h)
+          return NULL;
+        if (x_requested >= ty->w)
+          return NULL;
+        return &(TERMPTY_SCREEN(ty, 0, y_requested)) + x_requested;
+     }
+   if (!ty->back)
+     return NULL;
+
+   cells = _termpty_cellrow_from_beacon_get(ty, y_requested, &wret);
+   if (!cells || x_requested >= wret)
+     return NULL;
+   return cells + x_requested;
+}
+
 void
 termpty_write(Termpty *ty, const char *input, int len)
 {
@@ -1261,7 +1308,7 @@ _termpty_line_rewrap(Termpty *ty, Termcell *src_cells, int len,
         int copy_width = MIN(len, si->w - si->x);
         Termcell *dst_cells = &SCREEN_INFO_GET_CELLS(si, si->x, si->y);
 
-        termpty_cell_copy(ty,
+        TERMPTY_CELL_COPY(ty,
                           /*src*/ src_cells,
                           /*dst*/ dst_cells,
                           copy_width);
@@ -1351,7 +1398,7 @@ termpty_resize(Termpty *ty, int new_w, int new_h)
 
    old_y = 0;
    /* Rewrap the first line from the history if needed */
-   if (ty->backsize >= 1)
+   if (ty->backsize > 0)
      {
         Termsave *ts;
         ts = BACKLOG_ROW_GET(ty, 1);
@@ -1438,7 +1485,7 @@ termpty_backlog_size_set(Termpty *ty, size_t size)
         size_t i;
 
         for (i = 0; i < ty->backsize; i++)
-          termpty_save_free(&ty->back[i]);
+          termpty_save_free(ty, &ty->back[i]);
         free(ty->back);
      }
    if (size > 0)
@@ -1560,8 +1607,8 @@ termpty_block_chid_get(const Termpty *ty, const char *chid)
    return tb;
 }
 
-static void
-_handle_block_codepoint_overwrite_heavy(Termpty *ty, int oldc, int newc)
+void
+termpty_handle_block_codepoint_overwrite_heavy(Termpty *ty, int oldc, int newc)
 {
    Termblock *tb;
    int ido = 0, idn = 0;
@@ -1591,26 +1638,6 @@ _handle_block_codepoint_overwrite_heavy(Termpty *ty, int oldc, int newc)
      }
 }
 
-/* Try to trick the compiler into inlining the first test */
-static inline void
-_handle_block_codepoint_overwrite(Termpty *ty, Eina_Unicode oldc, Eina_Unicode newc)
-{
-   if (!((oldc | newc) & 0x80000000)) return;
-   _handle_block_codepoint_overwrite_heavy(ty, oldc, newc);
-}
-
-void
-termpty_cell_copy(Termpty *ty, Termcell *src, Termcell *dst, int n)
-{
-   int i;
-
-   for (i = 0; i < n; i++)
-     {
-        _handle_block_codepoint_overwrite(ty, dst[i].codepoint, src[i].codepoint);
-        dst[i] = src[i];
-     }
-}
-
 void
 termpty_screen_swap(Termpty *ty)
 {
@@ -1632,36 +1659,13 @@ termpty_screen_swap(Termpty *ty)
 }
 
 void
-termpty_cell_fill(Termpty *ty, Termcell *src, Termcell *dst, int n)
-{
-   int i;
-
-   if (src)
-     {
-        for (i = 0; i < n; i++)
-          {
-             _handle_block_codepoint_overwrite(ty, dst[i].codepoint, src[0].codepoint);
-             dst[i] = src[0];
-          }
-     }
-   else
-     {
-        for (i = 0; i < n; i++)
-          {
-             _handle_block_codepoint_overwrite(ty, dst[i].codepoint, 0);
-             memset(&(dst[i]), 0, sizeof(*dst));
-          }
-     }
-}
-
-void
 termpty_cells_set_content(Termpty *ty, Termcell *cells,
                           Eina_Unicode codepoint, int count)
 {
    int i;
    for (i = 0; i < count; i++)
      {
-        _handle_block_codepoint_overwrite(ty, cells[i].codepoint, codepoint);
+        HANDLE_BLOCK_CODEPOINT_OVERWRITE(ty, cells[i].codepoint, codepoint);
         cells[i].codepoint = codepoint;
      }
 }
@@ -1673,10 +1677,16 @@ termpty_cells_att_fill_preserve_colors(Termpty *ty, Termcell *cells,
    int i;
    Termcell local = { .codepoint = codepoint, .att = ty->termstate.att};
 
+   if (EINA_UNLIKELY(local.att.link_id))
+     term_link_refcount_inc(ty, local.att.link_id, count);
+
    for (i = 0; i < count; i++)
      {
         Termatt att = cells[i].att;
-        _handle_block_codepoint_overwrite(ty, cells[i].codepoint, codepoint);
+        HANDLE_BLOCK_CODEPOINT_OVERWRITE(ty, cells[i].codepoint, codepoint);
+        if (EINA_UNLIKELY(cells[i].att.link_id))
+          term_link_refcount_dec(ty, cells[i].att.link_id, 1);
+
         cells[i] = local;
         if (ty->termstate.att.fg == 0 && ty->termstate.att.bg == 0)
           {
@@ -1699,9 +1709,15 @@ termpty_cell_codepoint_att_fill(Termpty *ty, Eina_Unicode codepoint,
    Termcell local = { .codepoint = codepoint, .att = att };
    int i;
 
+   if (EINA_UNLIKELY(local.att.link_id))
+     term_link_refcount_inc(ty, local.att.link_id, n);
+
    for (i = 0; i < n; i++)
      {
-        _handle_block_codepoint_overwrite(ty, dst[i].codepoint, codepoint);
+        HANDLE_BLOCK_CODEPOINT_OVERWRITE(ty, dst[i].codepoint, codepoint);
+        if (EINA_UNLIKELY(dst[i].att.link_id))
+          term_link_refcount_dec(ty, dst[i].att.link_id, 1);
+
         dst[i] = local;
      }
 }
@@ -1710,4 +1726,107 @@ Config *
 termpty_config_get(const Termpty *ty)
 {
    return termio_config_get(ty->obj);
+}
+
+/* 0 means error here */
+static uint16_t
+_find_empty_slot(const Termpty *ty)
+{
+   int pos;
+   int max_pos = HL_LINKS_MAX / 8;
+
+   for (pos = 0; pos < max_pos && ty->hl.bitmap[pos] == 0xff; pos++)
+     {
+     }
+
+   if (pos <= max_pos)
+     {
+        int bit;
+        for (bit = 0; bit < 8; bit++)
+          {
+             if (!(ty->hl.bitmap[pos] & (1<<bit)))
+               {
+                  return pos * 8 + bit;
+               }
+          }
+     }
+   return 0;
+}
+
+static void
+hl_bitmap_set_bit(Termpty *ty, uint16_t id)
+{
+   uint8_t *pos = &ty->hl.bitmap[id / 8];
+   uint8_t bit = 1 << (id % 8);
+
+   *pos |= bit;
+}
+
+static void
+hl_bitmap_clear_bit(Termpty *ty, uint16_t id)
+{
+   uint8_t *pos = &ty->hl.bitmap[id / 8];
+   uint8_t bit = 1 << (id % 8);
+
+   *pos &= ~bit;
+}
+
+Term_Link *
+term_link_new(Termpty *ty)
+{
+   uint16_t id;
+   Term_Link *link;
+
+   /* 1st/ Find empty slot in bitmap */
+   id = _find_empty_slot(ty);
+   if (!id)
+     {
+        ERR("hyper links: can't find empty slot");
+        return NULL;
+     }
+
+   /* 2nd/ Do we need to realloc? */
+   if (id >= ty->hl.size)
+     {
+        Term_Link *links;
+        uint16_t old_size = ty->hl.size;
+
+        if (!ty->hl.size)
+          ty->hl.size = 256;
+        links = realloc(ty->hl.links,
+                        ty->hl.size * 2 * sizeof(Term_Link));
+        if (!links)
+          return NULL;
+        ty->hl.size *= 2;
+        ty->hl.links = links;
+        memset(ty->hl.links + old_size,
+               0,
+               (ty->hl.size - old_size) * sizeof(Term_Link));
+     }
+
+   link = ty->hl.links + id;
+   link->key = NULL;
+   link->url = NULL;
+   link->refcount = 0;
+
+   /* Mark in bitmap */
+   hl_bitmap_set_bit(ty, id);
+
+   return link;
+}
+
+void
+term_link_free(Termpty *ty, Term_Link *link)
+{
+   if (!link || !ty)
+     return;
+   uint16_t id = (link - ty->hl.links);
+
+   eina_stringshare_del(link->key);
+   link->key = NULL;
+   eina_stringshare_del(link->url);
+   link->url = NULL;
+
+   /* Remove from bitmap */
+   hl_bitmap_clear_bit(ty, id);
 }

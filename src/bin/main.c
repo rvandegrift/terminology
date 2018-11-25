@@ -1,7 +1,8 @@
+#include "private.h"
+
 #ifdef HAVE_PO
 #include <locale.h>
 #endif
-#include "private.h"
 
 #include <Ecore_Getopt.h>
 #include <Elementary.h>
@@ -21,8 +22,31 @@
 
 int terminology_starting_up;
 int _log_domain = -1;
+Eina_Bool multisense_available = EINA_TRUE;
 
 static Config *_main_config = NULL;
+
+static void
+_check_multisense(void)
+{
+   int enabled;
+   Eina_Bool setting = edje_audio_channel_mute_get(EDJE_CHANNEL_EFFECT);
+
+   /* older versions of efl have no capability for determining whether multisense support
+    * is available
+    * to check, attempt to set mute on a channel and check the value: if the value has not been
+    * set then the multisense codepath is disabled
+    *
+    * this is a no-op in either case, as the function only sets an internal variable and returns
+    */
+   for (enabled = 0; enabled < 2; enabled++)
+     {
+        edje_audio_channel_mute_set(EDJE_CHANNEL_EFFECT, enabled);
+        if (enabled != edje_audio_channel_mute_get(EDJE_CHANNEL_EFFECT))
+          multisense_available = EINA_FALSE;
+     }
+   edje_audio_channel_mute_set(EDJE_CHANNEL_EFFECT, setting);
+}
 
 Config *
 main_config_get(void)
@@ -431,38 +455,16 @@ _translate_options(void)
 #endif
 
 #ifdef ENABLE_FUZZING
-#include <syslog.h>
 static void
-_log_to_syslog(const Eina_Log_Domain *_d EINA_UNUSED,
-               Eina_Log_Level level,
-               const char *_file EINA_UNUSED,
-               const char *_fnc EINA_UNUSED,
-               int _line EINA_UNUSED,
-               const char *fmt,
-               void *_data EINA_UNUSED,
-               va_list args)
+_log_void(const Eina_Log_Domain *_d EINA_UNUSED,
+          Eina_Log_Level level EINA_UNUSED,
+          const char *_file EINA_UNUSED,
+          const char *_fnc EINA_UNUSED,
+          int _line EINA_UNUSED,
+          const char *fmt EINA_UNUSED,
+          void *_data EINA_UNUSED,
+          va_list args EINA_UNUSED)
 {
-    int priority;
-    switch (level) {
-     case EINA_LOG_LEVEL_CRITICAL:
-        priority = LOG_CRIT;
-        break;
-     case EINA_LOG_LEVEL_ERR:
-        priority = LOG_ERR;
-        break;
-     case EINA_LOG_LEVEL_WARN:
-        priority = LOG_WARNING;
-        break;
-     case EINA_LOG_LEVEL_INFO:
-        priority = LOG_INFO;
-        break;
-     case EINA_LOG_LEVEL_DBG:
-        priority = LOG_DEBUG;
-        break;
-     default:
-        priority = level + LOG_CRIT;
-    }
-    vsyslog(priority, fmt, args);
 }
 #endif
 
@@ -547,7 +549,7 @@ elm_main(int argc, char **argv)
    terminology_starting_up = EINA_TRUE;
 
 #ifdef ENABLE_FUZZING
-   eina_log_print_cb_set(_log_to_syslog, NULL);
+   eina_log_print_cb_set(_log_void, NULL);
 #endif
 
    elm_config_item_select_on_focus_disabled_set(EINA_TRUE);
@@ -633,6 +635,8 @@ elm_main(int argc, char **argv)
              eina_strbuf_free(strb);
           }
      }
+
+   _check_multisense();
 
    if (theme)
      {
