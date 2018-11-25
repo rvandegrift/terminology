@@ -1,0 +1,164 @@
+Description: Minor manpage improvements
+ This adds a manpage for the ty* helpers and fixes the terminology header.
+Author: Ross Vandegrift <ross@kallisti.us>
+Origin: other
+Forwarded: no
+Last-Update: 2018-06-16
+---
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
+
+From: Ross Vandegrift <ross@kallisti.us>
+Date: Sat, 5 May 2018 11:15:38 -0700
+Subject: Minor manpage improvements
+
+- Add basic man page for ty helpers
+- Fix terminology(1) header
+---
+ man/meson.build           |  7 +++++++
+ man/terminology-helpers.1 | 49 +++++++++++++++++++++++++++++++++++++++++++++++
+ man/terminology.1         |  2 +-
+ man/tyalpha.1             |  1 +
+ man/tybg.1                |  1 +
+ man/tycat.1               |  1 +
+ man/tyls.1                |  1 +
+ man/typop.1               |  1 +
+ man/tyq.1                 |  1 +
+ man/tysend.1              |  1 +
+ 10 files changed, 64 insertions(+), 1 deletion(-)
+ create mode 100644 man/terminology-helpers.1
+ create mode 100644 man/tyalpha.1
+ create mode 100644 man/tybg.1
+ create mode 100644 man/tycat.1
+ create mode 100644 man/tyls.1
+ create mode 100644 man/typop.1
+ create mode 100644 man/tyq.1
+ create mode 100644 man/tysend.1
+
+diff --git a/man/meson.build b/man/meson.build
+index b5c7425..bd7b6a7 100644
+--- a/man/meson.build
++++ b/man/meson.build
+@@ -1 +1,8 @@
+ install_man('terminology.1')
++install_man('tyls.1')
++install_man('tyalpha.1')
++install_man('tybg.1')
++install_man('tycat.1')
++install_man('typop.1')
++install_man('tyq.1')
++install_man('tysend.1')
+diff --git a/man/terminology-helpers.1 b/man/terminology-helpers.1
+new file mode 100644
+index 0000000..fb8187c
+--- /dev/null
++++ b/man/terminology-helpers.1
+@@ -0,0 +1,49 @@
++.\" Manpage for terminology helpers
++.TH TERMINOLOGY-HELPERS 1 "May  5 2018"
++.SH NAME
++terminiology-helpers \- programs that enhance
++.B terminology(1)
++.SH SYNOPSIS
++.TP
++.B tyls [-h] [-a] [-s|-m] FILE1 [FILE2 ...]
++List directory contents with bells and whistles
++.
++.TP
++.B tyalpha [-h][-p] on|off|<opacity level>
++Set transparency level of the background
++.
++.TP
++.B tybg [-h] [-p] [FILE1 FILE2 ...]
++Change the background image
++.
++.TP
++.B tycat [-h] [-s|-f|-c] [-g <width>x<height>] FILE1 [FILE2 ...]
++Display inline a media file or a URI
++.
++.TP
++.B typop [-h] FILE1 [FILE2 ...]
++Display in a popup a media file or a URI
++.
++.TP
++.B tyq [-h] FILE1 [FILE2 ...]
++Queue media files or URI to be popped up
++.
++.TP
++.B tysend [-h] FILE1 [FILE2 ...]
++Send files to the terminal (useful through ssh)
++
++.SH DESCRIPTION
++.PP
++Terminology provides a number of companion tools to control advanced
++behavior.  They allow in-line and popup display of media files,
++enhanced file listing, and control over visual appearance.
++
++The escape codes used to implement these behaviors are documented in
++.B EXTENDED ESCAPES FOR TERMINOLOGY
++section of
++.BR terminology (1).
++.SH SEE ALSO
++.BR terminology (1),
++
++.SH AUTHOR
++Terminology was written by Carsten Haitzler <raster@rasterman.com> and others.  It is maintained by Boris Faure <boris@fau.re> and others. See AUTHORS file for other contributors.
+diff --git a/man/terminology.1 b/man/terminology.1
+index 8df6c11..2561c64 100644
+--- a/man/terminology.1
++++ b/man/terminology.1
+@@ -1,5 +1,5 @@
+ .\" Manpage for Terminology
+-.TH man 1 "23 Nov 2018" "1.3.0" "Terminology man page"
++.TH TERMINOLOGY 1 "23 Nov 2018" "1.3.0" "Terminology man page"
+ .SH NAME
+ Terminology \- Terminal Emulator written with EFL (Enlightenment Foundation Libraries).
+ .SH SYNOPSIS
+diff --git a/man/tyalpha.1 b/man/tyalpha.1
+new file mode 100644
+index 0000000..b57fa92
+--- /dev/null
++++ b/man/tyalpha.1
+@@ -0,0 +1 @@
++.so man1/terminology-helpers.1
+diff --git a/man/tybg.1 b/man/tybg.1
+new file mode 100644
+index 0000000..b57fa92
+--- /dev/null
++++ b/man/tybg.1
+@@ -0,0 +1 @@
++.so man1/terminology-helpers.1
+diff --git a/man/tycat.1 b/man/tycat.1
+new file mode 100644
+index 0000000..b57fa92
+--- /dev/null
++++ b/man/tycat.1
+@@ -0,0 +1 @@
++.so man1/terminology-helpers.1
+diff --git a/man/tyls.1 b/man/tyls.1
+new file mode 100644
+index 0000000..b57fa92
+--- /dev/null
++++ b/man/tyls.1
+@@ -0,0 +1 @@
++.so man1/terminology-helpers.1
+diff --git a/man/typop.1 b/man/typop.1
+new file mode 100644
+index 0000000..b57fa92
+--- /dev/null
++++ b/man/typop.1
+@@ -0,0 +1 @@
++.so man1/terminology-helpers.1
+diff --git a/man/tyq.1 b/man/tyq.1
+new file mode 100644
+index 0000000..b57fa92
+--- /dev/null
++++ b/man/tyq.1
+@@ -0,0 +1 @@
++.so man1/terminology-helpers.1
+diff --git a/man/tysend.1 b/man/tysend.1
+new file mode 100644
+index 0000000..b57fa92
+--- /dev/null
++++ b/man/tysend.1
+@@ -0,0 +1 @@
++.so man1/terminology-helpers.1

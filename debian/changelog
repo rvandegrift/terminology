@@ -3,6 +3,8 @@ terminology (1.3.0-1) unstable; urgency=medium
   * New upstream release (Closes: #912356)
   * Drop remnants of lz4 support, all support removed by upstream.
   * Bump Standards-Version to 4.2.1, no changes required.
+  * d/p/0002-Minor-manpage-improvements.patch: add manpage for the ty*
+    helpers, fix terminology(1) header. (Closes: #836300)
 
  -- Ross Vandegrift <ross@kallisti.us>  Sun, 25 Nov 2018 14:44:15 -0800
 
