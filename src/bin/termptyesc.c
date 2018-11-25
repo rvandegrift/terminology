@@ -7,9 +7,6 @@
 #include "termptyesc.h"
 #include "termptyops.h"
 #include "termptyext.h"
-#if defined(SUPPORT_80_132_COLUMNS)
-#include "termio.h"
-#endif
 
 #undef CRITICAL
 #undef ERR
@@ -27,6 +24,7 @@
 #define BEL 0x07 // Bell
 #define ESC 033 // Escape
 #define DEL 127
+#define UTF8CC 0xc2
 
 /* XXX: all handle_ functions return the number of bytes successfully read, 0
  * if not enough bytes could be read
@@ -534,6 +532,12 @@ static int
 _approximate_truecolor_rgb(Termpty *ty, int r0, int g0, int b0)
 {
    int chosen_color = COL_DEF;
+#ifdef ENABLE_FUZZING
+   (void) ty;
+   (void) r0;
+   (void) g0;
+   (void) b0;
+#else
    int c;
    int distance_min = INT_MAX;
    Evas_Object *textgrid;
@@ -569,6 +573,7 @@ _approximate_truecolor_rgb(Termpty *ty, int r0, int g0, int b0)
              chosen_color = c;
           }
      }
+#endif
    return chosen_color;
 }
 
@@ -1464,7 +1469,7 @@ CUF:
              for (x = ty->cursor_state.cx; x < (ty->w); x++)
                {
                   if (x < lim)
-                    termpty_cell_copy(ty, &(cells[x + arg]), &(cells[x]), 1);
+                    TERMPTY_CELL_COPY(ty, &(cells[x + arg]), &(cells[x]), 1);
                   else
                     {
                        cells[x].codepoint = ' ';
@@ -1629,7 +1634,7 @@ HVP:
         if (b && *b == '!')
           {
              DBG("soft reset (DECSTR)");
-             termpty_reset_state(ty);
+             termpty_soft_reset_state(ty);
           }
         else
           {
@@ -1670,10 +1675,12 @@ HVP:
         termpty_cursor_copy(ty, EINA_FALSE);
         break;
       case 'x':
-        _handle_esc_csi_decfra(ty, &b);
+        if (*(cc-1) == '$')
+          _handle_esc_csi_decfra(ty, &b);
         break;
       case 'z':
-        _handle_esc_csi_decera(ty, &b);
+        if (*(cc-1) == '$')
+          _handle_esc_csi_decera(ty, &b);
         break;
       default:
         goto unhandled;
@@ -1703,7 +1710,7 @@ unhandled:
 }
 
 static int
-_xterm_arg_get(Eina_Unicode **ptr)
+_osc_arg_get(Eina_Unicode **ptr)
 {
    Eina_Unicode *b = *ptr;
    int sum = 0;
@@ -1796,6 +1803,100 @@ err:
 }
 
 static void
+_handle_hyperlink(Termpty *ty,
+                  char *s,
+                  int len)
+{
+    const char *url = NULL;
+    const char *key = NULL;
+    Term_Link *hl = NULL;
+
+    if (!s || len <= 0)
+      {
+         ERR("invalid hyperlink escape code (len:%d s:%p)",
+             len, s);
+         return;
+      }
+
+    if (len == 1 && *s == ';')
+      {
+         /* Closing escape code */
+         if (ty->termstate.att.link_id)
+           {
+              ty->termstate.att.link_id = 0;
+           }
+         else
+           {
+              ERR("invalid hyperlink escape code: no hyperlink to close"
+                  " (len:%d s:%.*s)", len, len, s);
+           }
+         goto end;
+      }
+
+    if (*s != ';')
+      {
+         /* Parse parameters */
+         char *end;
+
+         /* /!\ we expect ';' and ':' to be escaped in params */
+         end = memchr(s+1, ';', len);
+         if (!end)
+           {
+              ERR("invalid hyperlink escape code: missing ';'"
+                  " (len:%d s:%.*s)", len, len, s);
+              goto end;
+           }
+         *end = '\0';
+         do
+           {
+              char *end_param;
+
+              end_param = strchrnul(s, ':');
+
+              if (len > 3 && strncmp(s, "id=", 3) == 0)
+                {
+                   eina_stringshare_del(key);
+
+                   s += 3;
+                   len -= 3;
+                   key = eina_stringshare_add_length(s, end_param - s);
+                }
+              len -= end_param - s;
+              s = end_param;
+              if (*end_param)
+                {
+                   s++;
+                   len--;
+                }
+           }
+         while (s < end);
+         *end = ';';
+      }
+    s++;
+    len--;
+
+    url = eina_stringshare_add_length(s, len);
+    if (!url)
+      goto end;
+
+    hl = term_link_new(ty);
+    if (!hl)
+      goto end;
+    hl->key = key;
+    hl->url = url;
+    key = NULL;
+    url = NULL;
+
+    ty->termstate.att.link_id = hl - ty->hl.links;
+    hl = NULL;
+
+end:
+    term_link_free(ty, hl);
+    eina_stringshare_del(url);
+    eina_stringshare_del(key);
+}
+
+static void
 _handle_xterm_50_command(Termpty *ty,
                          char *s,
                          int len)
@@ -1861,7 +1962,7 @@ _handle_xterm_777_command(Termpty *_ty EINA_UNUSED,
 }
 
 static int
-_handle_esc_xterm(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
+_handle_esc_osc(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
 {
    const Eina_Unicode *cc, *be;
    Eina_Unicode buf[4096], *p;
@@ -1874,7 +1975,9 @@ _handle_esc_xterm(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
    be = buf + sizeof(buf) / sizeof(buf[0]);
    while ((cc < ce) && (*cc != ST) && (*cc != BEL) && (p < be))
      {
-        if ((cc < ce - 1) && (*cc == ESC) && (*(cc + 1) == '\\'))
+        if ((cc < ce - 1) &&
+            (((*cc == ESC) && (*(cc + 1) == '\\')) ||
+             ((*cc == UTF8CC) && (*(cc + 1) == ST))))
           {
              cc++;
              break;
@@ -1885,18 +1988,20 @@ _handle_esc_xterm(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
      }
    if (p == be)
      {
-        ERR("xterm parsing overflowed, skipping the whole buffer (binary data?)");
+        ERR("OSC parsing overflowed, skipping the whole buffer (binary data?)");
         return cc - c;
      }
-   *p = 0;
+   *p = '\0';
    p = buf;
-   if ((*cc == ST) || (*cc == BEL) || (*cc == '\\')) cc++;
-   else return 0;
+   if ((*cc == ST) || (*cc == BEL) || (*cc == '\\'))
+     cc++;
+   else
+     return 0;
 
 #define TERMPTY_WRITE_STR(_S) \
    termpty_write(ty, _S, strlen(_S))
 
-   arg = _xterm_arg_get(&p);
+   arg = _osc_arg_get(&p);
    switch (arg)
      {
       case -1:
@@ -1987,6 +2092,11 @@ _handle_esc_xterm(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
         // XXX: set palette entry. not supported.
         WRN("set palette, not supported");
         if ((cc - c) < 3) return 0;
+        break;
+      case 8:
+        DBG("hyperlink");
+        s = eina_unicode_unicode_to_utf8(p, &len);
+        _handle_hyperlink(ty, s, len);
         break;
       case 10:
         if (!*p)
@@ -2103,7 +2213,9 @@ _handle_esc_dcs(Termpty *ty,
    be = buf + sizeof(buf) / sizeof(buf[0]);
    while ((cc < ce) && (*cc != ST) && (b < be))
      {
-        if ((cc < ce - 1) && (*cc == ESC) && (*(cc + 1) == '\\'))
+        if ((cc < ce - 1) &&
+            (((*cc == ESC) && (*(cc + 1) == '\\')) ||
+             ((*cc == UTF8CC) && (*(cc + 1) == ST))))
           {
              cc++;
              break;
@@ -2206,7 +2318,7 @@ _handle_esc(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
         if (len == 0) return 0;
         return 1 + len;
       case ']':
-        len = _handle_esc_xterm(ty, c + 1, ce);
+        len = _handle_esc_osc(ty, c + 1, ce);
         if (len == 0) return 0;
         return 1 + len;
       case '}':
@@ -2329,6 +2441,32 @@ _handle_esc(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
    return 0;
 }
 
+static int
+_handle_utf8_control_code(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
+{
+   int len = ce - c;
+
+   if (len < 1)
+     return 0;
+   DBG("c0 utf8: '%s' (0x%02x)", _safechar(c[0]), c[0]);
+   switch (c[0])
+     {
+      case 0x9b:
+        len = _handle_esc_csi(ty, c + 1, ce);
+        if (len == 0) return 0;
+        return 1 + len;
+      case 0x9d:
+        len = _handle_esc_osc(ty, c + 1, ce);
+        if (len == 0) return 0;
+        return 1 + len;
+      default:
+        WRN("Unhandled utf8 control code '%s' (0x%02x)", _safechar(c[0]), (unsigned int) c[0]);
+        return 1;
+     }
+   return 0;
+}
+
+
 /* XXX: ce is excluded */
 int
 termpty_handle_seq(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
@@ -2401,6 +2539,14 @@ termpty_handle_seq(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
         len++;
         goto end;
      }
+   else if (c[0] == UTF8CC)
+     {
+        len = _handle_utf8_control_code(ty, c + 1, ce);
+        if (len == 0)
+          goto end;
+        len++;
+        goto end;
+     }
    else if ((ty->block.expecting) && (ty->block.on))
      {
         Termexp *ex;
@@ -2441,7 +2587,8 @@ termpty_handle_seq(Termpty *ty, const Eina_Unicode *c, const Eina_Unicode *ce)
      }
    cc = (Eina_Unicode *)c;
    DBG("txt: [");
-   while ((cc < ce) && (*cc >= 0x20) && (*cc != 0x7f))
+   while ((cc < ce) && (*cc >= 0x20) && (*cc != 0x7f) && (*cc != 0x9b)
+          && (*cc != UTF8CC))
      {
         DBG("%s", _safechar(*cc));
         cc++;

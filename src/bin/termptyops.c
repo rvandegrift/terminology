@@ -83,7 +83,7 @@ termpty_text_scroll(Termpty *ty, Eina_Bool clear)
           {
              cells = &(TERMPTY_SCREEN(ty, x, (y + 1)));
              cells2 = &(TERMPTY_SCREEN(ty, x, y));
-             termpty_cell_copy(ty, cells, cells2, w);
+             TERMPTY_CELL_COPY(ty, cells, cells2, w);
           }
         if (clear)
           termpty_cells_clear(ty, cells, w);
@@ -122,7 +122,7 @@ termpty_text_scroll_rev(Termpty *ty, Eina_Bool clear)
          {
             cells = &(TERMPTY_SCREEN(ty, 0, (y - 1)));
             cells2 = &(TERMPTY_SCREEN(ty, 0, y));
-            termpty_cell_copy(ty, cells, cells2, ty->w);
+            TERMPTY_CELL_COPY(ty, cells, cells2, ty->w);
          }
        if (clear)
           termpty_cells_clear(ty, cells, ty->w);
@@ -198,7 +198,7 @@ termpty_text_append(Termpty *ty, const Eina_Unicode *codepoints, int len)
         if (ty->termstate.insert)
           {
              for (j = max_right-1; j > ty->cursor_state.cx; j--)
-               termpty_cell_copy(ty, &(cells[j - 1]), &(cells[j]), 1);
+               TERMPTY_CELL_COPY(ty, &(cells[j - 1]), &(cells[j]), 1);
           }
 
         g = _termpty_charset_trans(ty, codepoints[i]);
@@ -319,7 +319,7 @@ termpty_clear_backlog(Termpty *ty)
      {
         size_t i;
         for (i = 0; i < ty->backsize; i++)
-          termpty_save_free(&ty->back[i]);
+          termpty_save_free(ty, &ty->back[i]);
         free(ty->back);
         ty->back = NULL;
      }
@@ -424,7 +424,7 @@ termpty_reset_att(Termatt *att)
 }
 
 void
-termpty_reset_state(Termpty *ty)
+termpty_soft_reset_state(Termpty *ty)
 {
    int i;
    Config *config = NULL;
@@ -432,8 +432,6 @@ termpty_reset_state(Termpty *ty)
    if (ty->obj)
      config = termio_config_get(ty->obj);
 
-   ty->cursor_state.cx = 0;
-   ty->cursor_state.cy = 0;
    ty->termstate.top_margin = 0;
    ty->termstate.bottom_margin = 0;
    ty->termstate.left_margin = 0;
@@ -443,6 +441,7 @@ termpty_reset_state(Termpty *ty)
    ty->termstate.had_cr_y = 0;
    ty->termstate.restrict_cursor = 0;
    termpty_reset_att(&(ty->termstate.att));
+   ty->termstate.att.link_id = 0;
    ty->termstate.charset = 0;
    ty->termstate.charsetch = 'B';
    ty->termstate.chset[0] = 'B';
@@ -465,7 +464,6 @@ termpty_reset_state(Termpty *ty)
    ty->mouse_ext = MOUSE_EXT_NONE;
    ty->bracketed_paste = 0;
 
-   termpty_clear_backlog(ty);
    termpty_clear_tabs_on_screen(ty);
    for (i = 0; i < ty->w; i += TAB_WIDTH)
      {
@@ -473,6 +471,15 @@ termpty_reset_state(Termpty *ty)
      }
    if (config && ty->obj)
      termio_set_cursor_shape(ty->obj, config->cursor_shape);
+}
+
+void
+termpty_reset_state(Termpty *ty)
+{
+   termpty_soft_reset_state(ty);
+   ty->cursor_state.cx = 0;
+   ty->cursor_state.cy = 0;
+   termpty_clear_backlog(ty);
 }
 
 void

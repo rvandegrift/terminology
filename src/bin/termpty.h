@@ -2,14 +2,16 @@
 #define _TERMPTY_H__ 1
 
 #include "config.h"
+#include "media.h"
 
-typedef struct _Termpty       Termpty;
 typedef struct _Termcell      Termcell;
 typedef struct _Termatt       Termatt;
 typedef struct _Termsave      Termsave;
 typedef struct _Termsavecomp  Termsavecomp;
 typedef struct _Termblock     Termblock;
 typedef struct _Termexp       Termexp;
+typedef struct _Termpty       Termpty;
+typedef struct _Termlink      Term_Link;
 
 #define COL_DEF        0
 #define COL_BLACK      1
@@ -43,6 +45,18 @@ typedef struct _Termexp       Termexp;
 #define MOVIE_STATE_PAUSE  1
 #define MOVIE_STATE_STOP   2
 
+#define HL_LINKS_MAX  (1 << 16)
+
+struct _Termlink
+{
+    const char *key;
+    const char *url;
+    unsigned int refcount;
+};
+
+
+
+
 struct _Termatt
 {
    unsigned char fg, bg;
@@ -73,6 +87,7 @@ struct _Termatt
 #else
    unsigned short bit_padding : 12;
 #endif
+   uint16_t       link_id;
 };
 
 struct _Termpty
@@ -174,13 +189,17 @@ struct _Termpty
    unsigned int mouse_mode : 3;
    unsigned int mouse_ext  : 2;
    unsigned int bracketed_paste : 1;
+   struct {
+       Term_Link *links;
+       uint8_t *bitmap;
+       uint32_t size;
+   } hl;
 };
 
 struct _Termcell
 {
    Eina_Unicode   codepoint;
    Termatt        att;
-   unsigned char padding[2];
 };
 
 struct _Termsave
@@ -210,7 +229,7 @@ struct _Termblock
    Evas_Object *obj;
    Eina_List   *cmds;
    int          id;
-   int          type;
+   Media_Type   type;
    int          refs;
    short        w, h;
    short        x, y;
@@ -229,9 +248,11 @@ struct _Termblock
 
 struct _Termexp
 {
-   int ch, left, id;
+   Eina_Unicode ch;
+   int left, id;
    int x, y, w, h;
 };
+
 
 void       termpty_init(void);
 void       termpty_shutdown(void);
@@ -246,6 +267,7 @@ void       termpty_backlog_lock(void);
 void       termpty_backlog_unlock(void);
 
 Termcell  *termpty_cellrow_get(Termpty *ty, int y, ssize_t *wret);
+Termcell * termpty_cell_get(Termpty *ty, int y_requested, int x_requested);
 ssize_t termpty_row_length(Termpty *ty, int y);
 void       termpty_write(Termpty *ty, const char *input, int len);
 void       termpty_resize(Termpty *ty, int new_w, int new_h);
@@ -263,8 +285,6 @@ Termblock *termpty_block_get(const Termpty *ty, int id);
 void       termpty_block_chid_update(Termpty *ty, Termblock *blk);
 Termblock *termpty_block_chid_get(const Termpty *ty, const char *chid);
 
-void       termpty_cell_copy(Termpty *ty, Termcell *src, Termcell *dst, int n);
-void       termpty_cell_fill(Termpty *ty, Termcell *src, Termcell *dst, int n);
 void       termpty_cell_codepoint_att_fill(Termpty *ty, Eina_Unicode codepoint, Termatt att, Termcell *dst, int n);
 void       termpty_cells_set_content(Termpty *ty, Termcell *cells,
                           Eina_Unicode codepoint, int count);
@@ -274,6 +294,10 @@ ssize_t termpty_line_length(const Termcell *cells, ssize_t nb_cells);
 
 Config *termpty_config_get(const Termpty *ty);
 void termpty_handle_buf(Termpty *ty, const Eina_Unicode *codepoints, int len);
+void termpty_handle_block_codepoint_overwrite_heavy(Termpty *ty, int oldc, int newc);
+
+Term_Link * term_link_new(Termpty *ty);
+void term_link_free(Termpty *ty, Term_Link *link);
 
 extern int _termpty_log_dom;
 
@@ -288,4 +312,98 @@ extern int _termpty_log_dom;
      Field = Min;                               \
    } while (0)
 
+/* Try to trick the compiler into inlining the first test */
+#define HANDLE_BLOCK_CODEPOINT_OVERWRITE(Tpty, OLDC, NEWC)                   \
+do {                                                                         \
+   if (EINA_UNLIKELY((OLDC | NEWC) & 0x80000000))                            \
+       termpty_handle_block_codepoint_overwrite_heavy(Tpty, OLDC, NEWC);     \
+} while (0)
+
+#define TERMPTY_CELL_COPY(Tpty, Tsrc, Tdst, N)                               \
+do {                                                                         \
+   int __i;                                                                  \
+                                                                             \
+   for (__i = 0; __i < N; __i++)                                             \
+     {                                                                       \
+        HANDLE_BLOCK_CODEPOINT_OVERWRITE(Tpty,                               \
+                                         (Tdst)[__i].codepoint,              \
+                                         (Tsrc)[__i].codepoint);             \
+        if (EINA_UNLIKELY((Tdst)[__i].att.link_id))                          \
+          term_link_refcount_dec(ty, (Tdst)[__i].att.link_id, 1);            \
+        if (EINA_UNLIKELY((Tsrc)[__i].att.link_id))                          \
+          term_link_refcount_inc(ty, (Tsrc)[__i].att.link_id, 1);            \
+     }                                                                       \
+   memcpy(Tdst, Tsrc, N * sizeof(Termcell));                                 \
+} while (0)
+
+
+static inline void
+term_link_refcount_inc(Termpty *ty, uint16_t link_id, uint16_t count)
+{
+   Term_Link *link;
+
+   link = &ty->hl.links[link_id];
+   link->refcount += count;
+}
+
+static inline void
+term_link_refcount_dec(Termpty *ty, uint16_t link_id, uint16_t count)
+{
+   Term_Link *link;
+
+   link = &ty->hl.links[link_id];
+   link->refcount -= count;
+   if (EINA_UNLIKELY(link->refcount == 0))
+     term_link_free(ty, link);
+}
+
+static inline Eina_Bool
+term_link_eq(Termpty *ty, Term_Link *hl, uint16_t link_id)
+{
+    Term_Link *hl2;
+    uint16_t hl_id;
+
+    if (link_id == 0)
+        return EINA_FALSE;
+
+    hl_id = hl - ty->hl.links;
+    if (hl_id == link_id)
+        return EINA_TRUE;
+    hl2 = &ty->hl.links[link_id];
+    if (!hl->key || !hl2->key ||
+        strcmp(hl->key, hl2->key) != 0)
+        return EINA_FALSE;
+    return (strcmp(hl->url, hl2->url) == 0);
+}
+
+static inline void
+termpty_cell_fill(Termpty *ty, Termcell *src, Termcell *dst, int n)
+{
+   int i;
+
+   if (src)
+     {
+        for (i = 0; i < n; i++)
+          {
+             HANDLE_BLOCK_CODEPOINT_OVERWRITE(ty, dst[i].codepoint, src[0].codepoint);
+             if (EINA_UNLIKELY(dst[i].att.link_id))
+               term_link_refcount_dec(ty, dst[i].att.link_id, 1);
+
+             dst[i] = src[0];
+          }
+        if (src[0].att.link_id)
+          term_link_refcount_inc(ty, src[0].att.link_id, n);
+     }
+   else
+     {
+        for (i = 0; i < n; i++)
+          {
+             HANDLE_BLOCK_CODEPOINT_OVERWRITE(ty, dst[i].codepoint, 0);
+             if (EINA_UNLIKELY(dst[i].att.link_id))
+               term_link_refcount_dec(ty, dst[i].att.link_id, 1);
+
+             memset(&(dst[i]), 0, sizeof(*dst));
+          }
+     }
+}
 #endif

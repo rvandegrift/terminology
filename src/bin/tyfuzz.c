@@ -1,3 +1,5 @@
+#include "coverity.h"
+
 #include <stdio.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -54,6 +56,13 @@ termio_font_size_set(Evas_Object *obj EINA_UNUSED,
                      int size EINA_UNUSED)
 {
 }
+
+
+void
+termio_set_cursor_shape(Evas_Object *obj EINA_UNUSED,
+                        Cursor_Shape shape EINA_UNUSED)
+{
+}
 /* }}} */
 
 
@@ -75,6 +84,10 @@ _termpty_init(Termpty *ty)
    ty->fd = STDIN_FILENO;
    ty->fd_dev_null = open("/dev/null", O_WRONLY|O_APPEND);
    assert(ty->fd_dev_null >= 0);
+   ty->hl.bitmap = calloc(1, HL_LINKS_MAX / 8); /* bit map for 1 << 16 elements */
+   assert(ty->hl.bitmap);
+   /* Mark id 0 as set */
+   ty->hl.bitmap[0] = 1;
 }
 
 static void

@@ -49,13 +49,26 @@ _cb_sel_off(void *data,
      elm_object_disabled_set(bt_copy, EINA_TRUE);
 }
 
-static Eina_Bool
-_cb_del_delay(void *data)
+static void
+_cb_hidden(void *data,
+           Evas *_e EINA_UNUSED,
+           Evas_Object *_obj EINA_UNUSED,
+           void *_ev EINA_UNUSED)
 {
-   Evas_Object *frame = data;
+   Controls_Ctx *ctx = data;
+   Evas_Object *frame = ctx->frame;
+   Evas_Object *o;
+
    evas_object_del(frame);
+
+   o = edje_object_part_swallow_get(ctx->base, "terminology.controls");
+   if (o)
+     {
+        edje_object_part_unswallow(ctx->base, o);
+     }
+
    elm_cache_all_flush();
-   return EINA_FALSE;
+   free(ctx);
 }
 
 static void
@@ -147,15 +160,20 @@ _on_sub_done(void *data)
 {
    Controls_Ctx *ctx = data;
 
-   ecore_timer_add(10.0, _cb_del_delay, ctx->frame);
-   ctx->frame = NULL;
-
    if (ctx->donecb)
      ctx->donecb(ctx->donedata);
 
    eina_hash_del(controls, &ctx->win, ctx);
 
-   free(ctx);
+   if (evas_object_visible_get(ctx->frame))
+     {
+        evas_object_event_callback_add(ctx->frame, EVAS_CALLBACK_HIDE,
+                                       _cb_hidden, ctx);
+     }
+   else
+     {
+        _cb_hidden(ctx, NULL, NULL, NULL);
+     }
 }
 
 static void
@@ -279,15 +297,7 @@ controls_hide(Controls_Ctx *ctx, Eina_Bool call_cb)
 
    if (call_cb)
      {
-        ecore_timer_add(10.0, _cb_del_delay, ctx->frame);
-        ctx->frame = NULL;
-
-        if (ctx->donecb)
-          ctx->donecb(ctx->donedata);
-
-        eina_hash_del(controls, &ctx->win, ctx);
-
-        free(ctx);
+        _on_sub_done(ctx);
      }
 }
 
@@ -300,12 +310,12 @@ controls_show(Evas_Object *win, Evas_Object *base, Evas_Object *bg,
    Evas_Object *ct_boxh, *ct_boxv, *ct_box, *ct_box2, *ct_box3;
    Controls_Ctx *ctx;
 
-   if (eina_hash_find(controls, &win))
+   if (eina_hash_find(controls, &win) ||
+       edje_object_part_swallow_get(base, "terminology.controls"))
      {
         donecb(donedata);
         return;
      }
-
 
    ctx = malloc(sizeof(*ctx));
    assert(ctx);

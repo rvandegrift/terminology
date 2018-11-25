@@ -10,6 +10,9 @@ This is an EFL terminal emulator with some extra bells and whistles.
 
 :warning: :warning: :warning:
 
+[![Coverity](https://scan.coverity.com/projects/terminology/badge.svg)](https://scan.coverity.com/projects/terminology)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/49a51811016a44279cb969af82cd246f)](https://www.codacy.com/app/billiob/terminology)
+
 
 Requirements
 ------------

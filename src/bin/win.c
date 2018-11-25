@@ -1,3 +1,5 @@
+#include "private.h"
+
 #include <assert.h>
 #include <Elementary.h>
 #include <Ecore_Input.h>
@@ -12,7 +14,6 @@
 #include "media.h"
 #include "termio.h"
 #include "utils.h"
-#include "private.h"
 #include "sel.h"
 #include "controls.h"
 #include "keyin.h"
@@ -2681,11 +2682,12 @@ _tabs_restore(Tabs *tabs)
    Term_Container *tc = (Term_Container*)tabs;
    Term *term;
    Solo *solo;
+   Win *wn = tc->wn;
 
    if (!tabs->selector)
      return;
 
-   EINA_LIST_FOREACH(tc->wn->terms, l, term)
+   EINA_LIST_FOREACH(wn->terms, l, term)
      {
         if (term->unswallowed)
           {
@@ -2713,6 +2715,8 @@ _tabs_restore(Tabs *tabs)
    evas_object_del(tabs->selector_bg);
    tabs->selector = NULL;
    tabs->selector_bg = NULL;
+
+   wn->on_popover = EINA_FALSE;
 
    /* XXX: reswallow in parent */
    tc->parent->swallow(tc->parent, tc, tc);
@@ -2781,6 +2785,8 @@ _cb_tab_selector_show(Tabs *tabs, Tab_Item *to_item)
 
    if (tabs->selector_bg)
      return;
+
+   wn->on_popover = EINA_TRUE;
 
    o = tc->get_evas_object(tc);
    evas_object_geometry_get(o, &x, &y, &w, &h);
@@ -3689,7 +3695,6 @@ _tabs_new(Term_Container *child, Term_Container *parent)
 Eina_Bool
 term_is_visible(Term *term)
 {
-   /* TODO: boris */
    Term_Container *tc;
 
    if (!term)
