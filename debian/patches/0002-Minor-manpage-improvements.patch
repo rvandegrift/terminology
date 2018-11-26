@@ -2,7 +2,7 @@ Description: Minor manpage improvements
  This adds a manpage for the ty* helpers and fixes the terminology header.
 Author: Ross Vandegrift <ross@kallisti.us>
 Origin: other
-Forwarded: no
+Forwarded: https://phab.enlightenment.org/D7356
 Last-Update: 2018-06-16
 ---
 This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
