@@ -34,12 +34,11 @@ Subject: Minor manpage improvements
  create mode 100644 man/tyq.1
  create mode 100644 man/tysend.1
 
-diff --git a/man/meson.build b/man/meson.build
-index b5c7425..bd7b6a7 100644
 --- a/man/meson.build
 +++ b/man/meson.build
-@@ -1 +1,8 @@
+@@ -1 +1,9 @@
  install_man('terminology.1')
++install_man('terminology-helpers.1')
 +install_man('tyls.1')
 +install_man('tyalpha.1')
 +install_man('tybg.1')
@@ -47,9 +46,6 @@ index b5c7425..bd7b6a7 100644
 +install_man('typop.1')
 +install_man('tyq.1')
 +install_man('tysend.1')
-diff --git a/man/terminology-helpers.1 b/man/terminology-helpers.1
-new file mode 100644
-index 0000000..fb8187c
 --- /dev/null
 +++ b/man/terminology-helpers.1
 @@ -0,0 +1,49 @@
@@ -102,8 +98,6 @@ index 0000000..fb8187c
 +
 +.SH AUTHOR
 +Terminology was written by Carsten Haitzler <raster@rasterman.com> and others.  It is maintained by Boris Faure <boris@fau.re> and others. See AUTHORS file for other contributors.
-diff --git a/man/terminology.1 b/man/terminology.1
-index 8df6c11..2561c64 100644
 --- a/man/terminology.1
 +++ b/man/terminology.1
 @@ -1,5 +1,5 @@
@@ -113,51 +107,30 @@ index 8df6c11..2561c64 100644
  .SH NAME
  Terminology \- Terminal Emulator written with EFL (Enlightenment Foundation Libraries).
  .SH SYNOPSIS
-diff --git a/man/tyalpha.1 b/man/tyalpha.1
-new file mode 100644
-index 0000000..b57fa92
 --- /dev/null
 +++ b/man/tyalpha.1
 @@ -0,0 +1 @@
 +.so man1/terminology-helpers.1
-diff --git a/man/tybg.1 b/man/tybg.1
-new file mode 100644
-index 0000000..b57fa92
 --- /dev/null
 +++ b/man/tybg.1
 @@ -0,0 +1 @@
 +.so man1/terminology-helpers.1
-diff --git a/man/tycat.1 b/man/tycat.1
-new file mode 100644
-index 0000000..b57fa92
 --- /dev/null
 +++ b/man/tycat.1
 @@ -0,0 +1 @@
 +.so man1/terminology-helpers.1
-diff --git a/man/tyls.1 b/man/tyls.1
-new file mode 100644
-index 0000000..b57fa92
 --- /dev/null
 +++ b/man/tyls.1
 @@ -0,0 +1 @@
 +.so man1/terminology-helpers.1
-diff --git a/man/typop.1 b/man/typop.1
-new file mode 100644
-index 0000000..b57fa92
 --- /dev/null
 +++ b/man/typop.1
 @@ -0,0 +1 @@
 +.so man1/terminology-helpers.1
-diff --git a/man/tyq.1 b/man/tyq.1
-new file mode 100644
-index 0000000..b57fa92
 --- /dev/null
 +++ b/man/tyq.1
 @@ -0,0 +1 @@
 +.so man1/terminology-helpers.1
-diff --git a/man/tysend.1 b/man/tysend.1
-new file mode 100644
-index 0000000..b57fa92
 --- /dev/null
 +++ b/man/tysend.1
 @@ -0,0 +1 @@
