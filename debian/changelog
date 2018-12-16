@@ -1,3 +1,9 @@
+terminology (1.3.1-1) UNRELEASED; urgency=high
+
+  * New upstream release.
+
+ -- Ross Vandegrift <ross@kallisti.us>  Sun, 16 Dec 2018 09:55:37 -0800
+
 terminology (1.3.0-1) unstable; urgency=medium
 
   * New upstream release.
