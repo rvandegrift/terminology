@@ -334,7 +334,7 @@ _fd_read_do(Termpty *ty, Ecore_Fd_Handler *fd_handler, Eina_Bool false_on_empty)
         termpty_handle_buf(ty, codepoint, j);
      }
    if (ty->cb.change.func) ty->cb.change.func(ty->cb.change.data);
-#ifdef ENABLE_FUZZING
+#if defined(ENABLE_FUZZING) || defined(ENABLE_TESTS)
    if (len <= 0)
      {
         ty->exit_code = 0;
@@ -477,7 +477,7 @@ Termpty *
 termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
             int w, int h, int backscroll, Eina_Bool xterm_256color,
             Eina_Bool erase_is_del, const char *emotion_mod,
-            const char *title)
+            const char *title, Ecore_Window window_id)
 {
    Termpty *ty;
    const char *pty;
@@ -525,7 +525,7 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
 
    ty->circular_offset = 0;
 
-#ifdef ENABLE_FUZZING
+#if defined(ENABLE_FUZZING) || defined(ENABLE_TESTS)
    ty->fd = STDIN_FILENO;
    ty->hand_fd = ecore_main_fd_handler_add(ty->fd,
                                            ECORE_FD_READ | ECORE_FD_ERROR,
@@ -719,6 +719,11 @@ termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
              snprintf(buf, sizeof(buf), "EMOTION_ENGINE=%s", emotion_mod);
              putenv(buf);
           }
+        if (window_id)
+          {
+             snprintf(buf, sizeof(buf), "WINDOWID=%lu", window_id);
+             putenv(buf);
+          }
         if (!login_shell)
           execvp(args[0], (char *const *)args);
         else
@@ -843,13 +848,10 @@ termpty_free(Termpty *ty)
 static Eina_Bool
 _termpty_cell_is_empty(const Termcell *cell)
 {
-   if ((cell->codepoint != 0) &&
-       (!cell->att.invisible) &&
-       (cell->att.fg != COL_INVIS))
-     {
-        return EINA_FALSE;
-     }
-   return EINA_TRUE;
+   return ((cell->codepoint == 0) ||
+           (cell->att.invisible) ||
+           (cell->att.fg == COL_INVIS)) &&
+      ((cell->att.bg == COL_INVIS) || (cell->att.bg == COL_DEF));
 }
 
 static Eina_Bool
@@ -1198,10 +1200,12 @@ termpty_cellrow_get(Termpty *ty, int y_requested, ssize_t *wret)
 {
    if (y_requested >= 0)
      {
+        Termcell *cells = &(TERMPTY_SCREEN(ty, 0, y_requested));
         if (y_requested >= ty->h)
           return NULL;
-        *wret = ty->w;
-        return &(TERMPTY_SCREEN(ty, 0, y_requested));
+
+        *wret = termpty_line_length(cells, ty->w);
+        return cells;
      }
    if (!ty->back)
      return NULL;
@@ -1236,15 +1240,18 @@ termpty_cell_get(Termpty *ty, int y_requested, int x_requested)
 void
 termpty_write(Termpty *ty, const char *input, int len)
 {
+#if defined(ENABLE_TESTS)
+   ty_sb_add(&ty->write_buffer, input, len);
+#else
    int fd = ty->fd;
-
-#ifdef ENABLE_FUZZING
+#if defined(ENABLE_FUZZING)
    fd = ty->fd_dev_null;
 #endif
    if (fd < 0) return;
    if (write(fd, input, len) < 0)
      ERR(_("Could not write to file descriptor %d: %s"),
          fd, strerror(errno));
+#endif
 }
 
 struct screen_info
@@ -1446,6 +1453,7 @@ termpty_resize(Termpty *ty, int new_w, int new_h)
    ty->cursor_state.cy = (new_si.cy >= 0) ? new_si.cy : 0;
    ty->cursor_state.cx = (new_si.cx >= 0) ? new_si.cx : 0;
    ty->circular_offset = new_si.circular_offset;
+   ty->circular_offset2 = 0;
 
    ty->w = new_w;
    ty->h = new_h;

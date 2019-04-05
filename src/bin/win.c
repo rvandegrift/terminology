@@ -1628,6 +1628,13 @@ win_new(const char *name, const char *role, const char *title,
         return NULL;
      }
 
+   if (_win_log_dom < 0)
+     {
+        _win_log_dom = eina_log_domain_register("win", NULL);
+        if (_win_log_dom < 0)
+          EINA_LOG_CRIT("Could not create logging domain '%s'.", "win");
+     }
+
    tc = (Term_Container*) wn;
    tc->term_next = _win_term_next;
    tc->term_prev = _win_term_prev;
@@ -2399,8 +2406,7 @@ _size_job(void *data)
    tc->size_eval(tc, &info);
 
    elm_win_size_base_set(wn->win,
-                         info.bg_min_w - info.step_x,
-                         info.bg_min_h - info.step_y);
+                         info.min_w, info.min_h);
    elm_win_size_step_set(wn->win, info.step_x, info.step_y);
    evas_object_size_hint_min_set(wn->backbg,
                                  info.bg_min_w,
@@ -4445,7 +4451,7 @@ _cb_popup(void *data,
      {
         /* Popup a link, there was user interaction on it. */
         from_user_interaction = EINA_TRUE;
-        src = termio_link_get(term->termio);
+        src = termio_link_get(term->termio, NULL);
      }
    if (!src)
      return;
@@ -4466,7 +4472,7 @@ _cb_popup_queue(void *data,
    if (!src)
      {
         from_user_interaction = EINA_TRUE;
-        src = termio_link_get(term->termio);
+        src = termio_link_get(term->termio, NULL);
      }
    if (!src)
      return;
@@ -5598,13 +5604,6 @@ term_new(Win *wn, Config *config, const char *cmd,
 
    if (!config) abort();
 
-   /* TODO: clean up that */
-   if (_win_log_dom < 0)
-     {
-        _win_log_dom = eina_log_domain_register("win", NULL);
-        if (_win_log_dom < 0)
-          EINA_LOG_CRIT("Could not create logging domain '%s'.", "win");
-     }
    termpty_init();
    miniview_init();
    gravatar_init();

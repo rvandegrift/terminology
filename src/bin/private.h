@@ -18,7 +18,15 @@
 
 extern int terminology_starting_up;
 
-#ifdef ENABLE_FUZZING
+/* Uncommenting the following enables processing of testing escape codes in
+ * the normal 'terminology' binary.
+ * This is only useful to write tests
+ */
+#if !defined(ENABLE_FUZZING) && !defined(ENABLE_TESTS)
+//#define ENABLE_TEST_UI
+#endif
+
+#if defined(ENABLE_FUZZING) || defined(ENABLE_TESTS)
 #define EINA_LOG_LEVEL_MAXIMUM (-1)
 #endif
 extern int _log_domain;

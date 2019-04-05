@@ -24,303 +24,34 @@
 # include <libproc.h>
 #endif
 
-typedef struct _Termio Termio;
-
-struct _Termio
-{
-   Evas_Object_Smart_Clipped_Data __clipped_data;
-   struct {
-      const char *name;
-      int size;
-      int chw, chh;
-   } font;
-   struct {
-      int w, h;
-      Evas_Object *obj;
-   } grid;
-   struct {
-        Evas_Object *top, *bottom, *theme;
-   } sel;
-   struct {
-      Evas_Object *obj;
-      int x, y;
-      Cursor_Shape shape;
-   } cursor;
-   struct {
-      int cx, cy;
-      int button;
-   } mouse;
-   struct {
-      const char *string;
-      int x1, y1, x2, y2;
-      int suspend;
-      uint16_t id;
-      Eina_List *objs;
-      struct {
-         Evas_Object *dndobj;
-         Evas_Coord x, y;
-         unsigned char down : 1;
-         unsigned char dnd : 1;
-         unsigned char dndobjdel : 1;
-      } down;
-   } link;
-   struct {
-      const char *file;
-      FILE *f;
-      double progress;
-      unsigned long long total, size;
-      Eina_Bool active : 1;
-   } sendfile;
-   Evas_Object *ctxpopup;
-   int zoom_fontsize_start;
-   int scroll;
-   Evas_Object *self;
-   Evas_Object *event;
-   Term *term;
-
-   Termpty *pty;
-   Ecore_Animator *anim;
-   Ecore_Timer *delayed_size_timer;
-   Ecore_Timer *link_do_timer;
-   Ecore_Timer *mouse_selection_scroll_timer;
-   Ecore_Job *mouse_move_job;
-   Ecore_Timer *mouseover_delay;
-   Evas_Object *win, *theme, *glayer;
-   Config *config;
-   const char *sel_str;
-   Eina_List *cur_chids;
-   Ecore_Job *sel_reset_job;
-   double set_sel_at;
-   Elm_Sel_Type sel_type;
-   unsigned char jump_on_change : 1;
-   unsigned char jump_on_keypress : 1;
-   unsigned char have_sel : 1;
-   unsigned char noreqsize : 1;
-   unsigned char didclick : 1;
-   unsigned char moved : 1;
-   unsigned char bottom_right : 1;
-   unsigned char top_left : 1;
-   unsigned char reset_sel : 1;
-   unsigned char cb_added : 1;
-   double gesture_zoom_start_size;
-};
-
-#define INT_SWAP(_a, _b) do {    \
-    int _swap = _a; _a = _b; _b = _swap; \
-} while (0)
-
 
 static Evas_Smart *_smart = NULL;
 static Evas_Smart_Class _parent_sc = EVAS_SMART_CLASS_INIT_NULL;
 
 static Eina_List *terms = NULL;
 
-static void _sel_set(Termio *sd, Eina_Bool enable);
 static void _remove_links(Termio *sd);
-static void _smart_update_queue(Evas_Object *obj, Termio *sd);
 static void _smart_apply(Evas_Object *obj);
 static void _smart_size(Evas_Object *obj, int w, int h, Eina_Bool force);
 static void _smart_calculate(Evas_Object *obj);
-static void _take_selection_text(Termio *sd, Elm_Sel_Type type, const char *text);
-static void _smart_xy_to_cursor(Termio *sd, Evas_Coord x, Evas_Coord y, int *cx, int *cy);
 static Eina_Bool _mouse_in_selection(Termio *sd, int cx, int cy);
 
 
 /* {{{ Helpers */
 
-static void
-_termio_scroll_selection(Termio *sd, Termpty *ty,
-                         int direction, int start_y, int end_y)
+Termio *
+termio_get_from_obj(Evas_Object *obj)
 {
-   if (!ty->selection.is_active)
-     return;
-
-   int sel_start_x = ty->selection.start.x;
-   int sel_start_y = ty->selection.start.y;
-   int sel_end_x = ty->selection.end.x;
-   int sel_end_y = ty->selection.end.y;
-
-   int left_margin = ty->termstate.left_margin;
-   int right_margin = ty->termstate.right_margin;
-
-   if (!ty->selection.is_top_to_bottom)
-     {
-        INT_SWAP(sel_start_y, sel_end_y);
-        INT_SWAP(sel_start_x, sel_end_x);
-     }
-
-   if (start_y <= sel_start_y &&
-       sel_end_y <= end_y)
-     {
-        if (ty->termstate.left_margin)
-          {
-             if ((ty->selection.is_box) || (sel_start_y == sel_end_y))
-               {
-                  /* if selection outside scrolling area */
-                  if ((sel_end_x <= left_margin) ||
-                      (sel_start_x >= right_margin))
-                    {
-                       return;
-                    }
-                  /* if selection not within scrolling area */
-                  if (!((sel_start_x >= left_margin) &&
-                        (sel_end_x <= right_margin)))
-                    {
-                       _sel_set(sd, EINA_FALSE);
-                       return;
-                    }
-               }
-             else
-               {
-                  _sel_set(sd, EINA_FALSE);
-                  return;
-               }
-          }
-
-          ty->selection.orig.y += direction;
-          ty->selection.start.y += direction;
-          ty->selection.end.y += direction;
-          sel_start_y += direction;
-          sel_end_y += direction;
-          if (!(start_y <= sel_start_y &&
-                sel_end_y <= end_y))
-            {
-               _sel_set(sd, EINA_FALSE);
-            }
-     }
-   else if (!((start_y > sel_end_y) ||
-              (end_y < sel_start_y)))
-     {
-        if (ty->termstate.left_margin)
-          {
-             if ((ty->selection.is_box) || (sel_start_y == sel_end_y))
-               {
-                  /* if selection outside scrolling area */
-                  if ((sel_end_x <= left_margin) ||
-                      (sel_start_x >= right_margin))
-                    {
-                       return;
-                    }
-               }
-          }
-        _sel_set(sd, EINA_FALSE);
-     }
-   else if (sd->scroll > 0)
-     {
-        ty->selection.orig.y += direction;
-        ty->selection.start.y += direction;
-        ty->selection.end.y += direction;
-     }
+   return evas_object_smart_data_get(obj);
 }
 
 void
-termio_scroll(Evas_Object *obj, int direction, int start_y, int end_y)
+termio_object_geometry_get(Termio *sd,
+                           Evas_Coord *x, Evas_Coord *y,
+                           Evas_Coord *w, Evas_Coord *h)
 {
-   Termio *sd = evas_object_smart_data_get(obj);
-   Termpty *ty;
-
-   EINA_SAFETY_ON_NULL_RETURN(sd);
-
-   ty = sd->pty;
-
-   if ((!sd->jump_on_change) && // if NOT scroll to bottom on updates
-       (sd->scroll > 0))
-     {
-        Evas_Object *mv = term_miniview_get(sd->term);
-        if (mv) miniview_position_offset(mv, direction, EINA_FALSE);
-        // adjust scroll position for added scrollback
-        sd->scroll -= direction;
-     }
-
-   _termio_scroll_selection(sd, ty, direction, start_y, end_y);
-
-   if (sd->link.string)
-     {
-        if (sd->link.y1 <= end_y && sd->link.y2 >= start_y)
-          _remove_links(sd);
-     }
+   evas_object_geometry_get(sd->self, x, y, w, h);
 }
-
-void
-termio_content_change(Evas_Object *obj, Evas_Coord x, Evas_Coord y,
-                      int n)
-{
-   Termpty *ty;
-   int start_x, start_y, end_x, end_y;
-   Termio *sd = evas_object_smart_data_get(obj);
-
-   EINA_SAFETY_ON_NULL_RETURN(sd);
-   ty = sd->pty;
-
-   if (sd->link.string)
-     {
-        int _y = y + (x + n) / ty->w;
-
-        start_x = sd->link.x1;
-        start_y = sd->link.y1;
-        end_x   = sd->link.x2;
-        end_y   = sd->link.y2;
-
-        y = MAX(y, start_y);
-        for (; y <= MIN(_y, end_y); y++)
-          {
-             int d = MIN(n, ty->w - x);
-             if (!((x > end_x) || (x + d < start_x)))
-               {
-                  _remove_links(sd);
-                  break;
-               }
-             n -= d;
-             x = 0;
-          }
-     }
-
-   if (!ty->selection.is_active) return;
-
-   start_x = sd->pty->selection.start.x;
-   start_y = sd->pty->selection.start.y;
-   end_x   = sd->pty->selection.end.x;
-   end_y   = sd->pty->selection.end.y;
-
-   if (!sd->pty->selection.is_top_to_bottom)
-     {
-        INT_SWAP(start_y, end_y);
-        INT_SWAP(start_x, end_x);
-     }
-   if (ty->selection.is_box)
-     {
-        int _y = y + (x + n) / ty->w;
-
-        y = MAX(y, start_y);
-        for (; y <= MIN(_y, end_y); y++)
-          {
-             int d = MIN(n, ty->w - x);
-             if (!((x > end_x) || (x + d < start_x)))
-               {
-                  _sel_set(sd, EINA_FALSE);
-                  break;
-               }
-             n -= d;
-             x = 0;
-          }
-     }
-   else
-     {
-        int sel_len;
-        Termcell *cells_changed, *cells_selection;
-
-        sel_len = end_x - start_x + ty->w * (end_y - start_y);
-        cells_changed = &(TERMPTY_SCREEN(ty, x, y));
-        cells_selection = &(TERMPTY_SCREEN(ty, start_x, start_y));
-
-        if (!((cells_changed > (cells_selection + sel_len)) ||
-             (cells_selection > (cells_changed + n))))
-          {
-             _sel_set(sd, EINA_FALSE);
-          }
-     }
-}
-
 
 static void
 _win_obj_del(void *data,
@@ -360,7 +91,7 @@ termio_mouseover_suspend_pushpop(Evas_Object *obj, int dir)
         if (sd->anim) ecore_animator_del(sd->anim);
         sd->anim = NULL;
      }
-   _smart_update_queue(obj, sd);
+   termio_smart_update_queue(sd);
 }
 
 void
@@ -395,7 +126,7 @@ termio_scroll_delta(Evas_Object *obj, int delta, int by_page)
    sd->scroll += delta;
    if (delta <= 0 && sd->scroll < 0)
        sd->scroll = 0;
-   _smart_update_queue(obj, sd);
+   termio_smart_update_queue(sd);
    miniview_position_offset(term_miniview_get(sd->term), -delta, EINA_TRUE);
 }
 
@@ -821,7 +552,8 @@ _should_inline(const Evas_Object *obj)
 
 /* Need to be freed */
 const char *
-termio_link_get(const Evas_Object *obj)
+termio_link_get(const Evas_Object *obj,
+                Eina_Bool *from_escape_code)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    EINA_SAFETY_ON_NULL_RETURN_VAL(sd, NULL);
@@ -829,6 +561,9 @@ termio_link_get(const Evas_Object *obj)
 
    if (!sd->link.string && !sd->link.id)
      return NULL;
+
+   if (from_escape_code)
+        *from_escape_code = EINA_FALSE;
    link = sd->link.string;
    if (sd->link.id)
      {
@@ -836,6 +571,8 @@ termio_link_get(const Evas_Object *obj)
         if (!hl->url)
           return NULL;
         link = hl->url;
+        if (from_escape_code)
+          *from_escape_code = EINA_TRUE;
      }
    if (link_is_url(link))
      {
@@ -863,32 +600,52 @@ _activate_link(Evas_Object *obj, Eina_Bool may_inline)
    char buf[PATH_MAX], *s, *escaped;
    const char *path = NULL, *cmd = NULL;
    const char *link = NULL;
+   Eina_Bool from_escape_code = EINA_FALSE;
    Eina_Bool url = EINA_FALSE, email = EINA_FALSE, handled = EINA_FALSE;
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
    config = sd->config;
-   if (!config) return;
-   if (!config->active_links) return;
+   if (!config)
+     return;
 
-   link = termio_link_get(obj);
+   link = termio_link_get(obj, &from_escape_code);
    if (!link)
      return;
 
-   if (link_is_url(link))
-     url = EINA_TRUE;
-   else if (link[0] == '/')
-     path = link;
-   else if (link_is_email(link))
-     email = EINA_TRUE;
+   if (from_escape_code && !config->active_links_escape)
+     goto end;
 
-   if (url && casestartswith(link, "mailto:"))
+   if (link_is_url(link))
+     {
+        if (casestartswith(link, "mailto:"))
+          {
+             email = EINA_TRUE;
+             if (!config->active_links_email)
+               goto end;
+          }
+        else
+          {
+             url = EINA_TRUE;
+             if (!config->active_links_url)
+               goto end;
+          }
+     }
+   else if (link[0] == '/')
+     {
+        path = link;
+        if (!config->active_links_file)
+          goto end;
+     }
+   else if (link_is_email(link))
      {
         email = EINA_TRUE;
-        url = EINA_FALSE;
+        if (!config->active_links_email)
+          goto end;
      }
 
    s = eina_str_escape(link);
-   if (!s) return;
+   if (!s)
+     goto end;
    if (email)
      {
         const char *p = s;
@@ -1005,10 +762,14 @@ _activate_link(Evas_Object *obj, Eina_Bool may_inline)
    else
      {
         free(s);
-        return;
+        goto end;
      }
    free(s);
-   if (!handled) ecore_exe_run(buf, NULL);
+   if (!handled)
+     ecore_exe_run(buf, NULL);
+
+end:
+   free((char*)link);
 }
 
 static void
@@ -1066,6 +827,108 @@ _cb_ctxp_link_open(void *data,
    evas_object_del(obj);
 }
 
+static void _lost_selection(void *data, Elm_Sel_Type selection);
+
+static void
+_lost_selection_reset_job(void *data)
+{
+   Termio *sd = evas_object_smart_data_get(data);
+   EINA_SAFETY_ON_NULL_RETURN(sd);
+
+   sd->sel_reset_job = NULL;
+   if (sd->sel_str)
+     {
+        elm_cnp_selection_set(sd->win, sd->sel_type,
+                              ELM_SEL_FORMAT_TEXT,
+                              sd->sel_str, strlen(sd->sel_str));
+        elm_cnp_selection_loss_callback_set(sd->win, sd->sel_type,
+                                            _lost_selection, data);
+     }
+}
+
+static void
+_lost_selection(void *data, Elm_Sel_Type selection)
+{
+   Eina_List *l;
+   Evas_Object *obj;
+   double t = ecore_time_get();
+
+   EINA_LIST_FOREACH(terms, l, obj)
+     {
+        Termio *sd = evas_object_smart_data_get(obj);
+        if (!sd) continue;
+        if ((t - sd->set_sel_at) < 0.2) /// hack
+          {
+             if ((sd->have_sel) && (sd->sel_str) && (!sd->reset_sel))
+               {
+                  sd->reset_sel = EINA_TRUE;
+                  if (sd->sel_reset_job) ecore_job_del(sd->sel_reset_job);
+                  sd->sel_reset_job = ecore_job_add
+                    (_lost_selection_reset_job, data);
+               }
+             continue;
+          }
+        if (sd->have_sel)
+          {
+             if (sd->sel_str)
+               {
+                  eina_stringshare_del(sd->sel_str);
+                  sd->sel_str = NULL;
+               }
+             termio_sel_set(sd, EINA_FALSE);
+             elm_object_cnp_selection_clear(sd->win, selection);
+             termio_smart_update_queue(sd);
+             sd->have_sel = EINA_FALSE;
+          }
+     }
+}
+
+
+
+void
+termio_take_selection_text(Termio *sd, Elm_Sel_Type type, const char *text)
+{
+   EINA_SAFETY_ON_NULL_RETURN(sd);
+
+   text = eina_stringshare_add(text);
+
+   sd->have_sel = EINA_FALSE;
+   sd->reset_sel = EINA_FALSE;
+   sd->set_sel_at = ecore_time_get(); // hack
+   sd->sel_type = type;
+
+   elm_cnp_selection_set(sd->win, type,
+                         ELM_SEL_FORMAT_TEXT,
+                         text,
+                         eina_stringshare_strlen(text));
+   elm_cnp_selection_loss_callback_set(sd->win, type,
+                                       _lost_selection, sd->self);
+   sd->have_sel = EINA_TRUE;
+   if (sd->sel_str) eina_stringshare_del(sd->sel_str);
+   sd->sel_str = text;
+}
+
+
+Eina_Bool
+termio_take_selection(Evas_Object *obj, Elm_Sel_Type type)
+{
+   Termio *sd = termio_get_from_obj(obj);
+   const char *s = NULL;
+   size_t len = 0;
+
+   EINA_SAFETY_ON_NULL_RETURN_VAL(sd, EINA_FALSE);
+
+   s = termio_internal_get_selection(sd, &len);
+   if (s)
+     {
+        if ((sd->win) && (len > 0))
+          termio_take_selection_text(sd, type, s);
+        eina_stringshare_del(s);
+        return EINA_TRUE;
+     }
+   return EINA_FALSE;
+}
+
 static void
 _cb_ctxp_link_content_copy(void *data,
                            Evas_Object *obj,
@@ -1074,7 +937,6 @@ _cb_ctxp_link_content_copy(void *data,
    Evas_Object *term = data;
    Termio *sd = evas_object_smart_data_get(term);
    const char *raw_link;
-   size_t len;
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
    if (sd->link.id)
@@ -1083,13 +945,18 @@ _cb_ctxp_link_content_copy(void *data,
 
         if (!hl->url)
           return;
-        _take_selection_text(sd, ELM_SEL_TYPE_CLIPBOARD, hl->url);
+        termio_take_selection_text(sd, ELM_SEL_TYPE_CLIPBOARD, hl->url);
      }
    else
      {
-        raw_link = termio_selection_get(term, sd->link.x1, sd->link.y1, sd->link.x2, sd->link.y2, &len, EINA_FALSE);
+        struct ty_sb sb = {.buf = NULL, .len = 0, .alloc = 0};
+        termio_selection_get(sd,
+                             sd->link.x1, sd->link.y1,
+                             sd->link.x2, sd->link.y2,
+                             &sb, EINA_FALSE);
+        raw_link = ty_sb_steal_buf(&sb);
 
-        _take_selection_text(sd, ELM_SEL_TYPE_CLIPBOARD, raw_link);
+        termio_take_selection_text(sd, ELM_SEL_TYPE_CLIPBOARD, raw_link);
      }
 
    sd->ctxpopup = NULL;
@@ -1105,11 +972,130 @@ _cb_ctxp_link_copy(void *data,
    Termio *sd = evas_object_smart_data_get(term);
    EINA_SAFETY_ON_NULL_RETURN(sd);
    EINA_SAFETY_ON_NULL_RETURN(sd->link.string);
-   _take_selection_text(sd, ELM_SEL_TYPE_CLIPBOARD, sd->link.string);
+   termio_take_selection_text(sd, ELM_SEL_TYPE_CLIPBOARD, sd->link.string);
 
    sd->ctxpopup = NULL;
    evas_object_del(obj);
 }
+
+static Eina_Bool
+_mouse_in_selection(Termio *sd, int cx, int cy)
+{
+   int start_x = 0, start_y = 0, end_x = 0, end_y = 0;
+
+   if (!sd->pty->selection.is_active)
+     return EINA_FALSE;
+
+   start_x = sd->pty->selection.start.x;
+   start_y = sd->pty->selection.start.y;
+   end_x = sd->pty->selection.end.x;
+   end_y = sd->pty->selection.end.y;
+
+   if (!sd->pty->selection.is_top_to_bottom)
+     {
+        INT_SWAP(start_y, end_y);
+        INT_SWAP(start_x, end_x);
+     }
+   if (sd->pty->selection.is_box)
+     {
+        if ((start_y <= cy) && (cy <= end_y) &&
+            (start_x <= cx) && (cx <= end_x) )
+          return EINA_TRUE;
+     }
+   else
+     {
+        if ((cy < start_y) || (cy > end_y))
+          return EINA_FALSE;
+        if (((cy == start_y) && (cx < start_x)) ||
+            ((cy == end_y) && (cx > end_x)))
+          return EINA_FALSE;
+        return EINA_TRUE;
+     }
+     return EINA_FALSE;
+}
+
+static Eina_Bool
+_getsel_cb(void *data,
+           Evas_Object *_obj EINA_UNUSED,
+           Elm_Selection_Data *ev)
+{
+   Termio *sd = evas_object_smart_data_get(data);
+
+   EINA_SAFETY_ON_NULL_RETURN_VAL(sd, EINA_FALSE);
+
+   if (ev->format == ELM_SEL_FORMAT_TEXT)
+     {
+        char *buf;
+
+        if (ev->len <= 0) return EINA_TRUE;
+
+        buf = malloc(ev->len);
+        if (buf)
+          {
+             char *s = ev->data;
+             size_t i, pos = 0;
+
+             /* apparently we have to convert \n into \r in terminal land. */
+             for (i = 0; i < ev->len && s[i]; i++)
+               {
+                  /* Skip escape codes as a security measure */
+                  if ((s[i] < '\n') ||
+                      ((s[i] > '\n') && (s[i] < ' ')))
+                    {
+                      continue;
+                    }
+                  buf[pos] = s[i];
+                  if (buf[pos] == '\n')
+                    buf[pos] = '\r';
+                  pos++;
+               }
+             if (pos)
+               {
+
+                if (sd->pty->bracketed_paste)
+                  termpty_write(sd->pty, "\x1b[200~",
+                                sizeof("\x1b[200~") - 1);
+
+                termpty_write(sd->pty, buf, pos);
+
+                if (sd->pty->bracketed_paste)
+                  termpty_write(sd->pty, "\x1b[201~",
+                                sizeof("\x1b[201~") - 1);
+               }
+
+             free(buf);
+          }
+     }
+   else
+     {
+        const char *fmt = "UNKNOWN";
+        switch (ev->format)
+          {
+           case ELM_SEL_FORMAT_TARGETS: fmt = "TARGETS"; break; /* shouldn't happen */
+           case ELM_SEL_FORMAT_NONE: fmt = "NONE"; break;
+           case ELM_SEL_FORMAT_TEXT: fmt = "TEXT"; break;
+           case ELM_SEL_FORMAT_MARKUP: fmt = "MARKUP"; break;
+           case ELM_SEL_FORMAT_IMAGE: fmt = "IMAGE"; break;
+           case ELM_SEL_FORMAT_VCARD: fmt = "VCARD"; break;
+           case ELM_SEL_FORMAT_HTML: fmt = "HTML"; break;
+          }
+        WRN(_("unsupported selection format '%s'"), fmt);
+     }
+   return EINA_TRUE;
+}
+
+
+void
+termio_paste_selection(Evas_Object *obj, Elm_Sel_Type type)
+{
+   Termio *sd = evas_object_smart_data_get(obj);
+   EINA_SAFETY_ON_NULL_RETURN(sd);
+   if (!sd->win)
+       return;
+   elm_cnp_selection_get(sd->win, type, ELM_SEL_FORMAT_TEXT,
+                         _getsel_cb, obj);
+}
+
 
 static void
 _cb_link_down(void *data,
@@ -1148,7 +1134,7 @@ _cb_link_down(void *data,
           {
              int cx = 0, cy = 0;
 
-             _smart_xy_to_cursor(sd, ev->canvas.x, ev->canvas.y, &cx, &cy);
+             termio_cursor_to_xy(sd, ev->canvas.x, ev->canvas.y, &cx, &cy);
              if (_mouse_in_selection(sd, cx, cy))
                return;
           }
@@ -1156,9 +1142,31 @@ _cb_link_down(void *data,
         ctxp = elm_ctxpopup_add(sd->win);
         sd->ctxpopup = ctxp;
 
+        if (hl)
+          {
+             raw_link = hl->url;
+             len = strlen(hl->url);
+          }
+        else
+          {
+             struct ty_sb sb = {.buf = NULL, .len = 0, .alloc = 0};
+             termio_selection_get(sd,
+                                  sd->link.x1,
+                                  sd->link.y1,
+                                  sd->link.x2,
+                                  sd->link.y2,
+                                  &sb,
+                                  EINA_FALSE);
+             len = sb.len;
+             raw_link = ty_sb_steal_buf(&sb);
+          }
+
+        if (len > 0 && raw_link[0] == '/')
+          absolut = EINA_TRUE;
+
         if (sd->config->helper.inline_please)
           {
-             Media_Type type = media_src_type_get(sd->link.string);
+             Media_Type type = media_src_type_get(raw_link);
 
              if ((type == MEDIA_TYPE_IMG) ||
                  (type == MEDIA_TYPE_SCALE) ||
@@ -1169,23 +1177,6 @@ _cb_link_down(void *data,
           }
         elm_ctxpopup_item_append(ctxp, _("Open"), NULL, _cb_ctxp_link_open,
                                  sd->self);
-        if (hl)
-          {
-             raw_link = hl->url;
-          }
-        else
-          {
-             raw_link = termio_selection_get(sd->self,
-                                             sd->link.x1,
-                                             sd->link.y1,
-                                             sd->link.x2,
-                                             sd->link.y2,
-                                             &len,
-                                             EINA_FALSE);
-          }
-
-        if (len > 0 && raw_link[0] == '/')
-          absolut = EINA_TRUE;
 
         if (!absolut &&
             !link_is_url(raw_link) &&
@@ -1490,7 +1481,7 @@ _hyperlink_end(Termio *sd,
 }
 
 static void
-_hyperlink_mouseover(Evas_Object *obj, Termio *sd,
+_hyperlink_mouseover(Termio *sd,
                      uint16_t link_id)
 {
    Evas_Coord ox, oy, ow, oh;
@@ -1516,7 +1507,7 @@ _hyperlink_mouseover(Evas_Object *obj, Termio *sd,
      return;
 
    /* Scan the whole screen and display links as needed */
-   evas_object_geometry_get(obj, &ox, &oy, &ow, &oh);
+   termio_object_geometry_get(sd, &ox, &oy, &ow, &oh);
    termpty_backlog_lock();
    termpty_backscroll_adjust(sd->pty, &sd->scroll);
    for (y = 0; y < sd->grid.h; y++)
@@ -1538,7 +1529,7 @@ _hyperlink_mouseover(Evas_Object *obj, Termio *sd,
                   if (!o)
                     {
                        o = elm_layout_add(sd->win);
-                       evas_object_smart_member_add(o, obj);
+                       evas_object_smart_member_add(o, sd->self);
                        theme_apply(elm_layout_edje_get(o), sd->config,
                                    "terminology/link");
                        evas_object_move(o,
@@ -2234,8 +2225,8 @@ _block_media_activate(Evas_Object *obj, Termblock *blk)
      }
 }
 
-static void
-_block_activate(Evas_Object *obj, Termblock *blk)
+void
+termio_block_activate(Evas_Object *obj, Termblock *blk)
 {
    Termio *sd = evas_object_smart_data_get(obj);
 
@@ -2266,1445 +2257,6 @@ _block_obj_del(Termblock *blk)
        _smart_media_del, blk);
    evas_object_del(blk->obj);
    blk->obj = NULL;
-}
-
-/* }}} */
-/* {{{ Selection */
-
-static Eina_Bool
-_mouse_in_selection(Termio *sd, int cx, int cy)
-{
-   int start_x = 0, start_y = 0, end_x = 0, end_y = 0;
-
-   if (!sd->pty->selection.is_active)
-     return EINA_FALSE;
-
-   start_x = sd->pty->selection.start.x;
-   start_y = sd->pty->selection.start.y;
-   end_x = sd->pty->selection.end.x;
-   end_y = sd->pty->selection.end.y;
-
-   if (!sd->pty->selection.is_top_to_bottom)
-     {
-        INT_SWAP(start_y, end_y);
-        INT_SWAP(start_x, end_x);
-     }
-   if (sd->pty->selection.is_box)
-     {
-        if ((start_y <= cy) && (cy <= end_y) &&
-            (start_x <= cx) && (cx <= end_x) )
-          return EINA_TRUE;
-     }
-   else
-     {
-        if ((cy < start_y) || (cy > end_y))
-          return EINA_FALSE;
-        if (((cy == start_y) && (cx < start_x)) ||
-            ((cy == end_y) && (cx > end_x)))
-          return EINA_FALSE;
-        return EINA_TRUE;
-     }
-     return EINA_FALSE;
-}
-
-
-
-char *
-termio_selection_get(const Evas_Object *obj,
-                     int c1x, int c1y, int c2x, int c2y,
-                     size_t *lenp,
-                     Eina_Bool rtrim)
-{
-   Termio *sd = evas_object_smart_data_get(obj);
-   struct ty_sb sb = {.buf = NULL, .len = 0, .alloc = 0};
-   int x, y;
-
-   EINA_SAFETY_ON_NULL_RETURN_VAL(sd, NULL);
-   termpty_backlog_lock();
-   for (y = c1y; y <= c2y; y++)
-     {
-        Termcell *cells;
-        ssize_t w;
-        int last0, v, start_x, end_x;
-
-        w = 0;
-        last0 = -1;
-        cells = termpty_cellrow_get(sd->pty, y, &w);
-        if (!cells || !w)
-          {
-             if (ty_sb_add(&sb, "\n", 1) < 0) goto err;
-             continue;
-          }
-        if (w > sd->grid.w) w = sd->grid.w;
-        if (y == c1y && c1x >= w)
-          {
-             if (rtrim)
-               ty_sb_spaces_rtrim(&sb);
-             if (ty_sb_add(&sb, "\n", 1) < 0) goto err;
-             continue;
-          }
-        start_x = c1x;
-        end_x = (c2x >= w) ? w - 1 : c2x;
-        if (c1y != c2y)
-          {
-             if (y == c1y) end_x = w - 1;
-             else if (y == c2y) start_x = 0;
-             else
-               {
-                  start_x = 0;
-                  end_x = w - 1;
-               }
-          }
-        for (x = start_x; x <= end_x; x++)
-          {
-             if ((cells[x].codepoint == 0) && (cells[x].att.dblwidth))
-               {
-                  if (x < end_x) x++;
-                  else break;
-               }
-             if (x >= w) break;
-             if (cells[x].att.newline)
-               {
-                  last0 = -1;
-                  if ((y != c2y) || (x != end_x))
-                    {
-                       if (rtrim)
-                         ty_sb_spaces_rtrim(&sb);
-                       if (ty_sb_add(&sb, "\n", 1) < 0) goto err;
-                    }
-                  break;
-               }
-             else if (cells[x].codepoint == 0)
-               {
-                  if (last0 < 0) last0 = x;
-               }
-             else
-               {
-                  char txt[8];
-                  int txtlen;
-
-                  if (last0 >= 0)
-                    {
-                       v = x - last0 - 1;
-                       last0 = -1;
-                       while (v >= 0)
-                         {
-                            if (ty_sb_add(&sb, " ", 1) < 0) goto err;
-                            v--;
-                         }
-                    }
-                  txtlen = codepoint_to_utf8(cells[x].codepoint, txt);
-                  if (txtlen > 0)
-                    if (ty_sb_add(&sb, txt, txtlen) < 0) goto err;
-                  if ((x == (w - 1)) &&
-                      ((x != c2x) || (y != c2y)))
-                    {
-                       if (!cells[x].att.autowrapped)
-                         {
-                            if (rtrim)
-                              ty_sb_spaces_rtrim(&sb);
-                            if (ty_sb_add(&sb, "\n", 1) < 0) goto err;
-                         }
-                    }
-               }
-          }
-        if (last0 >= 0)
-          {
-             if (y == c2y)
-               {
-                  Eina_Bool have_more = EINA_FALSE;
-
-                  for (x = end_x + 1; x < w; x++)
-                    {
-                       if ((cells[x].codepoint == 0) &&
-                           (cells[x].att.dblwidth))
-                         {
-                            if (x < (w - 1)) x++;
-                            else break;
-                         }
-                       if (((cells[x].codepoint != 0) &&
-                            (cells[x].codepoint != ' ')) ||
-                           (cells[x].att.newline))
-                         {
-                            have_more = EINA_TRUE;
-                            break;
-                         }
-                    }
-                  if (!have_more)
-                    {
-                       if (rtrim)
-                         ty_sb_spaces_rtrim(&sb);
-                       if (ty_sb_add(&sb, "\n", 1) < 0) goto err;
-                    }
-                  else
-                    {
-                       for (x = last0; x <= end_x; x++)
-                         {
-                            if ((cells[x].codepoint == 0) &&
-                                (cells[x].att.dblwidth))
-                              {
-                                 if (x < (w - 1)) x++;
-                                 else break;
-                              }
-                            if (x >= w) break;
-                            if (ty_sb_add(&sb, " ", 1) < 0) goto err;
-                         }
-                    }
-               }
-             else
-               {
-                  if (rtrim)
-                    ty_sb_spaces_rtrim(&sb);
-                  if (ty_sb_add(&sb, "\n", 1) < 0) goto err;
-               }
-          }
-     }
-   termpty_backlog_unlock();
-
-   if (rtrim)
-     ty_sb_spaces_rtrim(&sb);
-
-   if (lenp)
-     *lenp = sb.len;
-
-   return ty_sb_steal_buf(&sb);
-
-err:
-   ty_sb_free(&sb);
-   return NULL;
-}
-
-
-static void
-_sel_set(Termio *sd, Eina_Bool enable)
-{
-   if (sd->pty->selection.is_active == enable) return;
-   sd->pty->selection.is_active = enable;
-   if (enable)
-     evas_object_smart_callback_call(sd->win, "selection,on", NULL);
-   else
-     {
-        evas_object_smart_callback_call(sd->win, "selection,off", NULL);
-        sd->pty->selection.by_word = EINA_FALSE;
-        sd->pty->selection.by_line = EINA_FALSE;
-     }
-}
-
-static void _lost_selection(void *data, Elm_Sel_Type selection);
-
-static void
-_lost_selection_reset_job(void *data)
-{
-   Termio *sd = evas_object_smart_data_get(data);
-   EINA_SAFETY_ON_NULL_RETURN(sd);
-
-   sd->sel_reset_job = NULL;
-   if (sd->sel_str)
-     {
-        elm_cnp_selection_set(sd->win, sd->sel_type,
-                              ELM_SEL_FORMAT_TEXT,
-                              sd->sel_str, strlen(sd->sel_str));
-        elm_cnp_selection_loss_callback_set(sd->win, sd->sel_type,
-                                            _lost_selection, data);
-     }
-}
-
-static void
-_lost_selection(void *data, Elm_Sel_Type selection)
-{
-   Eina_List *l;
-   Evas_Object *obj;
-   double t = ecore_time_get();
-
-   EINA_LIST_FOREACH(terms, l, obj)
-     {
-        Termio *sd = evas_object_smart_data_get(obj);
-        if (!sd) continue;
-        if ((t - sd->set_sel_at) < 0.2) /// hack
-          {
-             if ((sd->have_sel) && (sd->sel_str) && (!sd->reset_sel))
-               {
-                  sd->reset_sel = EINA_TRUE;
-                  if (sd->sel_reset_job) ecore_job_del(sd->sel_reset_job);
-                  sd->sel_reset_job = ecore_job_add
-                    (_lost_selection_reset_job, data);
-               }
-             continue;
-          }
-        if (sd->have_sel)
-          {
-             if (sd->sel_str)
-               {
-                  eina_stringshare_del(sd->sel_str);
-                  sd->sel_str = NULL;
-               }
-             _sel_set(sd, EINA_FALSE);
-             elm_object_cnp_selection_clear(sd->win, selection);
-             _smart_update_queue(obj, sd);
-             sd->have_sel = EINA_FALSE;
-          }
-     }
-}
-
-static void
-_take_selection_text(Termio *sd, Elm_Sel_Type type, const char *text)
-{
-   EINA_SAFETY_ON_NULL_RETURN(sd);
-
-   text = eina_stringshare_add(text);
-
-   sd->have_sel = EINA_FALSE;
-   sd->reset_sel = EINA_FALSE;
-   sd->set_sel_at = ecore_time_get(); // hack
-   sd->sel_type = type;
-
-   elm_cnp_selection_set(sd->win, type,
-                         ELM_SEL_FORMAT_TEXT,
-                         text,
-                         eina_stringshare_strlen(text));
-   elm_cnp_selection_loss_callback_set(sd->win, type,
-                                       _lost_selection, sd->self);
-   sd->have_sel = EINA_TRUE;
-   if (sd->sel_str) eina_stringshare_del(sd->sel_str);
-   sd->sel_str = text;
-}
-
-Eina_Bool
-termio_take_selection(Evas_Object *obj, Elm_Sel_Type type)
-{
-   Termio *sd = evas_object_smart_data_get(obj);
-   int start_x = 0, start_y = 0, end_x = 0, end_y = 0;
-   const char *s = NULL;
-   size_t len = 0;
-
-   EINA_SAFETY_ON_NULL_RETURN_VAL(sd, EINA_FALSE);
-   if (sd->pty->selection.is_active)
-     {
-        start_x = sd->pty->selection.start.x;
-        start_y = sd->pty->selection.start.y;
-        end_x = sd->pty->selection.end.x;
-        end_y = sd->pty->selection.end.y;
-
-        if (!sd->pty->selection.is_top_to_bottom)
-          {
-             INT_SWAP(start_y, end_y);
-             INT_SWAP(start_x, end_x);
-          }
-     }
-   else
-     {
-        if (sd->link.string)
-          {
-             len = strlen(sd->link.string);
-             s = eina_stringshare_add_length(sd->link.string, len);
-          }
-        goto end;
-     }
-
-   if (sd->pty->selection.is_box)
-     {
-        int i;
-        Eina_Strbuf *sb;
-
-        sb = eina_strbuf_new();
-        for (i = start_y; i <= end_y; i++)
-          {
-             /* TODO: use our own strbuf implementation */
-             char *tmp = termio_selection_get(obj, start_x, i, end_x, i,
-                                              &len, EINA_TRUE);
-
-             if (tmp)
-               {
-                  eina_strbuf_append_length(sb, tmp, len);
-                  if (len && tmp[len - 1] != '\n' && i != end_y)
-                    eina_strbuf_append_char(sb, '\n');
-                  free(tmp);
-               }
-          }
-        len = eina_strbuf_length_get(sb);
-        s = eina_strbuf_string_steal(sb);
-        s = eina_stringshare_add_length(s, len);
-        eina_strbuf_free(sb);
-     }
-   else
-     {
-        s = termio_selection_get(obj, start_x, start_y, end_x, end_y, &len,
-                                 EINA_TRUE);
-        s = eina_stringshare_add_length(s, len);
-     }
-
-end:
-   if (s)
-     {
-        if ((sd->win) && (len > 0))
-          _take_selection_text(sd, type, s);
-        eina_stringshare_del(s);
-        return EINA_TRUE;
-     }
-   return EINA_FALSE;
-}
-
-static Eina_Bool
-_getsel_cb(void *data,
-           Evas_Object *_obj EINA_UNUSED,
-           Elm_Selection_Data *ev)
-{
-   Termio *sd = evas_object_smart_data_get(data);
-
-   EINA_SAFETY_ON_NULL_RETURN_VAL(sd, EINA_FALSE);
-
-   if (ev->format == ELM_SEL_FORMAT_TEXT)
-     {
-        char *tmp;
-
-        if (ev->len <= 0) return EINA_TRUE;
-
-        tmp = malloc(ev->len);
-        if (tmp)
-          {
-             char *s = ev->data;
-             size_t i;
-
-             // apparently we have to convert \n into \r in terminal land.
-             for (i = 0; i < ev->len && s[i]; i++)
-               {
-                  tmp[i] = s[i];
-                  if (tmp[i] == '\n') tmp[i] = '\r';
-               }
-             if (i)
-               {
-
-                if (sd->pty->bracketed_paste)
-                  termpty_write(sd->pty, "\x1b[200~",
-                                sizeof("\x1b[200~") - 1);
-
-                termpty_write(sd->pty, tmp, i);
-
-                if (sd->pty->bracketed_paste)
-                  termpty_write(sd->pty, "\x1b[201~",
-                                sizeof("\x1b[201~") - 1);
-               }
-
-             free(tmp);
-          }
-     }
-   else
-     {
-        const char *fmt = "UNKNOWN";
-        switch (ev->format)
-          {
-           case ELM_SEL_FORMAT_TARGETS: fmt = "TARGETS"; break; /* shouldn't happen */
-           case ELM_SEL_FORMAT_NONE: fmt = "NONE"; break;
-           case ELM_SEL_FORMAT_TEXT: fmt = "TEXT"; break;
-           case ELM_SEL_FORMAT_MARKUP: fmt = "MARKUP"; break;
-           case ELM_SEL_FORMAT_IMAGE: fmt = "IMAGE"; break;
-           case ELM_SEL_FORMAT_VCARD: fmt = "VCARD"; break;
-           case ELM_SEL_FORMAT_HTML: fmt = "HTML"; break;
-          }
-        WRN(_("unsupported selection format '%s'"), fmt);
-     }
-   return EINA_TRUE;
-}
-
-void
-termio_paste_selection(Evas_Object *obj, Elm_Sel_Type type)
-{
-   Termio *sd = evas_object_smart_data_get(obj);
-   EINA_SAFETY_ON_NULL_RETURN(sd);
-   if (!sd->win) return;
-   elm_cnp_selection_get(sd->win, type, ELM_SEL_FORMAT_TEXT,
-                         _getsel_cb, obj);
-}
-
-static void
-_sel_line(Termio *sd, int cy)
-{
-   int y;
-   ssize_t w = 0;
-   Termcell *cells;
-
-   termpty_backlog_lock();
-
-   _sel_set(sd, EINA_TRUE);
-   sd->pty->selection.makesel = EINA_FALSE;
-
-   sd->pty->selection.start.x = 0;
-   sd->pty->selection.start.y = cy;
-   sd->pty->selection.end.x = sd->grid.w - 1;
-   sd->pty->selection.end.y = cy;
-
-   /* check lines above */
-   y = cy;
-   for (;;)
-     {
-        cells = termpty_cellrow_get(sd->pty, y - 1, &w);
-        if (!cells || !cells[w-1].att.autowrapped) break;
-
-        y--;
-     }
-   sd->pty->selection.start.y = y;
-   y = cy;
-
-   /* check lines below */
-   for (;;)
-     {
-        cells = termpty_cellrow_get(sd->pty, y, &w);
-        if (!cells || !cells[w-1].att.autowrapped) break;
-
-        sd->pty->selection.end.x = w - 1;
-        y++;
-     }
-   sd->pty->selection.end.y = y;
-
-   sd->pty->selection.by_line = EINA_TRUE;
-   sd->pty->selection.is_top_to_bottom = EINA_TRUE;
-
-   termpty_backlog_unlock();
-}
-
-static void
-_sel_line_to(Termio *sd, int cy, Eina_Bool extend)
-{
-   int start_y, end_y, c_start_y, c_end_y,
-       orig_y, orig_start_y, orig_end_y;
-
-   EINA_SAFETY_ON_NULL_RETURN(sd);
-
-   /* Only change the end position */
-   orig_y = sd->pty->selection.orig.y;
-   start_y = sd->pty->selection.start.y;
-   end_y   = sd->pty->selection.end.y;
-
-   if (!sd->pty->selection.is_top_to_bottom)
-     INT_SWAP(start_y, end_y);
-
-   _sel_line(sd, cy);
-   c_start_y = sd->pty->selection.start.y;
-   c_end_y   = sd->pty->selection.end.y;
-
-   _sel_line(sd, orig_y);
-   orig_start_y = sd->pty->selection.start.y;
-   orig_end_y   = sd->pty->selection.end.y;
-
-   if (sd->pty->selection.is_box)
-     {
-        if (extend)
-          {
-             if (start_y <= cy && cy <= end_y )
-               {
-                  start_y = MIN(c_start_y, orig_start_y);
-                  end_y = MAX(c_end_y, orig_end_y);
-               }
-             else
-               {
-                  if (c_end_y > end_y)
-                    {
-                       orig_y = start_y;
-                       end_y = c_end_y;
-                    }
-                  if (c_start_y < start_y)
-                    {
-                       orig_y = end_y;
-                       start_y = c_start_y;
-                    }
-               }
-             goto end;
-          }
-        else
-          {
-             start_y = MIN(c_start_y, orig_start_y);
-             end_y = MAX(c_end_y, orig_end_y);
-             goto end;
-          }
-     }
-   else
-     {
-        if (c_start_y < start_y)
-          {
-             /* orig is at bottom */
-             if (extend)
-               {
-                  orig_y = end_y;
-               }
-             sd->pty->selection.is_top_to_bottom = EINA_FALSE;
-             end_y = c_start_y;
-             start_y = orig_end_y;
-          }
-        else if (c_end_y > end_y)
-          {
-             if (extend)
-               {
-                  orig_y = start_y;
-               }
-             sd->pty->selection.is_top_to_bottom = EINA_TRUE;
-             start_y = orig_start_y;
-             end_y = c_end_y;
-          }
-        else
-          {
-             if (c_start_y < orig_start_y)
-               {
-                  sd->pty->selection.is_top_to_bottom = EINA_FALSE;
-                  start_y = orig_end_y;
-                  end_y = c_start_y;
-               }
-             else
-               {
-                  sd->pty->selection.is_top_to_bottom = EINA_TRUE;
-                  start_y = orig_start_y;
-                  end_y = c_end_y;
-               }
-          }
-     }
-end:
-   sd->pty->selection.orig.y = orig_y;
-   sd->pty->selection.start.y = start_y;
-   sd->pty->selection.end.y = end_y;
-   if (sd->pty->selection.is_top_to_bottom)
-     {
-        sd->pty->selection.start.x = 0;
-        sd->pty->selection.end.x = sd->grid.w - 1;
-     }
-   else
-     {
-        sd->pty->selection.end.x = 0;
-        sd->pty->selection.start.x = sd->grid.w - 1;
-     }
-}
-
-static Eina_Bool
-_codepoint_is_wordsep(const Eina_Unicode g)
-{
-   /* TODO: use bitmaps to speed things up */
-   // http://en.wikipedia.org/wiki/Asterisk
-   // http://en.wikipedia.org/wiki/Comma
-   // http://en.wikipedia.org/wiki/Interpunct
-   // http://en.wikipedia.org/wiki/Bracket
-   static const Eina_Unicode wordsep[] =
-     {
-       0,
-       ' ',
-       '!',
-       '"',
-       '#',
-       '$',
-       '\'',
-       '(',
-       ')',
-       '*',
-       ',',
-       ';',
-       '=',
-       '?',
-       '[',
-       '\\',
-       ']',
-       '^',
-       '`',
-       '{',
-       '|',
-       '}',
-       0x00a0,
-       0x00ab,
-       0x00b7,
-       0x00bb,
-       0x0294,
-       0x02bb,
-       0x02bd,
-       0x02d0,
-       0x0312,
-       0x0313,
-       0x0314,
-       0x0315,
-       0x0326,
-       0x0387,
-       0x055d,
-       0x055e,
-       0x060c,
-       0x061f,
-       0x066d,
-       0x07fb,
-       0x1363,
-       0x1367,
-       0x14fe,
-       0x1680,
-       0x1802,
-       0x1808,
-       0x180e,
-       0x2000,
-       0x2001,
-       0x2002,
-       0x2003,
-       0x2004,
-       0x2005,
-       0x2006,
-       0x2007,
-       0x2008,
-       0x2009,
-       0x200a,
-       0x200b,
-       0x2018,
-       0x2019,
-       0x201a,
-       0x201b,
-       0x201c,
-       0x201d,
-       0x201e,
-       0x201f,
-       0x2022,
-       0x2027,
-       0x202f,
-       0x2039,
-       0x203a,
-       0x203b,
-       0x203d,
-       0x2047,
-       0x2048,
-       0x2049,
-       0x204e,
-       0x205f,
-       0x2217,
-       0x225f,
-       0x2308,
-       0x2309,
-       0x2420,
-       0x2422,
-       0x2423,
-       0x2722,
-       0x2723,
-       0x2724,
-       0x2725,
-       0x2731,
-       0x2732,
-       0x2733,
-       0x273a,
-       0x273b,
-       0x273c,
-       0x273d,
-       0x2743,
-       0x2749,
-       0x274a,
-       0x274b,
-       0x2a7b,
-       0x2a7c,
-       0x2cfa,
-       0x2e2e,
-       0x2e2e,
-       0x3000,
-       0x3001,
-       0x3008,
-       0x3009,
-       0x300a,
-       0x300b,
-       0x300c,
-       0x300c,
-       0x300d,
-       0x300d,
-       0x300e,
-       0x300f,
-       0x3010,
-       0x3011,
-       0x301d,
-       0x301e,
-       0x301f,
-       0x30fb,
-       0xa60d,
-       0xa60f,
-       0xa6f5,
-       0xe0a0,
-       0xe0b0,
-       0xe0b2,
-       0xfe10,
-       0xfe41,
-       0xfe42,
-       0xfe43,
-       0xfe44,
-       0xfe50,
-       0xfe51,
-       0xfe56,
-       0xfe61,
-       0xfe62,
-       0xfe63,
-       0xfeff,
-       0xff02,
-       0xff07,
-       0xff08,
-       0xff09,
-       0xff0a,
-       0xff0c,
-       0xff1b,
-       0xff1c,
-       0xff1e,
-       0xff1f,
-       0xff3b,
-       0xff3d,
-       0xff5b,
-       0xff5d,
-       0xff62,
-       0xff63,
-       0xff64,
-       0xff65,
-       0xe002a
-   };
-   size_t imax = (sizeof(wordsep) / sizeof(wordsep[0])) - 1,
-          imin = 0;
-   size_t imaxmax = imax;
-
-   if (g & 0x80000000)
-     return EINA_TRUE;
-
-   while (imax >= imin)
-     {
-        size_t imid = (imin + imax) / 2;
-
-        if (wordsep[imid] == g) return EINA_TRUE;
-        else if (wordsep[imid] < g) imin = imid + 1;
-        else imax = imid - 1;
-        if (imax > imaxmax) break;
-     }
-   return EINA_FALSE;
-}
-
-static Eina_Bool
-_to_trim(Eina_Unicode codepoint, Eina_Bool right_trim)
-{
-   static const Eina_Unicode trim_chars[] =
-     {
-       ':',
-       '<',
-       '>',
-       '.'
-     };
-   size_t i = 0, len;
-   len = sizeof(trim_chars)/sizeof((trim_chars)[0]);
-   if (right_trim)
-     len--; /* do not right trim . */
-
-   for (i = 0; i < len; i++)
-     if (codepoint == trim_chars[i])
-       return EINA_TRUE;
-   return EINA_FALSE;
-}
-
-static void
-_trim_sel_word(Termio *sd)
-{
-   Termpty *pty = sd->pty;
-   Termcell *cells;
-   int start = 0, end = 0, y = 0;
-   ssize_t w;
-
-   /* 1st step: trim from the start */
-   start = pty->selection.start.x;
-   for (y = pty->selection.start.y;
-        y <= pty->selection.end.y;
-        y++)
-     {
-        cells = termpty_cellrow_get(pty, y, &w);
-        if (!cells)
-          return;
-
-        while (start < w && _to_trim(cells[start].codepoint, EINA_TRUE))
-          start++;
-
-        if (start < w)
-          break;
-
-        start = 0;
-     }
-   /* check validy of the selection */
-   if ((y > pty->selection.end.y) ||
-       ((y == pty->selection.end.y) &&
-        (start > pty->selection.end.x)))
-     {
-        pty->selection.start.y = pty->selection.end.y;
-        pty->selection.start.x = pty->selection.end.x;
-        return;
-     }
-   pty->selection.start.y = y;
-   pty->selection.start.x = start;
-
-   /* 2nd step: trim from the end */
-   end = pty->selection.end.x;
-   for (y = pty->selection.end.y;
-        y >= pty->selection.start.y;
-        y--)
-     {
-        cells = termpty_cellrow_get(pty, y, &w);
-        if (!cells)
-          return;
-
-        while (end >= 0 && _to_trim(cells[end].codepoint, EINA_FALSE))
-          end--;
-
-        if (end >= 0)
-          break;
-     }
-   if (end < 0)
-     {
-        return;
-     }
-   /* check validy of the selection */
-   if ((y < pty->selection.start.y) ||
-       ((y == pty->selection.start.y) &&
-        (end < pty->selection.start.x)))
-     {
-        pty->selection.end.x = pty->selection.start.x;
-        pty->selection.end.y = pty->selection.start.y;
-        return;
-     }
-   pty->selection.end.x = end;
-   pty->selection.end.y = y;
-}
-
-static void
-_sel_word(Termio *sd, int cx, int cy)
-{
-   Termcell *cells;
-   int x, y;
-   ssize_t w = 0;
-   Eina_Bool done = EINA_FALSE;
-
-   termpty_backlog_lock();
-
-   _sel_set(sd, EINA_TRUE);
-   sd->pty->selection.makesel = EINA_TRUE;
-   sd->pty->selection.orig.x = cx;
-   sd->pty->selection.orig.y = cy;
-   sd->pty->selection.start.x = cx;
-   sd->pty->selection.start.y = cy;
-   sd->pty->selection.end.x = cx;
-   sd->pty->selection.end.y = cy;
-   x = cx;
-   y = cy;
-
-   if (sd->link.string &&
-       (sd->link.x1 <= cx) && (cx <= sd->link.x2) &&
-       (sd->link.y1 <= cy) && (cy <= sd->link.y2))
-     {
-        sd->pty->selection.start.x = sd->link.x1;
-        sd->pty->selection.start.y = sd->link.y1;
-        sd->pty->selection.end.x = sd->link.x2;
-        sd->pty->selection.end.y = sd->link.y2;
-        goto end;
-     }
-   cells = termpty_cellrow_get(sd->pty, y, &w);
-   if (!cells) goto end;
-   if (x >= w) x = w - 1;
-
-   do
-     {
-        for (; x >= 0; x--)
-          {
-             if ((cells[x].codepoint == 0) && (cells[x].att.dblwidth) &&
-                 (x > 0))
-               x--;
-             if (_codepoint_is_wordsep(cells[x].codepoint))
-               {
-                  done = EINA_TRUE;
-                  break;
-               }
-             sd->pty->selection.start.x = x;
-             sd->pty->selection.start.y = y;
-          }
-        if (!done)
-          {
-             Termcell *old_cells = cells;
-
-             cells = termpty_cellrow_get(sd->pty, y - 1, &w);
-             if (!cells || !cells[w-1].att.autowrapped)
-               {
-                  x = 0;
-                  cells = old_cells;
-                  done = EINA_TRUE;
-               }
-             else
-               {
-                  y--;
-                  x = w - 1;
-               }
-          }
-     }
-   while (!done);
-
-   done = EINA_FALSE;
-   if (cy != y)
-     {
-        y = cy;
-        cells = termpty_cellrow_get(sd->pty, y, &w);
-        if (!cells) goto end;
-     }
-   x = cx;
-
-   do
-     {
-        for (; x < w; x++)
-          {
-             if ((cells[x].codepoint == 0) && (cells[x].att.dblwidth) &&
-                 (x < (w - 1)))
-               {
-                  sd->pty->selection.end.x = x;
-                  x++;
-               }
-             if (_codepoint_is_wordsep(cells[x].codepoint))
-               {
-                  done = EINA_TRUE;
-                  break;
-               }
-             sd->pty->selection.end.x = x;
-             sd->pty->selection.end.y = y;
-          }
-        if (!done)
-          {
-             if (!cells[w - 1].att.autowrapped) goto end;
-             y++;
-             x = 0;
-             cells = termpty_cellrow_get(sd->pty, y, &w);
-             if (!cells) goto end;
-          }
-     }
-   while (!done);
-
-  end:
-
-   sd->pty->selection.by_word = EINA_TRUE;
-   sd->pty->selection.is_top_to_bottom = EINA_TRUE;
-   _trim_sel_word(sd);
-
-   termpty_backlog_unlock();
-}
-
-static void
-_sel_word_to(Termio *sd, int cx, int cy, Eina_Bool extend)
-{
-   int start_x, start_y, end_x, end_y, orig_x, orig_y,
-       c_start_x, c_start_y, c_end_x, c_end_y,
-       orig_start_x, orig_start_y, orig_end_x, orig_end_y;
-
-   EINA_SAFETY_ON_NULL_RETURN(sd);
-
-   orig_x = sd->pty->selection.orig.x;
-   orig_y = sd->pty->selection.orig.y;
-   start_x = sd->pty->selection.start.x;
-   start_y = sd->pty->selection.start.y;
-   end_x   = sd->pty->selection.end.x;
-   end_y   = sd->pty->selection.end.y;
-
-   if (!sd->pty->selection.is_top_to_bottom)
-     {
-        INT_SWAP(start_x, end_x);
-        INT_SWAP(start_y, end_y);
-     }
-
-   _sel_word(sd, cx, cy);
-   c_start_x = sd->pty->selection.start.x;
-   c_start_y = sd->pty->selection.start.y;
-   c_end_x   = sd->pty->selection.end.x;
-   c_end_y   = sd->pty->selection.end.y;
-
-   _sel_word(sd, orig_x, orig_y);
-   orig_start_x = sd->pty->selection.start.x;
-   orig_start_y = sd->pty->selection.start.y;
-   orig_end_x   = sd->pty->selection.end.x;
-   orig_end_y   = sd->pty->selection.end.y;
-
-   if (sd->pty->selection.is_box)
-     {
-        if (extend)
-          {
-             /* special case: kind of line selection */
-             if (c_start_y != c_end_y)
-               {
-                  start_x = 0;
-                  end_x = sd->grid.w - 1;
-                  if (start_y <= cy && cy <= end_y )
-                    {
-                       start_y = MIN(c_start_y, orig_start_y);
-                       end_y = MAX(c_end_y, orig_end_y);
-                    }
-                  else
-                    {
-                       if (c_end_y > end_y)
-                         {
-                            orig_y = start_y;
-                            end_y = c_end_y;
-                         }
-                       if (c_start_y < start_y)
-                         {
-                            orig_y = end_y;
-                            start_y = c_start_y;
-                         }
-                    }
-                  goto end;
-               }
-             if ((start_y <= cy && cy <= end_y ) &&
-                 (start_x <= cx && cx <= end_x ))
-               {
-                  start_x = MIN(c_start_x, orig_start_x);
-                  end_x = MAX(c_end_x, orig_end_x);
-                  start_y = MIN(c_start_y, orig_start_y);
-                  end_y = MAX(c_end_y, orig_end_y);
-               }
-             else
-               {
-                  if (c_end_x > end_x)
-                    {
-                       orig_x = start_x;
-                       end_x = c_end_x;
-                    }
-                  if (c_start_x < start_x)
-                    {
-                       orig_x = end_x;
-                       start_x = c_start_x;
-                    }
-                  if (c_end_y > end_y)
-                    {
-                       orig_y = start_y;
-                       end_y = c_end_y;
-                    }
-                  if (c_start_y < start_y)
-                    {
-                       orig_y = end_y;
-                       start_y = c_start_y;
-                    }
-                  end_x = MAX(c_end_x, end_x);
-                  start_y = MIN(c_start_y, start_y);
-                  end_y = MAX(c_end_y, end_y);
-               }
-          }
-        else
-          {
-             /* special case: kind of line selection */
-             if (c_start_y != c_end_y || orig_start_y != orig_end_y)
-               {
-                  start_x = 0;
-                  end_x = sd->grid.w - 1;
-                  start_y = MIN(c_start_y, orig_start_y);
-                  end_y = MAX(c_end_y, orig_end_y);
-                  goto end;
-               }
-
-             start_x = MIN(c_start_x, orig_start_x);
-             end_x = MAX(c_end_x, orig_end_x);
-             start_y = MIN(c_start_y, orig_start_y);
-             end_y = MAX(c_end_y, orig_end_y);
-          }
-     }
-   else
-     {
-        if (c_start_y < start_y ||
-            (c_start_y == start_y &&
-             c_start_x < start_x))
-          {
-             /* orig is at bottom */
-             if (extend)
-               {
-                  orig_x = end_x;
-                  orig_y = end_y;
-               }
-             sd->pty->selection.is_top_to_bottom = EINA_FALSE;
-             end_x = c_start_x;
-             end_y = c_start_y;
-             start_x = orig_end_x;
-             start_y = orig_end_y;
-          }
-        else if (c_end_y > end_y ||
-                 (c_end_y == end_y && c_end_x >= end_x))
-          {
-             if (extend)
-               {
-                  orig_x = start_x;
-                  orig_y = start_y;
-               }
-             sd->pty->selection.is_top_to_bottom = EINA_TRUE;
-             start_x = orig_start_x;
-             start_y = orig_start_y;
-             end_x = c_end_x;
-             end_y = c_end_y;
-          }
-        else
-          {
-             if (c_start_y < orig_start_y ||
-                 (c_start_y == orig_start_y && c_start_x <= orig_start_x))
-               {
-                  sd->pty->selection.is_top_to_bottom = EINA_FALSE;
-                  start_x = orig_end_x;
-                  start_y = orig_end_y;
-                  end_x = c_start_x;
-                  end_y = c_start_y;
-               }
-             else
-               {
-                  sd->pty->selection.is_top_to_bottom = EINA_TRUE;
-                  start_x = orig_start_x;
-                  start_y = orig_start_y;
-                  end_x = c_end_x;
-                  end_y = c_end_y;
-               }
-          }
-     }
-
-end:
-   sd->pty->selection.orig.x = orig_x;
-   sd->pty->selection.orig.y = orig_y;
-   sd->pty->selection.start.x = start_x;
-   sd->pty->selection.start.y = start_y;
-   sd->pty->selection.end.x = end_x;
-   sd->pty->selection.end.y = end_y;
-}
-
-static void
-_sel_to(Termio *sd, int cx, int cy, Eina_Bool extend)
-{
-   int start_x, start_y, end_x, end_y, orig_x, orig_y;
-
-   EINA_SAFETY_ON_NULL_RETURN(sd);
-
-   orig_x = sd->pty->selection.orig.x;
-   orig_y = sd->pty->selection.orig.y;
-   start_x = sd->pty->selection.start.x;
-   start_y = sd->pty->selection.start.y;
-   end_x   = sd->pty->selection.end.x;
-   end_y   = sd->pty->selection.end.y;
-
-   if (sd->pty->selection.is_box)
-     {
-        if (!sd->pty->selection.is_top_to_bottom)
-          INT_SWAP(start_y, end_y);
-        if (start_x > end_x)
-          INT_SWAP(start_x, end_x);
-
-        if (cy < start_y)
-          {
-             start_y = cy;
-          }
-        else if (cy > end_y)
-          {
-             end_y = cy;
-          }
-        else
-          {
-             start_y = orig_y;
-             end_y = cy;
-          }
-
-        if (cx < start_x)
-          {
-             start_x = cx;
-          }
-        else if (cx > end_x)
-          {
-             end_x = cx;
-          }
-        else
-          {
-             start_x = orig_x;
-             end_x = cx;
-          }
-        sd->pty->selection.is_top_to_bottom = (end_y > start_y);
-        if (sd->pty->selection.is_top_to_bottom)
-          {
-             if (start_x > end_x)
-               INT_SWAP(start_x, end_x);
-          }
-        else
-          {
-             if (start_x < end_x)
-               INT_SWAP(start_x, end_x);
-          }
-     }
-   else
-     {
-        if (!sd->pty->selection.is_top_to_bottom)
-          {
-             INT_SWAP(start_x, end_x);
-             INT_SWAP(start_y, end_y);
-          }
-        if (cy < start_y ||
-            (cy == start_y &&
-             cx < start_x))
-          {
-             /* orig is at bottom */
-             if (sd->pty->selection.is_top_to_bottom && extend)
-               {
-                  orig_x = end_x;
-                  orig_y = end_y;
-               }
-             sd->pty->selection.is_top_to_bottom = EINA_FALSE;
-          }
-        else if (cy > end_y ||
-                 (cy == end_y && cx >= end_x))
-          {
-             if (!sd->pty->selection.is_top_to_bottom && extend)
-               {
-                  orig_x = start_x;
-                  orig_y = start_y;
-               }
-             sd->pty->selection.is_top_to_bottom = EINA_TRUE;
-          }
-        else
-          {
-             sd->pty->selection.is_top_to_bottom =
-                (cy > orig_y) || (cy == orig_y && cx > orig_x);
-          }
-        start_x = orig_x;
-        start_y = orig_y;
-        end_x = cx;
-        end_y = cy;
-     }
-
-   sd->pty->selection.orig.x = orig_x;
-   sd->pty->selection.orig.y = orig_y;
-   sd->pty->selection.start.x = start_x;
-   sd->pty->selection.start.y = start_y;
-   sd->pty->selection.end.x = end_x;
-   sd->pty->selection.end.y = end_y;
-}
-
-static void
-_selection_dbl_fix(Termio *sd)
-{
-   int start_x, start_y, end_x, end_y;
-   ssize_t w = 0;
-   Termcell *cells;
-   /* Only change the end position */
-
-   EINA_SAFETY_ON_NULL_RETURN(sd);
-
-   start_x = sd->pty->selection.start.x;
-   start_y = sd->pty->selection.start.y;
-   end_x   = sd->pty->selection.end.x;
-   end_y   = sd->pty->selection.end.y;
-   if (!sd->pty->selection.is_top_to_bottom)
-     {
-        INT_SWAP(start_y, end_y);
-        INT_SWAP(start_x, end_x);
-     }
-
-   termpty_backlog_lock();
-   cells = termpty_cellrow_get(sd->pty, end_y - sd->scroll, &w);
-   if (cells)
-     {
-        // if sel2 after sel1
-        if ((end_y > start_y) ||
-            ((end_y == start_y) &&
-                (end_x >= start_x)))
-          {
-             if (end_x < (w - 1))
-               {
-                  if ((cells[end_x].codepoint != 0) &&
-                      (cells[end_x].att.dblwidth))
-                    end_x++;
-               }
-          }
-        // else sel1 after sel 2
-        else
-          {
-             if (end_x > 0)
-               {
-                  if ((cells[end_x].codepoint == 0) &&
-                      (cells[end_x].att.dblwidth))
-                    end_x--;
-               }
-          }
-     }
-   cells = termpty_cellrow_get(sd->pty, start_y - sd->scroll, &w);
-   if (cells)
-     {
-        // if sel2 after sel1
-        if ((end_y > start_y) ||
-            ((end_y == start_y) &&
-                (end_x >= start_x)))
-          {
-             if (start_x > 0)
-               {
-                  if ((cells[start_x].codepoint == 0) &&
-                      (cells[start_x].att.dblwidth))
-                    start_x--;
-               }
-          }
-        // else sel1 after sel 2
-        else
-          {
-             if (start_x < (w - 1))
-               {
-                  if ((cells[start_x].codepoint != 0) &&
-                      (cells[start_x].att.dblwidth))
-                    start_x++;
-               }
-          }
-     }
-   termpty_backlog_unlock();
-
-   if (!sd->pty->selection.is_top_to_bottom)
-     {
-        INT_SWAP(start_y, end_y);
-        INT_SWAP(start_x, end_x);
-     }
-   sd->pty->selection.start.x = start_x;
-   sd->pty->selection.start.y = start_y;
-   sd->pty->selection.end.x = end_x;
-   sd->pty->selection.end.y = end_y;
-}
-
-static void
-_selection_newline_extend_fix(Evas_Object *obj)
-{
-   int start_x, start_y, end_x, end_y;
-   Termio *sd;
-   ssize_t w;
-
-   sd = evas_object_smart_data_get(obj);
-
-   if ((sd->top_left) || (sd->bottom_right) || (sd->pty->selection.is_box))
-     return;
-
-   termpty_backlog_lock();
-
-   start_x = sd->pty->selection.start.x;
-   start_y = sd->pty->selection.start.y;
-   end_x   = sd->pty->selection.end.x;
-   end_y   = sd->pty->selection.end.y;
-   if (!sd->pty->selection.is_top_to_bottom)
-     {
-        INT_SWAP(start_y, end_y);
-        INT_SWAP(start_x, end_x);
-     }
-
-   if ((end_y > start_y) ||
-       ((end_y == start_y) &&
-        (end_x >= start_x)))
-     {
-        /* going down/right */
-        w = termpty_row_length(sd->pty, start_y);
-        if (w < start_x)
-          start_x = w;
-        w = termpty_row_length(sd->pty, end_y);
-        if (w <= end_x)
-          end_x = sd->pty->w;
-     }
-   else
-     {
-        /* going up/left */
-        w = termpty_row_length(sd->pty, end_y);
-        if (w < end_x)
-          end_x = w;
-        w = termpty_row_length(sd->pty, start_y);
-        if (w <= start_x)
-          start_x = sd->pty->w;
-     }
-
-   if (!sd->pty->selection.is_top_to_bottom)
-     {
-        INT_SWAP(start_y, end_y);
-        INT_SWAP(start_x, end_x);
-     }
-   sd->pty->selection.start.x = start_x;
-   sd->pty->selection.start.y = start_y;
-   sd->pty->selection.end.x = end_x;
-   sd->pty->selection.end.y = end_y;
-
-   termpty_backlog_unlock();
 }
 
 /* }}} */
@@ -3765,22 +2317,19 @@ termio_focus_out(Evas_Object *termio)
 }
 
 static void
-_smart_mouseover_apply(Evas_Object *obj)
+_smart_mouseover_apply(Termio *sd)
 {
    char *s;
    int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
    Eina_Bool same_geom = EINA_FALSE;
-   Termio *sd = evas_object_smart_data_get(obj);
    Config *config;
    Termcell *cell = NULL;
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
    config = sd->config;
-   if (!config->active_links)
-     return;
 
    if ((sd->mouse.cx < 0) || (sd->mouse.cy < 0) ||
-       (sd->link.suspend) || (!evas_object_focus_get(obj)))
+       (sd->link.suspend) || (!evas_object_focus_get(sd->self)))
      {
         _remove_links(sd);
         return;
@@ -3794,11 +2343,12 @@ _smart_mouseover_apply(Evas_Object *obj)
 
    if (cell->att.link_id)
      {
-        _hyperlink_mouseover(obj, sd, cell->att.link_id);
+        if (config->active_links_escape)
+          _hyperlink_mouseover(sd, cell->att.link_id);
         return;
      }
 
-   s = termio_link_find(obj, sd->mouse.cx, sd->mouse.cy,
+   s = termio_link_find(sd->self, sd->mouse.cx, sd->mouse.cy,
                         &x1, &y1, &x2, &y2);
    if (!s)
      {
@@ -3806,9 +2356,34 @@ _smart_mouseover_apply(Evas_Object *obj)
         return;
      }
 
+   if (link_is_url(s))
+     {
+        if (casestartswith(s, "mailto:"))
+          {
+             if (!config->active_links_email)
+               goto end;
+          }
+        else
+          {
+             if (!config->active_links_url)
+               goto end;
+          }
+     }
+   else if (s[0] == '/')
+     {
+        if (!config->active_links_file)
+          goto end;
+     }
+   else if (link_is_email(s))
+     {
+        if (!config->active_links_email)
+          goto end;
+     }
+
    if (sd->link.string)
      eina_stringshare_del(sd->link.string);
    sd->link.string = eina_stringshare_add(s);
+   s = NULL;
 
    if ((x1 == sd->link.x1) && (y1 == sd->link.y1) &&
        (x2 == sd->link.x2) && (y2 == sd->link.y2))
@@ -3821,327 +2396,37 @@ _smart_mouseover_apply(Evas_Object *obj)
    sd->link.x2 = x2;
    sd->link.y2 = y2;
    _update_link(sd, same_geom);
+
+end:
+   free(s);
 }
 
-static void
-_smart_xy_to_cursor(Termio *sd, Evas_Coord x, Evas_Coord y,
-                    int *cx, int *cy)
-{
-   Evas_Coord ox, oy;
-   EINA_SAFETY_ON_NULL_RETURN(sd);
-
-   evas_object_geometry_get(sd->self, &ox, &oy, NULL, NULL);
-   *cx = (x - ox) / sd->font.chw;
-   *cy = (y - oy) / sd->font.chh;
-   if (*cx < 0) *cx = 0;
-   else if (*cx >= sd->grid.w) *cx = sd->grid.w - 1;
-   if (*cy < 0) *cy = 0;
-   else if (*cy >= sd->grid.h) *cy = sd->grid.h - 1;
-}
-
-static Eina_Bool
-_rep_mouse_down(Termio *sd, Evas_Event_Mouse_Down *ev, int cx, int cy)
-{
-   char buf[64];
-   Eina_Bool ret = EINA_FALSE;
-   int btn;
-
-   if (sd->pty->mouse_mode == MOUSE_OFF) return EINA_FALSE;
-   if (!sd->mouse.button)
-     {
-        /* Need to remember the first button pressed for terminal handling */
-        sd->mouse.button = ev->button;
-     }
-
-   btn = ev->button - 1;
-   switch (sd->pty->mouse_ext)
-     {
-      case MOUSE_EXT_NONE:
-        if ((cx < (0xff - ' ')) && (cy < (0xff - ' ')))
-          {
-             if (sd->pty->mouse_mode == MOUSE_X10)
-               {
-                  if (btn <= 2)
-                    {
-                       buf[0] = 0x1b;
-                       buf[1] = '[';
-                       buf[2] = 'M';
-                       buf[3] = btn + ' ';
-                       buf[4] = cx + 1 + ' ';
-                       buf[5] = cy + 1 + ' ';
-                       buf[6] = 0;
-                       termpty_write(sd->pty, buf, strlen(buf));
-                       ret = EINA_TRUE;
-                    }
-               }
-             else
-               {
-                  int meta = evas_key_modifier_is_set(ev->modifiers, "Alt") ? 8 : 0;
-
-                  if (btn > 2) btn = 0;
-                  buf[0] = 0x1b;
-                  buf[1] = '[';
-                  buf[2] = 'M';
-                  buf[3] = (btn | meta) + ' ';
-                  buf[4] = cx + 1 + ' ';
-                  buf[5] = cy + 1 + ' ';
-                  buf[6] = 0;
-                  termpty_write(sd->pty, buf, strlen(buf));
-                  ret = EINA_TRUE;
-               }
-          }
-        break;
-      case MOUSE_EXT_UTF8: // ESC.[.M.BTN/FLGS.XUTF8.YUTF8
-          {
-             int meta = evas_key_modifier_is_set(ev->modifiers, "Alt") ? 8 : 0;
-             int v, i;
-
-             if (btn > 2) btn = 0;
-             buf[0] = 0x1b;
-             buf[1] = '[';
-             buf[2] = 'M';
-             buf[3] = (btn | meta) + ' ';
-             i = 4;
-             v = cx + 1 + ' ';
-             if (v <= 127) buf[i++] = v;
-             else
-               { // 14 bits for cx/cy - enough i think
-                   buf[i++] = 0xc0 + (v >> 6);
-                   buf[i++] = 0x80 + (v & 0x3f);
-               }
-             v = cy + 1 + ' ';
-             if (v <= 127) buf[i++] = v;
-             else
-               { // 14 bits for cx/cy - enough i think
-                   buf[i++] = 0xc0 + (v >> 6);
-                   buf[i++] = 0x80 + (v & 0x3f);
-               }
-             buf[i] = 0;
-             termpty_write(sd->pty, buf, strlen(buf));
-             ret = EINA_TRUE;
-          }
-        break;
-      case MOUSE_EXT_SGR: // ESC.[.<.NUM.;.NUM.;.NUM.M
-          {
-             int meta = evas_key_modifier_is_set(ev->modifiers, "Alt") ? 8 : 0;
-
-             if (btn > 2) btn = 0;
-             snprintf(buf, sizeof(buf), "%c[<%i;%i;%iM", 0x1b,
-                      (btn | meta), cx + 1, cy + 1);
-             termpty_write(sd->pty, buf, strlen(buf));
-             ret = EINA_TRUE;
-          }
-        break;
-      case MOUSE_EXT_URXVT: // ESC.[.NUM.;.NUM.;.NUM.M
-          {
-             int meta = evas_key_modifier_is_set(ev->modifiers, "Alt") ? 8 : 0;
-
-             if (btn > 2) btn = 0;
-             snprintf(buf, sizeof(buf), "%c[%i;%i;%iM", 0x1b,
-                      (btn | meta) + ' ',
-                      cx + 1, cy + 1);
-             termpty_write(sd->pty, buf, strlen(buf));
-             ret = EINA_TRUE;
-          }
-        break;
-      default:
-        break;
-     }
-   return ret;
-}
-
-static Eina_Bool
-_rep_mouse_up(Termio *sd, Evas_Event_Mouse_Up *ev, int cx, int cy)
-{
-   char buf[64];
-   Eina_Bool ret = EINA_FALSE;
-   int meta;
-
-   if ((sd->pty->mouse_mode == MOUSE_OFF) ||
-       (sd->pty->mouse_mode == MOUSE_X10))
-     return EINA_FALSE;
-   if (sd->mouse.button == ev->button)
-     sd->mouse.button = 0;
-
-   meta = evas_key_modifier_is_set(ev->modifiers, "Alt") ? 8 : 0;
-
-   switch (sd->pty->mouse_ext)
-     {
-      case MOUSE_EXT_NONE:
-        if ((cx < (0xff - ' ')) && (cy < (0xff - ' ')))
-          {
-             buf[0] = 0x1b;
-             buf[1] = '[';
-             buf[2] = 'M';
-             buf[3] = (3 | meta) + ' ';
-             buf[4] = cx + 1 + ' ';
-             buf[5] = cy + 1 + ' ';
-             buf[6] = 0;
-             termpty_write(sd->pty, buf, strlen(buf));
-             ret = EINA_TRUE;
-          }
-        break;
-      case MOUSE_EXT_UTF8: // ESC.[.M.BTN/FLGS.XUTF8.YUTF8
-          {
-             int v, i;
-
-             buf[0] = 0x1b;
-             buf[1] = '[';
-             buf[2] = 'M';
-             buf[3] = (3 | meta) + ' ';
-             i = 4;
-             v = cx + 1 + ' ';
-             if (v <= 127) buf[i++] = v;
-             else
-               { // 14 bits for cx/cy - enough i think
-                   buf[i++] = 0xc0 + (v >> 6);
-                   buf[i++] = 0x80 + (v & 0x3f);
-               }
-             v = cy + 1 + ' ';
-             if (v <= 127) buf[i++] = v;
-             else
-               { // 14 bits for cx/cy - enough i think
-                   buf[i++] = 0xc0 + (v >> 6);
-                   buf[i++] = 0x80 + (v & 0x3f);
-               }
-             buf[i] = 0;
-             termpty_write(sd->pty, buf, strlen(buf));
-             ret = EINA_TRUE;
-          }
-        break;
-      case MOUSE_EXT_SGR: // ESC.[.<.NUM.;.NUM.;.NUM.m
-          {
-             int btn = ev->button - 1;
-             if (btn > 2) btn = 0;
-             snprintf(buf, sizeof(buf), "%c[<%i;%i;%im", 0x1b,
-                      (btn | meta), cx + 1, cy + 1);
-             termpty_write(sd->pty, buf, strlen(buf));
-             ret = EINA_TRUE;
-          }
-        break;
-      case MOUSE_EXT_URXVT: // ESC.[.NUM.;.NUM.;.NUM.M
-          {
-             snprintf(buf, sizeof(buf), "%c[%i;%i;%iM", 0x1b,
-                      (3 | meta) + ' ',
-                      cx + 1, cy + 1);
-             termpty_write(sd->pty, buf, strlen(buf));
-             ret = EINA_TRUE;
-          }
-        break;
-      default:
-        break;
-     }
-   return ret;
-}
-
-static Eina_Bool
-_rep_mouse_move(Termio *sd, int cx, int cy)
-{
-   char buf[64];
-   Eina_Bool ret = EINA_FALSE;
-   int btn;
-
-   if ((sd->pty->mouse_mode == MOUSE_OFF) ||
-       (sd->pty->mouse_mode == MOUSE_X10) ||
-       (sd->pty->mouse_mode == MOUSE_NORMAL))
-     return EINA_FALSE;
-
-   if ((!sd->mouse.button) && (sd->pty->mouse_mode == MOUSE_NORMAL_BTN_MOVE))
-     return EINA_FALSE;
-
-   btn = sd->mouse.button - 1;
-
-   switch (sd->pty->mouse_ext)
-     {
-      case MOUSE_EXT_NONE:
-        if ((cx < (0xff - ' ')) && (cy < (0xff - ' ')))
-          {
-             buf[0] = 0x1b;
-             buf[1] = '[';
-             buf[2] = 'M';
-             buf[3] = btn + 32 + ' ';
-             buf[4] = cx + 1 + ' ';
-             buf[5] = cy + 1 + ' ';
-             buf[6] = 0;
-             termpty_write(sd->pty, buf, strlen(buf));
-             ret = EINA_TRUE;
-          }
-        break;
-      case MOUSE_EXT_UTF8: // ESC.[.M.BTN/FLGS.XUTF8.YUTF8
-          {
-             int v, i;
-
-             buf[0] = 0x1b;
-             buf[1] = '[';
-             buf[2] = 'M';
-             buf[3] = btn + 32 + ' ';
-             i = 4;
-             v = cx + 1 + ' ';
-             if (v <= 127) buf[i++] = v;
-             else
-               { // 14 bits for cx/cy - enough i think
-                   buf[i++] = 0xc0 + (v >> 6);
-                   buf[i++] = 0x80 + (v & 0x3f);
-               }
-             v = cy + 1 + ' ';
-             if (v <= 127) buf[i++] = v;
-             else
-               { // 14 bits for cx/cy - enough i think
-                   buf[i++] = 0xc0 + (v >> 6);
-                   buf[i++] = 0x80 + (v & 0x3f);
-               }
-             buf[i] = 0;
-             termpty_write(sd->pty, buf, strlen(buf));
-             ret = EINA_TRUE;
-          }
-        break;
-      case MOUSE_EXT_SGR: // ESC.[.<.NUM.;.NUM.;.NUM.M
-          {
-             snprintf(buf, sizeof(buf), "%c[<%i;%i;%iM", 0x1b,
-                      btn + 32, cx + 1, cy + 1);
-             termpty_write(sd->pty, buf, strlen(buf));
-             ret = EINA_TRUE;
-          }
-        break;
-      case MOUSE_EXT_URXVT: // ESC.[.NUM.;.NUM.;.NUM.M
-          {
-             snprintf(buf, sizeof(buf), "%c[%i;%i;%iM", 0x1b,
-                      btn + 32  + ' ',
-                      cx + 1, cy + 1);
-             termpty_write(sd->pty, buf, strlen(buf));
-             ret = EINA_TRUE;
-          }
-        break;
-      default:
-        break;
-     }
-   return ret;
-}
 
 static Eina_Bool
 _smart_mouseover_delay(void *data)
 {
-   Termio *sd = evas_object_smart_data_get(data);
+   Termio *sd = data;
 
    EINA_SAFETY_ON_NULL_RETURN_VAL(sd, EINA_FALSE);
    sd->mouseover_delay = NULL;
-   _smart_mouseover_apply(data);
+   _smart_mouseover_apply(sd);
    return EINA_FALSE;
 }
 
 
-static void
-_smart_cb_mouse_move_job(void *data)
+void
+termio_smart_cb_mouse_move_job(void *data)
 {
-   Termio *sd = evas_object_smart_data_get(data);
+   Termio *sd = data;
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
    sd->mouse_move_job = NULL;
    if (sd->mouseover_delay)
      ecore_timer_reset(sd->mouseover_delay);
    else
-     sd->mouseover_delay = ecore_timer_add(0.05, _smart_mouseover_delay, data);
+     sd->mouseover_delay = ecore_timer_add(0.05, _smart_mouseover_delay, sd);
 }
+
 
 static void
 _edje_cb_bottom_right_in(void *data,
@@ -4187,109 +2472,6 @@ _edje_cb_top_left_out(void *data,
    sd->top_left = EINA_FALSE;
 }
 
-static void
-_handle_mouse_down_single_click(Termio *sd,
-                                int cx, int cy,
-                                int ctrl, int alt, int shift)
-{
-   sd->didclick = EINA_FALSE;
-   /* SINGLE CLICK */
-   if (sd->pty->selection.is_active &&
-       (sd->top_left || sd->bottom_right))
-     {
-        /* stretch selection */
-        int start_x, start_y, end_x, end_y;
-
-        start_x = sd->pty->selection.start.x;
-        start_y = sd->pty->selection.start.y;
-        end_x   = sd->pty->selection.end.x;
-        end_y   = sd->pty->selection.end.y;
-
-        if (!sd->pty->selection.is_top_to_bottom)
-          {
-             INT_SWAP(start_y, end_y);
-             INT_SWAP(start_x, end_x);
-          }
-
-        cy -= sd->scroll;
-
-        sd->pty->selection.makesel = EINA_TRUE;
-
-        if (sd->pty->selection.is_box)
-          {
-             if (end_x < start_x)
-               INT_SWAP(end_x, start_x);
-          }
-        if (sd->top_left)
-          {
-             sd->pty->selection.orig.x = end_x;
-             sd->pty->selection.orig.y = end_y;
-             sd->pty->selection.is_top_to_bottom = EINA_FALSE;
-          }
-        else
-          {
-             /* sd->bottom_right */
-             sd->pty->selection.orig.x = start_x;
-             sd->pty->selection.orig.y = start_y;
-             sd->pty->selection.is_top_to_bottom = EINA_TRUE;
-          }
-
-        sd->pty->selection.start.x = sd->pty->selection.orig.x;
-        sd->pty->selection.start.y = sd->pty->selection.orig.y;
-        sd->pty->selection.end.x = cx;
-        sd->pty->selection.end.y = cy;
-        _selection_dbl_fix(sd);
-     }
-   else if (!shift && alt && !sd->pty->selection.is_active
-            && (sd->pty->mouse_mode == MOUSE_OFF))
-     {
-        /* move cursor to position */
-        termpty_move_cursor(sd->pty, cx, cy);
-     }
-   else if (!shift && !sd->pty->selection.is_active)
-     {
-        /* New selection */
-        sd->moved = EINA_FALSE;
-        _sel_set(sd, EINA_FALSE);
-        sd->pty->selection.is_box = (ctrl || alt);
-        sd->pty->selection.start.x = cx;
-        sd->pty->selection.start.y = cy - sd->scroll;
-        sd->pty->selection.orig.x = sd->pty->selection.start.x;
-        sd->pty->selection.orig.y = sd->pty->selection.start.y;
-        sd->pty->selection.end.x = cx;
-        sd->pty->selection.end.y = cy - sd->scroll;
-        sd->pty->selection.makesel = EINA_TRUE;
-        sd->pty->selection.by_line = EINA_FALSE;
-        sd->pty->selection.by_word = EINA_FALSE;
-        _selection_dbl_fix(sd);
-     }
-   else if (shift && sd->pty->selection.is_active)
-     {
-        /* let cb_up handle it */
-        /* do nothing */
-        return;
-     }
-   else if (shift &&
-            (time(NULL) - sd->pty->selection.last_click) <= 5)
-     {
-        sd->pty->selection.is_box = ctrl;
-        _sel_to(sd, cx, cy - sd->scroll, EINA_FALSE);
-        sd->pty->selection.is_active = EINA_TRUE;
-        _selection_dbl_fix(sd);
-     }
-   else
-     {
-        sd->pty->selection.is_box = ctrl;
-        sd->pty->selection.start.x = sd->pty->selection.end.x = cx;
-        sd->pty->selection.orig.x = cx;
-        sd->pty->selection.start.y = sd->pty->selection.end.y = cy - sd->scroll;
-        sd->pty->selection.orig.y = cy - sd->scroll;
-        sd->pty->selection.makesel = EINA_TRUE;
-        sd->didclick = !sd->pty->selection.is_active;
-        sd->pty->selection.is_active = EINA_FALSE;
-        _sel_set(sd, EINA_FALSE);
-     }
-}
 
 static void
 _cb_ctxp_sel_copy(void *data,
@@ -4366,9 +2548,9 @@ end:
 }
 
 
-static void
-_handle_right_click(Evas_Object *obj, Evas_Event_Mouse_Down *ev, Termio *sd,
-                    int cx, int cy)
+void
+termio_handle_right_click(Evas_Event_Mouse_Down *ev, Termio *sd,
+                          int cx, int cy)
 {
    if (_mouse_in_selection(sd, cx, cy))
      {
@@ -4389,7 +2571,7 @@ _handle_right_click(Evas_Object *obj, Evas_Event_Mouse_Down *ev, Termio *sd,
         return;
      }
    if (!sd->link.string)
-     evas_object_smart_callback_call(obj, "options", NULL);
+     evas_object_smart_callback_call(sd->self, "options", NULL);
 }
 
 static void
@@ -4400,75 +2582,20 @@ _smart_cb_mouse_down(void *data,
 {
    Evas_Event_Mouse_Down *ev = event;
    Termio *sd = evas_object_smart_data_get(data);
-   int cx = 0, cy = 0;
-   int shift, ctrl, alt;
+   Termio_Modifiers modifiers = {};
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
-   shift = evas_key_modifier_is_set(ev->modifiers, "Shift");
-   ctrl = evas_key_modifier_is_set(ev->modifiers, "Control");
-   alt = evas_key_modifier_is_set(ev->modifiers, "Alt");
-   _smart_xy_to_cursor(sd, ev->canvas.x, ev->canvas.y, &cx, &cy);
+   modifiers.alt = evas_key_modifier_is_set(ev->modifiers, "Alt");
+   modifiers.shift = evas_key_modifier_is_set(ev->modifiers, "Shift");
+   modifiers.ctrl = evas_key_modifier_is_set(ev->modifiers, "Control");
+   modifiers.super = evas_key_modifier_is_set(ev->modifiers, "Super");
+   modifiers.meta = evas_key_modifier_is_set(ev->modifiers, "Meta");
+   modifiers.hyper = evas_key_modifier_is_set(ev->modifiers, "Hyper");
+   modifiers.iso_level3_shift = evas_key_modifier_is_set(ev->modifiers, "ISO_Level3_Shift");
+   modifiers.altgr= evas_key_modifier_is_set(ev->modifiers, "AltGr");
 
-   if ((ev->button == 3) && ctrl)
-     {
-        _handle_right_click(data, ev, sd, cx, cy);
-        return;
-     }
-   if (!shift && !ctrl)
-     if (_rep_mouse_down(sd, ev, cx, cy))
-       {
-           if (sd->pty->selection.is_active)
-             {
-                _sel_set(sd, EINA_FALSE);
-                _smart_update_queue(data, sd);
-             }
-          return;
-       }
-   if (ev->button == 1)
-     {
-        sd->pty->selection.makesel = EINA_TRUE;
-        if (ev->flags & EVAS_BUTTON_TRIPLE_CLICK)
-          {
-             if (shift && sd->pty->selection.is_active)
-               _sel_line_to(sd, cy - sd->scroll, EINA_TRUE);
-             else
-               _sel_line(sd, cy - sd->scroll);
-             if (sd->pty->selection.is_active)
-               {
-                  termio_take_selection(data, ELM_SEL_TYPE_PRIMARY);
-               }
-             sd->didclick = EINA_TRUE;
-          }
-        else if (ev->flags & EVAS_BUTTON_DOUBLE_CLICK)
-          {
-             if (!sd->pty->selection.is_active && sd->didclick)
-               sd->pty->selection.is_active = EINA_TRUE;
-             if (shift && sd->pty->selection.is_active)
-               _sel_word_to(sd, cx, cy - sd->scroll, EINA_TRUE);
-             else
-               _sel_word(sd, cx, cy - sd->scroll);
-             if (sd->pty->selection.is_active)
-               {
-                  if (!termio_take_selection(data, ELM_SEL_TYPE_PRIMARY))
-                    _sel_set(sd, EINA_FALSE);
-               }
-             sd->didclick = EINA_TRUE;
-          }
-        else
-          {
-             _handle_mouse_down_single_click(sd, cx, cy, ctrl, alt, shift);
-          }
-        _smart_update_queue(data, sd);
-     }
-   else if (ev->button == 2)
-     {
-        termio_paste_selection(data, ELM_SEL_TYPE_PRIMARY);
-     }
-   else if (ev->button == 3)
-     {
-        _handle_right_click(data, ev, sd, cx, cy);
-     }
+   termio_internal_mouse_down(sd, ev, modifiers);
 }
 
 static void
@@ -4479,116 +2606,20 @@ _smart_cb_mouse_up(void *data,
 {
    Evas_Event_Mouse_Up *ev = event;
    Termio *sd = evas_object_smart_data_get(data);
-   int cx = 0, cy = 0;
-   int shift, ctrl;
+   Termio_Modifiers modifiers = {};
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
-   shift = evas_key_modifier_is_set(ev->modifiers, "Shift");
-   ctrl = evas_key_modifier_is_set(ev->modifiers, "Control");
+   modifiers.alt = evas_key_modifier_is_set(ev->modifiers, "Alt");
+   modifiers.shift = evas_key_modifier_is_set(ev->modifiers, "Shift");
+   modifiers.ctrl = evas_key_modifier_is_set(ev->modifiers, "Control");
+   modifiers.super = evas_key_modifier_is_set(ev->modifiers, "Super");
+   modifiers.meta = evas_key_modifier_is_set(ev->modifiers, "Meta");
+   modifiers.hyper = evas_key_modifier_is_set(ev->modifiers, "Hyper");
+   modifiers.iso_level3_shift = evas_key_modifier_is_set(ev->modifiers, "ISO_Level3_Shift");
+   modifiers.altgr= evas_key_modifier_is_set(ev->modifiers, "AltGr");
 
-   _smart_xy_to_cursor(sd, ev->canvas.x, ev->canvas.y, &cx, &cy);
-   if (!shift && !ctrl && !sd->pty->selection.makesel)
-      if (_rep_mouse_up(sd, ev, cx, cy))
-        {
-           if (sd->pty->selection.is_active)
-             {
-                _sel_set(sd, EINA_FALSE);
-                _smart_update_queue(data, sd);
-             }
-           return;
-        }
-   if (sd->link.down.dnd) return;
-   if (sd->pty->selection.makesel)
-     {
-        if (sd->mouse_selection_scroll_timer)
-          {
-             ecore_timer_del(sd->mouse_selection_scroll_timer);
-             sd->mouse_selection_scroll_timer = NULL;
-          }
-        sd->pty->selection.makesel = EINA_FALSE;
-
-        if (!sd->pty->selection.is_active)
-          {
-             /* Only change the end position */
-             if (((sd->pty->selection.start.x == sd->pty->selection.end.x) &&
-                  (sd->pty->selection.start.y == sd->pty->selection.end.y)))
-               {
-                  _sel_set(sd, EINA_FALSE);
-                  sd->didclick = EINA_FALSE;
-                  sd->pty->selection.last_click = time(NULL);
-                  sd->pty->selection.by_line = EINA_FALSE;
-                  sd->pty->selection.by_word = EINA_FALSE;
-                  _smart_update_queue(data, sd);
-                  return;
-               }
-          }
-        else
-          {
-             if (sd->pty->selection.by_line)
-               {
-                  _sel_line_to(sd, cy - sd->scroll, shift);
-               }
-             else if (sd->pty->selection.by_word)
-               {
-                  _sel_word_to(sd, cx, cy - sd->scroll, shift);
-               }
-             else
-               {
-                  if (shift)
-                    {
-                       /* extend selection */
-                       _sel_to(sd, cx, cy - sd->scroll, EINA_TRUE);
-                    }
-                  else
-                    {
-                       sd->didclick = EINA_TRUE;
-                       _sel_to(sd, cx, cy - sd->scroll, EINA_FALSE);
-                    }
-               }
-             _selection_dbl_fix(sd);
-             _selection_newline_extend_fix(data);
-             _smart_update_queue(data, sd);
-             termio_take_selection(data, ELM_SEL_TYPE_PRIMARY);
-             sd->pty->selection.makesel = EINA_FALSE;
-          }
-     }
-}
-
-static Eina_Bool
-_mouse_selection_scroll(void *data)
-{
-   Evas_Object *obj = data;
-   Termio *sd = evas_object_smart_data_get(obj);
-   Evas_Coord oy, my;
-   int cy;
-   float fcy;
-
-   if (!sd->pty->selection.makesel) return EINA_FALSE;
-
-   evas_pointer_canvas_xy_get(evas_object_evas_get(obj), NULL, &my);
-   evas_object_geometry_get(data, NULL, &oy, NULL, NULL);
-   fcy = (my - oy) / (float)sd->font.chh;
-   cy = fcy;
-   if (fcy < 0.3)
-     {
-        if (cy == 0)
-          cy = -1;
-        sd->scroll -= cy;
-        sd->pty->selection.end.y = -sd->scroll;
-        _smart_update_queue(data, sd);
-     }
-   else if (fcy >= (sd->grid.h - 0.3))
-     {
-        if (cy <= sd->grid.h)
-          cy = sd->grid.h + 1;
-        sd->scroll -= cy - sd->grid.h;
-        if (sd->scroll < 0) sd->scroll = 0;
-        sd->pty->selection.end.y = sd->scroll + sd->grid.h - 1;
-        _smart_update_queue(data, sd);
-     }
-
-   return EINA_TRUE;
+   termio_internal_mouse_up(sd, ev, modifiers);
 }
 
 static void
@@ -4599,100 +2630,20 @@ _smart_cb_mouse_move(void *data,
 {
    Evas_Event_Mouse_Move *ev = event;
    Termio *sd = evas_object_smart_data_get(data);
-   int cx, cy;
-   float fcy;
-   Evas_Coord ox, oy;
-   Eina_Bool scroll = EINA_FALSE;
-   int shift, ctrl;
-
-   shift = evas_key_modifier_is_set(ev->modifiers, "Shift");
-   ctrl = evas_key_modifier_is_set(ev->modifiers, "Control");
+   Termio_Modifiers modifiers = {};
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
-   evas_object_geometry_get(data, &ox, &oy, NULL, NULL);
-   cx = (ev->cur.canvas.x - ox) / sd->font.chw;
-   fcy = (ev->cur.canvas.y - oy) / (float)sd->font.chh;
-   cy = fcy;
-   if (cx < 0) cx = 0;
-   else if (cx >= sd->grid.w) cx = sd->grid.w - 1;
-   if (fcy < 0.3)
-     {
-        cy = 0;
-        if (sd->pty->selection.makesel)
-             scroll = EINA_TRUE;
-     }
-   else if (fcy >= (sd->grid.h - 0.3))
-     {
-        cy = sd->grid.h - 1;
-        if (sd->pty->selection.makesel)
-             scroll = EINA_TRUE;
-     }
-   if (scroll == EINA_TRUE)
-     {
-        if (!sd->mouse_selection_scroll_timer)
-          {
-             sd->mouse_selection_scroll_timer
-                = ecore_timer_add(0.05, _mouse_selection_scroll, data);
-          }
-        return;
-     }
-   else if (sd->mouse_selection_scroll_timer)
-     {
-        ecore_timer_del(sd->mouse_selection_scroll_timer);
-        sd->mouse_selection_scroll_timer = NULL;
-     }
+   modifiers.alt = evas_key_modifier_is_set(ev->modifiers, "Alt");
+   modifiers.shift = evas_key_modifier_is_set(ev->modifiers, "Shift");
+   modifiers.ctrl = evas_key_modifier_is_set(ev->modifiers, "Control");
+   modifiers.super = evas_key_modifier_is_set(ev->modifiers, "Super");
+   modifiers.meta = evas_key_modifier_is_set(ev->modifiers, "Meta");
+   modifiers.hyper = evas_key_modifier_is_set(ev->modifiers, "Hyper");
+   modifiers.iso_level3_shift = evas_key_modifier_is_set(ev->modifiers, "ISO_Level3_Shift");
+   modifiers.altgr= evas_key_modifier_is_set(ev->modifiers, "AltGr");
 
-   if ((sd->mouse.cx == cx) && (sd->mouse.cy == cy)) return;
-
-   sd->mouse.cx = cx;
-   sd->mouse.cy = cy;
-   if (!shift && !ctrl)
-     if (_rep_mouse_move(sd, cx, cy)) return;
-   if (sd->link.down.dnd)
-     {
-        sd->pty->selection.makesel = EINA_FALSE;
-        _sel_set(sd, EINA_FALSE);
-        _smart_update_queue(data, sd);
-        return;
-     }
-   if (sd->pty->selection.makesel)
-     {
-        int start_x, start_y;
-
-        /* Only change the end position */
-        start_x = sd->pty->selection.start.x;
-        start_y = sd->pty->selection.start.y;
-
-        if (!sd->pty->selection.is_active)
-          {
-             if ((cx != start_x) ||
-                 ((cy - sd->scroll) != start_y))
-               _sel_set(sd, EINA_TRUE);
-          }
-
-        if (sd->pty->selection.by_line)
-          {
-             _sel_line_to(sd, cy - sd->scroll, EINA_FALSE);
-          }
-        else if (sd->pty->selection.by_word)
-          {
-             _sel_word_to(sd, cx, cy - sd->scroll, EINA_FALSE);
-          }
-        else
-          {
-             _sel_to(sd, cx, cy - sd->scroll, EINA_FALSE);
-          }
-
-        _selection_dbl_fix(sd);
-        if (!sd->pty->selection.is_box)
-          _selection_newline_extend_fix(data);
-        _smart_update_queue(data, sd);
-        sd->moved = EINA_TRUE;
-     }
-   /* TODO: make the following useless */
-   if (sd->mouse_move_job) ecore_job_del(sd->mouse_move_job);
-   sd->mouse_move_job = ecore_job_add(_smart_cb_mouse_move_job, data);
+   termio_internal_mouse_move(sd, ev, modifiers);
 }
 
 static void
@@ -4706,7 +2657,7 @@ _smart_cb_mouse_in(void *data,
    Termio *sd = evas_object_smart_data_get(data);
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
-   _smart_xy_to_cursor(sd, ev->canvas.x, ev->canvas.y, &cx, &cy);
+   termio_cursor_to_xy(sd, ev->canvas.x, ev->canvas.y, &cx, &cy);
    sd->mouse.cx = cx;
    sd->mouse.cy = cy;
    termio_mouseover_suspend_pushpop(data, -1);
@@ -4736,7 +2687,7 @@ _smart_cb_mouse_out(void *data,
      {
         int cx = 0, cy = 0;
 
-        _smart_xy_to_cursor(sd, ev->canvas.x, ev->canvas.y, &cx, &cy);
+        termio_cursor_to_xy(sd, ev->canvas.x, ev->canvas.y, &cx, &cy);
         sd->mouse.cx = cx;
         sd->mouse.cy = cy;
      }
@@ -4754,112 +2705,20 @@ _smart_cb_mouse_wheel(void *data,
 {
    Evas_Event_Mouse_Wheel *ev = event;
    Termio *sd = evas_object_smart_data_get(data);
-   char buf[64];
+   Termio_Modifiers modifiers = {};
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
-   /* do not handle horizontal scrolling */
-   if (ev->direction) return;
+   modifiers.alt = evas_key_modifier_is_set(ev->modifiers, "Alt");
+   modifiers.shift = evas_key_modifier_is_set(ev->modifiers, "Shift");
+   modifiers.ctrl = evas_key_modifier_is_set(ev->modifiers, "Control");
+   modifiers.super = evas_key_modifier_is_set(ev->modifiers, "Super");
+   modifiers.meta = evas_key_modifier_is_set(ev->modifiers, "Meta");
+   modifiers.hyper = evas_key_modifier_is_set(ev->modifiers, "Hyper");
+   modifiers.iso_level3_shift = evas_key_modifier_is_set(ev->modifiers, "ISO_Level3_Shift");
+   modifiers.altgr= evas_key_modifier_is_set(ev->modifiers, "AltGr");
 
-   if (evas_key_modifier_is_set(ev->modifiers, "Control")) return;
-   if (evas_key_modifier_is_set(ev->modifiers, "Alt")) return;
-   if (evas_key_modifier_is_set(ev->modifiers, "Shift")) return;
-
-   if (sd->pty->mouse_mode == MOUSE_OFF)
-     {
-        if (sd->pty->altbuf)
-          {
-             /* Emulate cursors */
-             buf[0] = 0x1b;
-             buf[1] = 'O';
-             buf[2] = (ev->z < 0) ? 'A' : 'B';
-             buf[3] = 0;
-             termpty_write(sd->pty, buf, strlen(buf));
-          }
-        else
-          {
-             sd->scroll -= (ev->z * 4);
-             if (sd->scroll < 0)
-               sd->scroll = 0;
-             _smart_update_queue(data, sd);
-             miniview_position_offset(term_miniview_get(sd->term),
-                                      ev->z * 4, EINA_TRUE);
-
-             _smart_cb_mouse_move_job(data);
-          }
-     }
-   else
-     {
-       int cx = 0, cy = 0;
-
-       _smart_xy_to_cursor(sd, ev->canvas.x, ev->canvas.y, &cx, &cy);
-
-       switch (sd->pty->mouse_ext)
-         {
-          case MOUSE_EXT_NONE:
-            if ((cx < (0xff - ' ')) && (cy < (0xff - ' ')))
-              {
-                 int btn = (ev->z >= 0) ? 1 + 64 : 64;
-
-                 buf[0] = 0x1b;
-                 buf[1] = '[';
-                 buf[2] = 'M';
-                 buf[3] = btn + ' ';
-                 buf[4] = cx + 1 + ' ';
-                 buf[5] = cy + 1 + ' ';
-                 buf[6] = 0;
-                 termpty_write(sd->pty, buf, strlen(buf));
-              }
-            break;
-          case MOUSE_EXT_UTF8: // ESC.[.M.BTN/FLGS.XUTF8.YUTF8
-              {
-                 int v, i;
-                 int btn = (ev->z >= 0) ? 'a' : '`';
-
-                 buf[0] = 0x1b;
-                 buf[1] = '[';
-                 buf[2] = 'M';
-                 buf[3] = btn;
-                 i = 4;
-                 v = cx + 1 + ' ';
-                 if (v <= 127) buf[i++] = v;
-                 else
-                   { // 14 bits for cx/cy - enough i think
-                       buf[i++] = 0xc0 + (v >> 6);
-                       buf[i++] = 0x80 + (v & 0x3f);
-                   }
-                 v = cy + 1 + ' ';
-                 if (v <= 127) buf[i++] = v;
-                 else
-                   { // 14 bits for cx/cy - enough i think
-                       buf[i++] = 0xc0 + (v >> 6);
-                       buf[i++] = 0x80 + (v & 0x3f);
-                   }
-                 buf[i] = 0;
-                 termpty_write(sd->pty, buf, strlen(buf));
-              }
-            break;
-          case MOUSE_EXT_SGR: // ESC.[.<.NUM.;.NUM.;.NUM.M
-              {
-                 int btn = (ev->z >= 0) ? 1 + 64 : 64;
-                 snprintf(buf, sizeof(buf), "%c[<%i;%i;%iM", 0x1b,
-                          btn, cx + 1, cy + 1);
-                 termpty_write(sd->pty, buf, strlen(buf));
-              }
-            break;
-          case MOUSE_EXT_URXVT: // ESC.[.NUM.;.NUM.;.NUM.M
-              {
-                 int btn = (ev->z >= 0) ? 1 + 64 : 64;
-                 snprintf(buf, sizeof(buf), "%c[%i;%i;%iM", 0x1b,
-                          btn + ' ',
-                          cx + 1, cy + 1);
-                 termpty_write(sd->pty, buf, strlen(buf));
-              }
-            break;
-          default:
-            break;
-         }
-     }
+   termio_internal_mouse_wheel(sd, ev, modifiers);
 }
 
 /* }}} */
@@ -5026,272 +2885,17 @@ _smart_apply(Evas_Object *obj)
 {
    Termio *sd = evas_object_smart_data_get(obj);
    Evas_Coord ox, oy, ow, oh;
-   Eina_List *l, *ln;
+   int preedit_x = 0, preedit_y = 0;
    Termblock *blk;
-   int x, y, ch1 = 0, ch2 = 0, inv = 0, preedit_x = 0, preedit_y = 0;
-   const char *preedit_str;
-   ssize_t w;
+   Eina_List *l, *ln;
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
+
    evas_object_geometry_get(obj, &ox, &oy, &ow, &oh);
 
-   EINA_LIST_FOREACH(sd->pty->block.active, l, blk)
-     {
-        blk->was_active = blk->active;
-        blk->active = EINA_FALSE;
-     }
-   inv = sd->pty->termstate.reverse;
-   termpty_backlog_lock();
-   termpty_backscroll_adjust(sd->pty, &sd->scroll);
-   for (y = 0; y < sd->grid.h; y++)
-     {
-        Termcell *cells;
-        Evas_Textgrid_Cell *tc;
-
-        w = 0;
-        cells = termpty_cellrow_get(sd->pty, y - sd->scroll, &w);
-        if (!cells) continue;
-        tc = evas_object_textgrid_cellrow_get(sd->grid.obj, y);
-        if (!tc) continue;
-        ch1 = -1;
-        for (x = 0; x < sd->grid.w; x++)
-          {
-             if ((!cells) || (x >= w))
-               {
-                  if ((tc[x].codepoint != 0) ||
-                      (tc[x].bg != COL_INVIS) ||
-                      (tc[x].bg_extended))
-                    {
-                       if (ch1 < 0) ch1 = x;
-                       ch2 = x;
-                    }
-                  tc[x].codepoint = 0;
-                  if (inv) tc[x].bg = COL_INVERSEBG;
-                  else tc[x].bg = COL_INVIS;
-                  tc[x].bg_extended = 0;
-                  tc[x].underline = 0;
-                  tc[x].strikethrough = 0;
-                  tc[x].bold = 0;
-                  tc[x].italic = 0;
-                  tc[x].double_width = 0;
-               }
-             else
-               {
-                  int bid, bx = 0, by = 0;
-
-                  bid = termpty_block_id_get(&(cells[x]), &bx, &by);
-                  if (bid >= 0)
-                    {
-                       if (ch1 < 0) ch1 = x;
-                       ch2 = x;
-                       tc[x].codepoint = 0;
-                       tc[x].fg_extended = 0;
-                       tc[x].bg_extended = 0;
-                       tc[x].underline = 0;
-                       tc[x].strikethrough = 0;
-                       tc[x].bold = 0;
-                       tc[x].italic = 0;
-                       tc[x].double_width = 0;
-                       tc[x].fg = COL_INVIS;
-                       tc[x].bg = COL_INVIS;
-                       blk = termpty_block_get(sd->pty, bid);
-                       if (blk)
-                         {
-                            _block_activate(obj, blk);
-                            blk->x = (x - bx);
-                            blk->y = (y - by);
-                            evas_object_move(blk->obj,
-                                             ox + (blk->x * sd->font.chw),
-                                             oy + (blk->y * sd->font.chh));
-                            evas_object_resize(blk->obj,
-                                               blk->w * sd->font.chw,
-                                               blk->h * sd->font.chh);
-                         }
-                    }
-                  else if (cells[x].att.invisible)
-                    {
-                       if ((tc[x].codepoint != 0) ||
-                           (tc[x].bg != COL_INVIS) ||
-                           (tc[x].bg_extended))
-                         {
-                            if (ch1 < 0) ch1 = x;
-                            ch2 = x;
-                         }
-                       tc[x].codepoint = 0;
-                       if (inv) tc[x].bg = COL_INVERSEBG;
-                       else tc[x].bg = COL_INVIS;
-                       tc[x].bg_extended = 0;
-                       tc[x].underline = 0;
-                       tc[x].strikethrough = 0;
-                       tc[x].bold = 0;
-                       tc[x].italic = 0;
-                       tc[x].double_width = cells[x].att.dblwidth;
-                       if ((tc[x].double_width) && (tc[x].codepoint == 0) &&
-                           (ch2 == x - 1))
-                         ch2 = x;
-                    }
-                  else
-                    {
-                       int fg, bg, fgext, bgext, bold, italic;
-                       Eina_Unicode codepoint;
-
-                       // colors
-                       fg = cells[x].att.fg;
-                       bg = cells[x].att.bg;
-                       fgext = cells[x].att.fg256;
-                       bgext = cells[x].att.bg256;
-                       codepoint = cells[x].codepoint;
-                       if (sd->config->font.bolditalic)
-                         {
-                            bold = cells[x].att.bold;
-                            italic = cells[x].att.italic;
-                         }
-                       else
-                         {
-                            bold = 0;
-                            italic = 0;
-                         }
-
-                       if ((fg == COL_DEF) && (cells[x].att.inverse ^ inv))
-                         fg = COL_INVERSEBG;
-                       if (bg == COL_DEF)
-                         {
-                            if (cells[x].att.inverse ^ inv)
-                              bg = COL_INVERSE;
-                            else if (!bgext)
-                              bg = COL_INVIS;
-                         }
-                       if ((cells[x].att.fgintense) && (!fgext)) fg += 48;
-                       if ((cells[x].att.bgintense) && (!bgext)) bg += 48;
-                       if (cells[x].att.inverse ^ inv)
-                         {
-                            int t;
-                            t = fgext; fgext = bgext; bgext = t;
-                            t = fg; fg = bg; bg = t;
-                         }
-                       if ((cells[x].att.bold) && (!fgext)) fg += 12;
-                       if ((cells[x].att.faint) && (!fgext)) fg += 24;
-                       if ((tc[x].codepoint != codepoint) ||
-                           (tc[x].bold != bold) ||
-                           (tc[x].italic != italic) ||
-                           (tc[x].fg != fg) ||
-                           (tc[x].bg != bg) ||
-                           (tc[x].fg_extended != fgext) ||
-                           (tc[x].bg_extended != bgext) ||
-                           (tc[x].underline != cells[x].att.underline) ||
-                           (tc[x].strikethrough != cells[x].att.strike))
-                         {
-                            if (ch1 < 0) ch1 = x;
-                            ch2 = x;
-                         }
-                       tc[x].fg_extended = fgext;
-                       tc[x].bg_extended = bgext;
-                       tc[x].underline = cells[x].att.underline;
-                       tc[x].strikethrough = cells[x].att.strike;
-                       if (sd->config->font.bolditalic)
-                         {
-                            tc[x].bold = cells[x].att.bold;
-                            tc[x].italic = cells[x].att.italic;
-                         }
-                       else
-                         {
-                            tc[x].bold = 0;
-                            tc[x].italic = 0;
-                         }
-                       tc[x].double_width = cells[x].att.dblwidth;
-                       tc[x].fg = fg;
-                       tc[x].bg = bg;
-                       tc[x].codepoint = codepoint;
-                       if ((tc[x].double_width) && (tc[x].codepoint == 0) &&
-                           (ch2 == x - 1))
-                         ch2 = x;
-                       // cells[x].att.blink
-                       // cells[x].att.blink2
-                    }
-               }
-          }
-        evas_object_textgrid_cellrow_set(sd->grid.obj, y, tc);
-        /* only bothering to keep 1 change span per row - not worth doing
-         * more really */
-        if (ch1 >= 0)
-          evas_object_textgrid_update_add(sd->grid.obj, ch1, y,
-                                          ch2 - ch1 + 1, 1);
-     }
-
-   preedit_str = term_preedit_str_get(sd->term);
-   if (preedit_str && preedit_str[0])
-     {
-        Eina_Unicode *uni, g;
-        int len = 0, i, jump, xx, backx;
-        Eina_Bool dbl;
-        Evas_Textgrid_Cell *tc;
-        x = sd->cursor.x, y = sd->cursor.y;
-
-        uni = eina_unicode_utf8_to_unicode(preedit_str, &len);
-        if (uni)
-          {
-             for (i = 0; i < len; i++)
-               {
-                  jump = 1;
-                  g = uni[i];
-                  dbl = _termpty_is_dblwidth_get(sd->pty, g);
-                  if (dbl) jump = 2;
-                  backx = 0;
-                  if ((x + jump) > sd->grid.w)
-                    {
-                       if (y < (sd->grid.h - 1))
-                         {
-                            x = jump;
-                            backx = jump;
-                            y++;
-                         }
-                    }
-                  else
-                    {
-                       x += jump;
-                       backx = jump;
-                    }
-                  tc = evas_object_textgrid_cellrow_get(sd->grid.obj, y);
-                  xx = x - backx;
-                  tc[xx].bold = 1;
-                  tc[xx].bg = COL_BLACK;
-                  tc[xx].fg = COL_WHITE;
-                  tc[xx].fg_extended = 0;
-                  tc[xx].bg_extended = 0;
-                  tc[xx].underline = 1;
-                  tc[xx].strikethrough = 0;
-                  tc[xx].double_width = dbl;
-                  tc[xx].codepoint = g;
-                  if (dbl)
-                    {
-                       xx = x - backx + 1;
-                       tc[xx].bold = 1;
-                       tc[xx].bg = COL_BLACK;
-                       tc[xx].fg = COL_WHITE;
-                       tc[xx].fg_extended = 0;
-                       tc[xx].bg_extended = 0;
-                       tc[xx].underline = 1;
-                       tc[xx].strikethrough = 0;
-                       tc[xx].double_width = 0;
-                       tc[xx].codepoint = 0;
-                    }
-                  evas_object_textgrid_cellrow_set(sd->grid.obj, y, tc);
-                  if (x >= sd->grid.w)
-                    {
-                       if (y < (sd->grid.h - 1))
-                         {
-                            x = 0;
-                            y++;
-                         }
-                    }
-               }
-             evas_object_textgrid_update_add(sd->grid.obj, 0, sd->cursor.y,
-                                             sd->grid.w, y - sd->cursor.y + 1);
-          }
-        preedit_x = x - sd->cursor.x;
-        preedit_y = y - sd->cursor.y;
-     }
-   termpty_backlog_unlock();
+   termio_internal_render(sd,
+                          ox, oy,
+                          &preedit_x, &preedit_y);
 
    EINA_LIST_FOREACH_SAFE(sd->pty->block.active, l, ln, blk)
      {
@@ -5400,9 +3004,11 @@ static void
 _smart_size(Evas_Object *obj, int w, int h, Eina_Bool force)
 {
    Termio *sd = evas_object_smart_data_get(obj);
+   Eina_Bool first_time;
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
-   if ((w <= 1) || (h <= 1))
+   first_time = (sd->grid.h == 0);
+   if ((w <= 0) || (h <= 0))
      {
         w = 80;
         h = 24;
@@ -5412,17 +3018,18 @@ _smart_size(Evas_Object *obj, int w, int h, Eina_Bool force)
      {
         if ((w == sd->grid.w) && (h == sd->grid.h)) return;
      }
-   evas_event_freeze(evas_object_evas_get(obj));
-   evas_object_textgrid_size_set(sd->grid.obj, w, h);
    sd->grid.w = w;
    sd->grid.h = h;
+   evas_event_freeze(evas_object_evas_get(obj));
+   evas_object_textgrid_size_set(sd->grid.obj, w, h);
    evas_object_resize(sd->cursor.obj, sd->font.chw, sd->font.chh);
-   evas_object_size_hint_min_set(obj, sd->font.chw, sd->font.chh);
+   if (!first_time)
+     evas_object_size_hint_min_set(obj, sd->font.chw, sd->font.chh);
    if (!sd->noreqsize)
      evas_object_size_hint_request_set(obj,
                                        sd->font.chw * sd->grid.w,
                                        sd->font.chh * sd->grid.h);
-   _sel_set(sd, EINA_FALSE);
+   termio_sel_set(sd, EINA_FALSE);
    termpty_resize(sd->pty, w, h);
 
    _smart_calculate(obj);
@@ -5463,12 +3070,32 @@ _smart_cb_change(void *data)
    return EINA_FALSE;
 }
 
-static void
-_smart_update_queue(Evas_Object *obj, Termio *sd)
+void
+termio_smart_update_queue(Termio *sd)
 {
-   if (sd->anim) return;
-   sd->anim = ecore_animator_add(_smart_cb_change, obj);
+   if (sd->anim)
+       return;
+   sd->anim = ecore_animator_add(_smart_cb_change, sd->self);
 }
+
+void
+termio_sel_set(Termio *sd, Eina_Bool enable)
+{
+   if (sd->pty->selection.is_active == enable)
+     return;
+   sd->pty->selection.is_active = enable;
+   if (enable)
+     evas_object_smart_callback_call(sd->win, "selection,on", NULL);
+   else
+     {
+        evas_object_smart_callback_call(sd->win, "selection,off", NULL);
+        sd->pty->selection.by_word = EINA_FALSE;
+        sd->pty->selection.by_line = EINA_FALSE;
+        free(sd->pty->selection.codepoints);
+        sd->pty->selection.codepoints = NULL;
+     }
+}
+
 
 static void
 _cursor_cb_move(void *data,
@@ -5653,7 +3280,11 @@ _smart_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
    evas_object_geometry_get(obj, NULL, NULL, &ow, &oh);
-   if ((ow == w) && (oh == h)) return;
+   /* Do not resize if same size */
+   if ((ow == w) && (oh == h))
+     {
+        return;
+     }
    evas_object_smart_changed(obj);
    if (!sd->delayed_size_timer)
      sd->delayed_size_timer = ecore_timer_add(0.0, _smart_cb_delayed_size, obj);
@@ -5719,7 +3350,7 @@ _smart_pty_change(void *data)
 // if scroll to bottom on updates
    if (sd->jump_on_change)
      sd->scroll = 0;
-   _smart_update_queue(data, sd);
+   termio_smart_update_queue(sd);
 }
 
 static void
@@ -5754,9 +3385,9 @@ _smart_pty_cancel_sel(void *data)
    EINA_SAFETY_ON_NULL_RETURN(sd);
    if (sd->pty->selection.is_active)
      {
-        _sel_set(sd, EINA_FALSE);
+        termio_sel_set(sd, EINA_FALSE);
         sd->pty->selection.makesel = EINA_FALSE;
-        _smart_update_queue(data, sd);
+        termio_smart_update_queue(sd);
      }
 }
 
@@ -6296,6 +3927,7 @@ termio_add(Evas_Object *win, Config *config,
         "gstreamer1"
      };
    char *mod = NULL;
+   Ecore_Window window_id;
 
    EINA_SAFETY_ON_NULL_RETURN_VAL(win, NULL);
    e = evas_object_evas_get(win);
@@ -6344,9 +3976,10 @@ termio_add(Evas_Object *win, Config *config,
                        _smart_cb_drag_pos, obj,
                        _smart_cb_drop, obj);
 
+   window_id = elm_win_window_id_get(win);
    sd->pty = termpty_new(cmd, login_shell, cd, w, h, config->scrollback,
                          config->xterm_256color, config->erase_is_del, mod,
-                         title);
+                         title, window_id);
    if (!sd->pty)
      {
         ERR(_("Could not allocate termpty"));
@@ -6368,7 +4001,7 @@ termio_add(Evas_Object *win, Config *config,
    sd->pty->cb.bell.data = obj;
    sd->pty->cb.command.func = _smart_pty_command;
    sd->pty->cb.command.data = obj;
-   _smart_size(obj, w, h, EINA_FALSE);
+   _smart_size(obj, w, h, EINA_TRUE);
    return obj;
 }
 
@@ -6385,7 +4018,7 @@ termio_key_down(Evas_Object *termio,
         if (!key_is_modifier(ev->key))
           {
              sd->scroll = 0;
-             _smart_update_queue(termio, sd);
+             termio_smart_update_queue(sd);
           }
      }
    if (sd->config->flicker_on_key)

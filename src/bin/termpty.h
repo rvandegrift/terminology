@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "media.h"
+#include "sb.h"
 
 typedef struct _Termcell      Termcell;
 typedef struct _Termatt       Termatt;
@@ -90,6 +91,43 @@ struct _Termatt
    uint16_t       link_id;
 };
 
+typedef struct _Backlog_Beacon{
+    int screen_y;
+    int backlog_y;
+} Backlog_Beacon;
+
+typedef struct _Term_State {
+    Termatt       att;
+    unsigned char charset;
+    unsigned char charsetch;
+    unsigned char chset[4];
+    int           top_margin, bottom_margin;
+    int           left_margin, right_margin;
+    int           had_cr_x, had_cr_y;
+    unsigned int  lr_margins : 1;
+    unsigned int  restrict_cursor : 1;
+    unsigned int  multibyte : 1;
+    unsigned int  alt_kp : 1;
+    unsigned int  insert : 1;
+    unsigned int  appcursor : 1;
+    unsigned int  wrap : 1;
+    unsigned int  wrapnext : 1;
+    unsigned int  crlf : 1;
+    unsigned int  send_bs : 1;
+    unsigned int  kbd_lock : 1;
+    unsigned int  reverse : 1;
+    unsigned int  no_autorepeat : 1;
+    unsigned int  cjk_ambiguous_wide : 1;
+    unsigned int  hide_cursor : 1;
+    unsigned int  combining_strike : 1;
+    unsigned int  sace_rectangular : 1;
+} Term_State;
+
+typedef struct _Term_Cursor {
+    int cx;
+    int cy;
+} Term_Cursor;
+
 struct _Termpty
 {
    Evas_Object *obj;
@@ -124,13 +162,13 @@ struct _Termpty
    size_t backsize, backpos;
    /* this beacon in the backlog tells about the top line in screen
     * coordinates that maps to a line in the backlog */
-   struct {
-        int screen_y;
-        int backlog_y;
-   } backlog_beacon;
+   Backlog_Beacon backlog_beacon;
    int w, h;
    int fd, slavefd;
-#ifdef ENABLE_FUZZING
+#if defined(ENABLE_TESTS)
+   struct ty_sb write_buffer;
+#endif
+#if defined(ENABLE_FUZZING)
    int fd_dev_null;
 #endif
    struct {
@@ -147,48 +185,25 @@ struct _Termpty
       struct {
          int x, y;
       } start, end, orig;
+      Eina_Unicode *codepoints;
       time_t last_click;
-      unsigned char is_active : 1;
       unsigned char is_box    : 1;
-      unsigned char makesel   : 1;
+      unsigned char is_active : 1; // there is a visible selection
+      unsigned char makesel   : 1; // selection is being worked on
       unsigned char by_word   : 1;
       unsigned char by_line   : 1;
       unsigned char is_top_to_bottom : 1;
    } selection;
-   struct {
-        Termatt       att;
-        unsigned char charset;
-        unsigned char charsetch;
-        unsigned char chset[4];
-        int           top_margin, bottom_margin;
-        int           left_margin, right_margin;
-        int           had_cr_x, had_cr_y;
-        unsigned int  lr_margins : 1;
-        unsigned int  restrict_cursor : 1;
-        unsigned int  multibyte : 1;
-        unsigned int  alt_kp : 1;
-        unsigned int  insert : 1;
-        unsigned int  appcursor : 1;
-        unsigned int  wrap : 1;
-        unsigned int  wrapnext : 1;
-        unsigned int  crlf : 1;
-        unsigned int  send_bs : 1;
-        unsigned int  kbd_lock : 1;
-        unsigned int  reverse : 1;
-        unsigned int  no_autorepeat : 1;
-        unsigned int  cjk_ambiguous_wide : 1;
-        unsigned int  hide_cursor : 1;
-        unsigned int  combining_strike : 1;
-   } termstate;
-   struct {
-        int           cx, cy;
-   } cursor_state, cursor_save[2];
+   Term_State termstate;
+   Term_Cursor cursor_state;
+   Term_Cursor cursor_save[2];
    int exit_code;
    pid_t pid;
    unsigned int altbuf     : 1;
    unsigned int mouse_mode : 3;
    unsigned int mouse_ext  : 2;
    unsigned int bracketed_paste : 1;
+   unsigned int decoding_error : 1;
    struct {
        Term_Link *links;
        uint8_t *bitmap;
@@ -260,7 +275,7 @@ void       termpty_shutdown(void);
 Termpty   *termpty_new(const char *cmd, Eina_Bool login_shell, const char *cd,
                       int w, int h, int backscroll, Eina_Bool xterm_256color,
                       Eina_Bool erase_is_del, const char *emotion_mod,
-                      const char *title);
+                      const char *title, Ecore_Window window_id);
 void       termpty_free(Termpty *ty);
 
 void       termpty_backlog_lock(void);

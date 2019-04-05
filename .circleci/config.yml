@@ -1,0 +1,92 @@
+version: 2
+
+jobs:
+  checkout_code:
+    docker:
+      - image: borisfaure/terminology-ci:latest
+    steps:
+      - run: |
+          cd /terminology
+          git pull --ff-only
+          if [ -n "$CIRCLE_PR_NUMBER" ]; then
+              git fetch origin pull/$CIRCLE_PR_NUMBER/head
+          fi
+          if [ -n "$CIRCLE_SHA1" ]; then
+            git reset --hard $CIRCLE_SHA1
+          else
+            git reset --hard origin/master
+          fi
+      - save_cache:
+          key: checkout-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - /terminology
+
+  build_gcc:
+    docker:
+      - image: borisfaure/terminology-ci:latest
+    steps:
+      - restore_cache:
+          key: checkout-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Compile with GCC
+          environment:
+            CFLAGS: -O0 -g
+          command: |
+            cd /terminology
+            meson -Dtests=true -Dfuzzing=true -Db_coverage=true . build
+            meson configure build
+            cd build
+            ninja
+      - save_cache:
+          key: build_gcc-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - /terminology
+  tests_gcc:
+    docker:
+      - image: borisfaure/terminology-ci:latest
+    steps:
+      - restore_cache:
+          key: build_gcc-{{ .Environment.CIRCLE_SHA1 }}
+      - run: |
+          cd /terminology
+          tests/run_tests.sh -v -t build/src/bin/tytest -r tests/tests.results -d tests/
+      - run: |
+          cd /terminology/build/
+          cd src/bin
+          rm -fr *@@terminology@exe *@@tyalpha@exe *@@tybg@exe *@@tycat@exe
+          rm -fr *@@tyfuzz@exe *@@tyls@exe *@@typop@exe *@@tyq@exe
+          rm -fr *@@tysend@exe
+          cd /terminology/build/
+          curl -s https://codecov.io/bash > .codecov
+          chmod +x .codecov
+          sed -i.bak 's/execdir/exec/' .codecov
+          ./.codecov -Z
+  build_clang:
+    docker:
+      - image: borisfaure/terminology-ci:latest
+    environment:
+      - CC: clang
+    steps:
+      - restore_cache:
+          key: checkout-{{ .Environment.CIRCLE_SHA1 }}
+      - run: |
+          cd /terminology
+          meson -Dtests=true -Dfuzzing=true . build
+          meson configure build
+          cd build
+          ninja
+path: /terminology
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - checkout_code
+      - build_gcc:
+          requires:
+            - checkout_code
+      - tests_gcc:
+          requires:
+            - build_gcc
+      - build_clang:
+          requires:
+            - checkout_code
