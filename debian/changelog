@@ -1,3 +1,13 @@
+terminology (1.4.0-1~1.gbp622968) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @622968c125fc3c01ab1404d5244151267df77ab3 **
+
+  * d/gbp.conf: reduce duplication, make "gbp pull" easy"
+  * d/gbp.conf: drop cleaner to fix pipeline runs
+  * d/gitlab-ci.yml: enable salsa-ci pipeline
+
+ -- Ross Vandegrift <ross@kallisti.us>  Thu, 04 Apr 2019 19:51:41 -0700
+
 terminology (1.3.2-1) unstable; urgency=low
 
   * New upstream version 1.3.2.
