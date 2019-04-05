@@ -423,7 +423,7 @@ static void
 _translate_options(void)
 {
    options.copyright = eina_stringshare_printf(gettext(options.copyright),
-                                               2018);
+                                               2019);
 
    Ecore_Getopt_Desc *desc = (Ecore_Getopt_Desc *) options.descs;
    while ((desc->shortname != '\0') || (desc->longname) ||
@@ -454,7 +454,7 @@ _translate_options(void)
 }
 #endif
 
-#ifdef ENABLE_FUZZING
+#if defined(ENABLE_FUZZING) || defined(ENABLE_TESTS)
 static void
 _log_void(const Eina_Log_Domain *_d EINA_UNUSED,
           Eina_Log_Level level EINA_UNUSED,
@@ -548,7 +548,7 @@ elm_main(int argc, char **argv)
 
    terminology_starting_up = EINA_TRUE;
 
-#ifdef ENABLE_FUZZING
+#if defined(ENABLE_FUZZING) || defined(ENABLE_TESTS)
    eina_log_print_cb_set(_log_void, NULL);
 #endif
 
@@ -569,7 +569,7 @@ elm_main(int argc, char **argv)
    textdomain(PACKAGE);
    _translate_options();
 #else
-   options.copyright = "(C) 2012-2018 Carsten Haitzler and others";
+   options.copyright = "(C) 2012-2019 Carsten Haitzler and others";
 #endif
 
    _log_domain = eina_log_domain_register("terminology", NULL);
@@ -745,6 +745,10 @@ elm_main(int argc, char **argv)
    if (active_links != 0xff)
      {
         config->active_links = !!active_links;
+        config->active_links_email = config->active_links;
+        config->active_links_file = config->active_links;
+        config->active_links_url = config->active_links;
+        config->active_links_escape = config->active_links;
         config->temporary = EINA_TRUE;
      }
 

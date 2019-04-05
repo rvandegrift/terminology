@@ -11,6 +11,8 @@ This is an EFL terminal emulator with some extra bells and whistles.
 :warning: :warning: :warning:
 
 [![Coverity](https://scan.coverity.com/projects/terminology/badge.svg)](https://scan.coverity.com/projects/terminology)
+[![CircleCI](https://circleci.com/gh/billiob/terminology.svg?style=shield)](https://circleci.com/gh/billiob/terminology)
+[![codecov](https://codecov.io/gh/billiob/terminology/branch/master/graph/badge.svg)](https://codecov.io/gh/billiob/terminology)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/49a51811016a44279cb969af82cd246f)](https://www.codacy.com/app/billiob/terminology)
 
 
@@ -18,7 +20,6 @@ Requirements
 ------------
 
   * `efl` (>= 1.20.0)
-  * `elementary` (>= 1.20.0)
 
 Please see http://www.enlightenment.org for information on these.
 

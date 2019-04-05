@@ -1,5 +1,5 @@
 project('terminology', 'c',
-        version: '1.3.2',
+        version: '1.4.0',
         default_options: ['c_std=gnu99'],
         license: 'BSD')
 
@@ -109,10 +109,16 @@ endif
 fuzzing = get_option('fuzzing')
 
 if fuzzing
-  config_data.set('ENABLE_FUZZING', 1)
   message('Fuzzing is enabled')
 else
   message('Fuzzing is disabled')
+endif
+
+tests = get_option('tests')
+if tests
+  message('Tests are enabled')
+else
+  message('Tests are disabled')
 endif
 
 message('edje_cc set to:' + edje_cc)
@@ -125,4 +131,3 @@ subdir('data')
 subdir('man')
 subdir('src/bin')
 
-meson.add_install_script('meson_install_themes.sh', edj_files)
