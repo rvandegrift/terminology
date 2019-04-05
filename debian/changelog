@@ -6,7 +6,7 @@ terminology (1.4.0-1~1.gbp622968) UNRELEASED; urgency=medium
   * d/gbp.conf: drop cleaner to fix pipeline runs
   * d/gitlab-ci.yml: enable salsa-ci pipeline
 
- -- Ross Vandegrift <ross@kallisti.us>  Thu, 04 Apr 2019 19:51:41 -0700
+ -- Ross Vandegrift <ross@kallisti.us>  Thu, 04 Apr 2019 19:58:24 -0700
 
 terminology (1.3.2-1) unstable; urgency=low
 
