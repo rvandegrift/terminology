@@ -226,7 +226,8 @@ _fd_read_do(Termpty *ty, Ecore_Fd_Handler *fd_handler, Eina_Bool false_on_empty)
 {
    char buf[4097];
    Eina_Unicode codepoint[4097];
-   int len, i, j, k, reads;
+   int len, i, j, reads;
+   unsigned int k;
 
    if (ecore_main_fd_handler_active_get(fd_handler, ECORE_FD_ERROR))
      {
@@ -302,7 +303,7 @@ _fd_read_do(Termpty *ty, Ecore_Fd_Handler *fd_handler, Eina_Bool false_on_empty)
         j = 0;
         for (i = 0; i < len;)
           {
-             int g = 0, prev_i = i;
+             Eina_Unicode g = 0, prev_i = i;
 
              if (buf[i])
                {
@@ -311,7 +312,7 @@ _fd_read_do(Termpty *ty, Ecore_Fd_Handler *fd_handler, Eina_Bool false_on_empty)
                       (len - prev_i) <= (int)sizeof(ty->oldbuf))
                     {
                        for (k = 0;
-                            (k < (int)sizeof(ty->oldbuf)) && 
+                            (k < (unsigned int)sizeof(ty->oldbuf)) && 
                             (k < (len - prev_i));
                             k++)
                          {

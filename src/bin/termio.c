@@ -1029,40 +1029,42 @@ _getsel_cb(void *data,
 
         if (ev->len <= 0) return EINA_TRUE;
 
-        buf = malloc(ev->len);
+        buf = calloc(2, ev->len); /* twice in case the paste is only \n */
         if (buf)
           {
-             char *s = ev->data;
-             size_t i, pos = 0;
+             const char *s = ev->data;
+             int i, j, pos = 0;
 
              /* apparently we have to convert \n into \r in terminal land. */
-             for (i = 0; i < ev->len && s[i]; i++)
+             for (i = 0; i < (int)ev->len && s[i];)
                {
+                  Eina_Unicode g = 0;
+                  int prev_i = i;
+                  g = eina_unicode_utf8_next_get(s, &i);
                   /* Skip escape codes as a security measure */
-                  if ((s[i] < '\n') ||
-                      ((s[i] > '\n') && (s[i] < ' ')))
+                  if ((g < '\n') ||
+                      ((g > '\n') && (g < ' ')))
                     {
-                      continue;
+                       continue;
                     }
-                  buf[pos] = s[i];
-                  if (buf[pos] == '\n')
-                    buf[pos] = '\r';
-                  pos++;
+                  if (g == '\n')
+                    buf[pos++] = '\r';
+                  else
+                      for (j = prev_i; j < i; j++)
+                          buf[pos++] = s[j];
                }
              if (pos)
                {
+                  if (sd->pty->bracketed_paste)
+                    termpty_write(sd->pty, "\x1b[200~",
+                                  sizeof("\x1b[200~") - 1);
 
-                if (sd->pty->bracketed_paste)
-                  termpty_write(sd->pty, "\x1b[200~",
-                                sizeof("\x1b[200~") - 1);
+                  termpty_write(sd->pty, buf, pos);
 
-                termpty_write(sd->pty, buf, pos);
-
-                if (sd->pty->bracketed_paste)
-                  termpty_write(sd->pty, "\x1b[201~",
-                                sizeof("\x1b[201~") - 1);
+                  if (sd->pty->bracketed_paste)
+                    termpty_write(sd->pty, "\x1b[201~",
+                                  sizeof("\x1b[201~") - 1);
                }
-
              free(buf);
           }
      }
@@ -3004,15 +3006,19 @@ static void
 _smart_size(Evas_Object *obj, int w, int h, Eina_Bool force)
 {
    Termio *sd = evas_object_smart_data_get(obj);
-   Eina_Bool first_time;
+   Evas_Coord mw = 0, mh = 0;
+
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
-   first_time = (sd->grid.h == 0);
    if ((w <= 0) || (h <= 0))
      {
         w = 80;
         h = 24;
      }
+
+   evas_object_size_hint_min_get(obj, &mw, &mh);
+   if ((mw != sd->font.chw) || (mh != sd->font.chh))
+     evas_object_size_hint_min_set(obj, sd->font.chw, sd->font.chh);
 
    if (!force)
      {
@@ -3023,8 +3029,6 @@ _smart_size(Evas_Object *obj, int w, int h, Eina_Bool force)
    evas_event_freeze(evas_object_evas_get(obj));
    evas_object_textgrid_size_set(sd->grid.obj, w, h);
    evas_object_resize(sd->cursor.obj, sd->font.chw, sd->font.chh);
-   if (!first_time)
-     evas_object_size_hint_min_set(obj, sd->font.chw, sd->font.chh);
    if (!sd->noreqsize)
      evas_object_size_hint_request_set(obj,
                                        sd->font.chw * sd->grid.w,
