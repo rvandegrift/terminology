@@ -1,0 +1,2 @@
+tests/*.sh /usr/share/terminology-tests
+tests/tests.results /usr/share/terminology-tests

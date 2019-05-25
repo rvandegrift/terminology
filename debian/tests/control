@@ -1,0 +1,2 @@
+Test-Command: /usr/share/terminology-tests/run_tests.sh -v -t /usr/bin/tytest -r /usr/share/terminology-tests/tests.results -d /usr/share/terminology-tests
+Depends: terminology-tests

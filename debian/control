@@ -57,3 +57,11 @@ Description: Enlightenment efl based terminal emulator data
   * Single process, multiple windows/terminals support
  .
  This package provides the shared data for all architectures.
+
+Package: terminology-tests
+Architecture: all
+Depends: ${misc:Depends}, terminology (= ${binary:Version})
+Description: test data for terminology
+ This package contains the test case scripts for the terminology
+ terminal emulator.  It is meant to be used with autopkgtest and
+ shouldn't normally be installed on end users' systems.
