@@ -1,16 +1,17 @@
-terminology (1.4.1-1~2.gbpe81548) UNRELEASED; urgency=medium
+terminology (1.4.1-1~2.gbpa39d58) UNRELEASED; urgency=medium
 
-  ** SNAPSHOT build @e8154807386dfe8906045d6adafc8c1138cb82f6 **
+  ** SNAPSHOT build @a39d580d5ee00d6ed62425a6dd8ea8d6f956c371 **
 
-  * d/gbp.conf: reduce duplication, make "gbp pull" easy"
-  * d/gbp.conf: drop cleaner to fix pipeline runs
+  * New upstream release. (Closes: #908843)
+  * d/gbp.conf:
+    + reduce duplication, make "gbp pull" easy
+    + drop cleaner to fix pipeline runs
   * d/gitlab-ci.yml: enable salsa-ci pipeline
-  * Add snapshot changelog
-  * tweak changelog to trigger pipeline after fixing gitlab config
-  * Allow reprotest job to fail
   * d/control: use my debian email
+  * Enable terminology tests & autopkgtest
+  * d/p/fix-del-backspace-key.patch: defuzz
 
- -- Ross Vandegrift <rvandegrift@debian.org>  Sat, 25 May 2019 09:44:39 -0700
+ -- Ross Vandegrift <rvandegrift@debian.org>  Sat, 25 May 2019 10:18:42 -0700
 
 terminology (1.3.2-1) unstable; urgency=low
 
