@@ -2,7 +2,7 @@ Source: terminology
 Section: x11
 Priority: optional
 Maintainer: Debian Pkg-e Team <pkg-e-devel@lists.alioth.debian.org>
-Uploaders: Ross Vandegrift <ross@kallisti.us>,
+Uploaders: Ross Vandegrift <rvandegrift@debian.org>,
            Andreas Metzler <ametzler@debian.org>
 Build-Depends: debhelper (>= 11),
                libefl-all-dev (>= 1.18),
