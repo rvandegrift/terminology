@@ -60,7 +60,7 @@ Description: Enlightenment efl based terminal emulator data
 
 Package: terminology-tests
 Architecture: any
-Depends: ${misc:Depends}, terminology (= ${binary:Version})
+Depends: ${shlibs:Depends}, ${misc:Depends}, terminology (= ${binary:Version})
 Description: test data for terminology
  This package contains the test case scripts for the terminology
  terminal emulator.  It is meant to be used with autopkgtest and
