@@ -1,6 +1,4 @@
-terminology (1.4.1-1~3.gbp8e5c34) UNRELEASED; urgency=medium
-
-  ** SNAPSHOT build @8e5c34ebc7d3092fbc1ada509759d417715fa695 **
+terminology (1.4.1-1) UNRELEASED; urgency=medium
 
   * New upstream release. (Closes: #908843)
   * d/gbp.conf:
@@ -10,10 +8,9 @@ terminology (1.4.1-1~3.gbp8e5c34) UNRELEASED; urgency=medium
   * d/control: use my debian email
   * Enable terminology tests & autopkgtest
   * d/p/fix-del-backspace-key.patch: defuzz
-  * update changelog
-  * Fix arch:all depends on arch:any
+  * Bump Standards-Version to 4.3.0, no changes required
 
- -- Ross Vandegrift <rvandegrift@debian.org>  Sun, 26 May 2019 10:33:23 -0700
+ -- Ross Vandegrift <rvandegrift@debian.org>  Sun, 26 May 2019 11:24:18 -0700
 
 terminology (1.3.2-1) unstable; urgency=low
 
