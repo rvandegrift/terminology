@@ -59,7 +59,7 @@ Description: Enlightenment efl based terminal emulator data
  This package provides the shared data for all architectures.
 
 Package: terminology-tests
-Architecture: all
+Architecture: any
 Depends: ${misc:Depends}, terminology (= ${binary:Version})
 Description: test data for terminology
  This package contains the test case scripts for the terminology

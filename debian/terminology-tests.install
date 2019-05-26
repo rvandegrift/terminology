@@ -1,2 +1,3 @@
-tests/*.sh /usr/share/terminology-tests
-tests/tests.results /usr/share/terminology-tests
+/usr/bin/tytest
+tests/*.sh /usr/lib/terminology/tests
+tests/tests.results /usr/lib/terminology/tests
