@@ -1,0 +1,2 @@
+# tytest doesn't have user docs, it's only useful for running the tests
+terminology-tests binary: binary-without-manpage usr/bin/tytest
