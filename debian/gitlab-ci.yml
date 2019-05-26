@@ -13,9 +13,10 @@ reprotest:
 lintian:
   extends: .test-lintian
 
-autopkgtest:
-  extends: .test-autopkgtest
-  allow_failure: true
+# disabled, known to be not reprodducible and allow_failure isn't working
+# autopkgtest:
+#   extends: .test-autopkgtest
+#   allow_failure: true
 
 blhc:
   extends: .test-blhc
