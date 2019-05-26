@@ -7,7 +7,7 @@ Uploaders: Ross Vandegrift <rvandegrift@debian.org>,
 Build-Depends: debhelper (>= 11),
                libefl-all-dev (>= 1.18),
                meson
-Standards-Version: 4.2.1
+Standards-Version: 4.3.0
 Homepage: https://www.enlightenment.org/p.php?p=about/terminology
 Vcs-Git: https://salsa.debian.org/pkg-e-team/terminology.git -b debian/sid
 Vcs-Browser: https://salsa.debian.org/pkg-e-team/terminology
@@ -62,6 +62,6 @@ Package: terminology-tests
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, terminology (= ${binary:Version})
 Description: test data for terminology
- This package contains the test case scripts for the terminology
- terminal emulator.  It is meant to be used with autopkgtest and
- shouldn't normally be installed on end users' systems.
+ This package contains the test suite for the terminology terminal
+ emulator.  It is meant to be used with autopkgtest and shouldn't
+ normally be installed on end users' systems.
