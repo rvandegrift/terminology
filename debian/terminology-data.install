@@ -2,3 +2,5 @@
 /usr/share/man
 /usr/share/terminology
 /usr/share/locale
+tests/*.sh /usr/lib/terminology/tests
+tests/tests.results /usr/lib/terminology/tests

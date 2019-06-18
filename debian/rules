@@ -1,6 +1,7 @@
 #!/usr/bin/make -f
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 %:
 	dh $@ --without autoreconf --buildsystem=meson
@@ -10,3 +11,7 @@ override_dh_auto_configure:
 
 override_dh_auto_build:
 	$(CURDIR)/debian/fake_home.sh dh_auto_build --verbose
+
+override_dh_install:
+	dh_install usr/bin/tytest /usr/lib/$(DEB_HOST_MULTIARCH)/terminology
+	dh_install
