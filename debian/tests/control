@@ -3,3 +3,4 @@ Test-Command: /usr/lib/terminology/tests/run_tests.sh -v
  -r /usr/lib/terminology/tests/tests.results
  -d /usr/lib/terminology/tests
 Depends: terminology
+Restrictions: allow-stderr
