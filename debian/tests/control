@@ -2,5 +2,4 @@ Test-Command: /usr/lib/terminology/tests/run_tests.sh -v
  -t /usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/terminology/tytest
  -r /usr/lib/terminology/tests/tests.results
  -d /usr/lib/terminology/tests
-Depends: terminology
-Restrictions: allow-stderr
+Depends: gcc, terminology
