@@ -1,5 +1,3 @@
-#include "coverity.h"
-
 #include <stdio.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -40,7 +38,7 @@ static Termpty _ty;
 static Termio _sd = {
      .font = {
           .name = "",
-          .size = 12,
+          .size = 10,
           .chw = TY_CH_W,
           .chh = TY_CH_H,
      },
@@ -226,14 +224,34 @@ termio_set_cursor_shape(Evas_Object *obj EINA_UNUSED,
 {
 }
 #endif
+
+int
+termpty_color_class_get(Termpty *ty EINA_UNUSED, const char *key,
+                        int *r, int *g, int *b, int *a)
+{
+   if (strncmp(key, "BG", strlen("BG")) == 0)
+     {
+        if (r)
+          *r = 131;
+        if (g)
+          *g = 132;
+        if (b)
+          *b = 133;
+        if (a)
+          *a = 134;
+        return 0;
+     }
+   return -1;
+}
 /* }}} */
 
 
 
 static void
-_termpty_init(Termpty *ty)
+_termpty_init(Termpty *ty, Config *config)
 {
    memset(ty, '\0', sizeof(*ty));
+   ty->config = config;
    ty->w = TY_W;
    ty->h = TY_H;
    ty->backsize = TY_BACKSIZE;
@@ -293,7 +311,7 @@ main(int argc EINA_UNUSED, char **argv EINA_UNUSED)
    _config = config_new();
    _sd.config = _config;
 
-   _termpty_init(&_ty);
+   _termpty_init(&_ty, _config);
 
    if (argc > 1)
      {
@@ -372,8 +390,8 @@ main(int argc EINA_UNUSED, char **argv EINA_UNUSED)
    tytest_shutdown();
 #endif
 
+   config_del(_config);
    eina_shutdown();
-   free(_config);
 
    return 0;
 }

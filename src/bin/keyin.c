@@ -120,7 +120,7 @@ keyin_handle_key_to_pty(Termpty *ty, const Evas_Event_Key_Down *ev,
           }
         else
           {
-             Config *cfg = termpty_config_get(ty);
+             const Config *cfg = ty->config;
 
              if (cfg->erase_is_del && !ctrl)
                {
@@ -312,7 +312,6 @@ cb_all_group(Evas_Object *termio_obj)
 
    win_toggle_all_group(wn);
 
-   ERR("ALL GROUP");
    return EINA_TRUE;
 }
 
@@ -323,7 +322,6 @@ cb_visible_group(Evas_Object *termio_obj)
 
    win_toggle_visible_group(wn);
 
-   ERR("VISIBLE GROUP");
    return EINA_TRUE;
 }
 
@@ -852,7 +850,7 @@ key_bindings_load(Config *config)
 
    if (!_key_bindings)
      {
-#if HAVE_GETTEXT && ENABLE_NLS
+#if ENABLE_NLS
         Shortcut_Action *action = _actions;
 
         while (action->action)

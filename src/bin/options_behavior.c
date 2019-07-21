@@ -1,5 +1,6 @@
 #include "private.h"
 
+#include <math.h>
 #include <Elementary.h>
 #include <assert.h>
 #include "config.h"
@@ -14,6 +15,7 @@ typedef struct _Behavior_Ctx {
      Evas_Object *op_h;
      Evas_Object *op_wh_current;
      Evas_Object *term;
+     Evas_Object *sld_hide_cursor;
      Config *config;
 } Behavior_Ctx;
 
@@ -57,6 +59,7 @@ CB(notabs,  1);
 CB(mv_always_show, 0);
 CB(ty_escapes, 0);
 CB(changedir_to_current, 0);
+CB(emoji_dbl_width, 0);
 
 #undef CB
 
@@ -204,10 +207,48 @@ _cursors_changed_cb(void *data, Evas_Object *obj,
 }
 
 static void
+_cb_op_hide_cursor_changed(void *data,
+                           Evas_Object *obj,
+                           void *_event EINA_UNUSED)
+{
+   Behavior_Ctx *ctx = data;
+   Config *config = ctx->config;
+
+   if (elm_check_state_get(obj))
+     {
+        config->hide_cursor = elm_slider_value_get(ctx->sld_hide_cursor);
+        elm_object_disabled_set(ctx->sld_hide_cursor, EINA_FALSE);
+     }
+   else
+     {
+        config->hide_cursor = INFINITY;
+        elm_object_disabled_set(ctx->sld_hide_cursor, EINA_TRUE);
+     }
+   config_save(config, NULL);
+}
+
+static void
+_cb_hide_cursor_slider_chg(void *data,
+                 Evas_Object *obj,
+                 void *_event EINA_UNUSED)
+{
+   Behavior_Ctx *ctx = data;
+   Config *config = ctx->config;
+   double value = elm_slider_value_get(obj);
+
+   if (config->hide_cursor == value)
+       return;
+
+   config->hide_cursor = value;
+   config_save(config, NULL);
+}
+
+
+static void
 _add_cursors_option(Evas_Object *bx,
                     Behavior_Ctx *ctx)
 {
-   Evas_Object *lbl, *rd, *rdg, *layout, *oe;
+   Evas_Object *lbl, *rd, *rdg, *layout;
 
    lbl = elm_label_add(bx);
    evas_object_size_hint_weight_set(lbl, EVAS_HINT_EXPAND, 0.0);
@@ -224,16 +265,15 @@ _add_cursors_option(Evas_Object *bx,
    elm_object_text_set(rd, _("Blinking Block"));
    elm_radio_state_value_set(rd, 1);
    layout = elm_layout_add(rd);
-   oe = elm_layout_edje_get(layout);
-   theme_apply(oe, ctx->config, "terminology/cursor");
+   theme_apply_elm(layout, ctx->config, "terminology/cursor");
    evas_object_size_hint_weight_set(layout, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(layout, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_image_resizable_set(layout, EINA_FALSE, EINA_FALSE);
    elm_object_part_content_set(rd, "icon", layout);
    elm_box_pack_end(bx, rd);
    evas_object_show(rd);
-   edje_object_signal_emit(oe, "focus,out", "terminology");
-   edje_object_signal_emit(oe, "focus,in", "terminology");
+   elm_layout_signal_emit(layout, "focus,out", "terminology");
+   elm_layout_signal_emit(layout, "focus,in", "terminology");
    evas_object_smart_callback_add(rd, "changed", _cursors_changed_cb, ctx);
 
    /* Steady Block */
@@ -244,16 +284,15 @@ _add_cursors_option(Evas_Object *bx,
    elm_radio_state_value_set(rd, 2);
    elm_radio_group_add(rd, rdg);
    layout = elm_layout_add(rd);
-   oe = elm_layout_edje_get(layout);
-   theme_apply(oe, ctx->config, "terminology/cursor");
+   theme_apply_elm(layout, ctx->config, "terminology/cursor");
    evas_object_size_hint_weight_set(layout, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(layout, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_image_resizable_set(layout, EINA_FALSE, EINA_FALSE);
    elm_object_part_content_set(rd, "icon", layout);
    elm_box_pack_end(bx, rd);
    evas_object_show(rd);
-   edje_object_signal_emit(oe, "focus,out", "terminology");
-   edje_object_signal_emit(oe, "focus,in,noblink", "terminology");
+   elm_layout_signal_emit(layout, "focus,out", "terminology");
+   elm_layout_signal_emit(layout, "focus,in,noblink", "terminology");
    evas_object_smart_callback_add(rd, "changed", _cursors_changed_cb, ctx);
 
    /* Blinking Underline */
@@ -264,16 +303,15 @@ _add_cursors_option(Evas_Object *bx,
    elm_radio_state_value_set(rd, 3);
    elm_radio_group_add(rd, rdg);
    layout = elm_layout_add(rd);
-   oe = elm_layout_edje_get(layout);
-   theme_apply(oe, ctx->config, "terminology/cursor_underline");
+   theme_apply_elm(layout, ctx->config, "terminology/cursor_underline");
    evas_object_size_hint_weight_set(layout, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(layout, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_image_resizable_set(layout, EINA_FALSE, EINA_FALSE);
    elm_object_part_content_set(rd, "icon", layout);
    elm_box_pack_end(bx, rd);
    evas_object_show(rd);
-   edje_object_signal_emit(oe, "focus,out", "terminology");
-   edje_object_signal_emit(oe, "focus,in", "terminology");
+   elm_layout_signal_emit(layout, "focus,out", "terminology");
+   elm_layout_signal_emit(layout, "focus,in", "terminology");
    evas_object_smart_callback_add(rd, "changed", _cursors_changed_cb, ctx);
 
    /* Steady Underline */
@@ -284,16 +322,15 @@ _add_cursors_option(Evas_Object *bx,
    elm_radio_state_value_set(rd, 4);
    elm_radio_group_add(rd, rdg);
    layout = elm_layout_add(rd);
-   oe = elm_layout_edje_get(layout);
-   theme_apply(oe, ctx->config, "terminology/cursor_underline");
+   theme_apply_elm(layout, ctx->config, "terminology/cursor_underline");
    evas_object_size_hint_weight_set(layout, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(layout, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_image_resizable_set(layout, EINA_FALSE, EINA_FALSE);
    elm_object_part_content_set(rd, "icon", layout);
    elm_box_pack_end(bx, rd);
    evas_object_show(rd);
-   edje_object_signal_emit(oe, "focus,out", "terminology");
-   edje_object_signal_emit(oe, "focus,in,noblink", "terminology");
+   elm_layout_signal_emit(layout, "focus,out", "terminology");
+   elm_layout_signal_emit(layout, "focus,in,noblink", "terminology");
    evas_object_smart_callback_add(rd, "changed", _cursors_changed_cb, ctx);
 
    /* Blinking Bar */
@@ -304,16 +341,15 @@ _add_cursors_option(Evas_Object *bx,
    elm_radio_state_value_set(rd, 5);
    elm_radio_group_add(rd, rdg);
    layout = elm_layout_add(rd);
-   oe = elm_layout_edje_get(layout);
-   theme_apply(oe, ctx->config, "terminology/cursor_bar");
+   theme_apply_elm(layout, ctx->config, "terminology/cursor_bar");
    evas_object_size_hint_weight_set(layout, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(layout, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_image_resizable_set(layout, EINA_FALSE, EINA_FALSE);
    elm_object_part_content_set(rd, "icon", layout);
    elm_box_pack_end(bx, rd);
    evas_object_show(rd);
-   edje_object_signal_emit(oe, "focus,out", "terminology");
-   edje_object_signal_emit(oe, "focus,in", "terminology");
+   elm_layout_signal_emit(layout, "focus,out", "terminology");
+   elm_layout_signal_emit(layout, "focus,in", "terminology");
    evas_object_smart_callback_add(rd, "changed", _cursors_changed_cb, ctx);
 
    /* Steady Bar */
@@ -324,16 +360,15 @@ _add_cursors_option(Evas_Object *bx,
    elm_radio_state_value_set(rd, 6);
    elm_radio_group_add(rd, rdg);
    layout = elm_layout_add(rd);
-   oe = elm_layout_edje_get(layout);
-   theme_apply(oe, ctx->config, "terminology/cursor_bar");
+   theme_apply_elm(layout, ctx->config, "terminology/cursor_bar");
    evas_object_size_hint_weight_set(layout, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(layout, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_image_resizable_set(layout, EINA_FALSE, EINA_FALSE);
    elm_object_part_content_set(rd, "icon", layout);
    elm_box_pack_end(bx, rd);
    evas_object_show(rd);
-   edje_object_signal_emit(oe, "focus,out", "terminology");
-   edje_object_signal_emit(oe, "focus,in,noblink", "terminology");
+   elm_layout_signal_emit(layout, "focus,out", "terminology");
+   elm_layout_signal_emit(layout, "focus,in,noblink", "terminology");
    evas_object_smart_callback_add(rd, "changed", _cursors_changed_cb, ctx);
 
    elm_radio_value_set(rdg,
@@ -451,6 +486,7 @@ options_behavior(Evas_Object *opbox, Evas_Object *term)
    CX(_("Always show miniview"), mv_always_show, 0);
    CX(_("Enable special Terminology escape codes"), ty_escapes, 0);
    CX(_("Open new terminals in current working directory"), changedir_to_current, 0);
+   CX(_("Treat Emojis as double-width characters"), emoji_dbl_width, 0);
 
 #undef CX
 
@@ -555,6 +591,8 @@ options_behavior(Evas_Object *opbox, Evas_Object *term)
    evas_object_smart_callback_add(o, "delay,changed",
                                   _cb_op_behavior_sback_chg, ctx);
 
+   SEPARATOR;
+
    o = elm_label_add(bx);
    evas_object_size_hint_weight_set(o, 0.0, 0.0);
    evas_object_size_hint_align_set(o, 0.0, 0.5);
@@ -568,7 +606,6 @@ options_behavior(Evas_Object *opbox, Evas_Object *term)
    evas_object_show(o);
 
    o = elm_slider_add(bx);
-   elm_object_tooltip_text_set(o, tooltip);
    evas_object_size_hint_weight_set(o, EVAS_HINT_EXPAND, 0.0);
    evas_object_size_hint_align_set(o, EVAS_HINT_FILL, 0.0);
    elm_slider_span_size_set(o, 40);
@@ -584,5 +621,38 @@ options_behavior(Evas_Object *opbox, Evas_Object *term)
    evas_object_size_hint_weight_set(opbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(opbox, EVAS_HINT_FILL, EVAS_HINT_FILL);
    evas_object_show(o);
+
+   SEPARATOR;
+
+   o = elm_check_add(opbox);
+   evas_object_size_hint_weight_set(o, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(o, EVAS_HINT_FILL, 0.5);
+   elm_object_text_set(o, _("Translucent"));
+   elm_object_text_set(o, _("Auto hide the mouse cursor when idle:"));
+   elm_check_state_set(o, !isnan(config->hide_cursor));
+   elm_box_pack_end(bx, o);
+   evas_object_show(o);
+   evas_object_smart_callback_add(o, "changed",
+                                  _cb_op_hide_cursor_changed, ctx);
+
+   o = elm_slider_add(bx);
+   ctx->sld_hide_cursor = o;
+   elm_object_tooltip_text_set(o, tooltip);
+   evas_object_size_hint_weight_set(o, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(o, EVAS_HINT_FILL, 0.0);
+   elm_slider_span_size_set(o, 40);
+   elm_slider_unit_format_set(o, _("%1.1f s"));
+   elm_slider_indicator_format_set(o, _("%1.1f s"));
+   elm_slider_min_max_set(o, 0.0, 60.0);
+   elm_slider_value_set(o, config->hide_cursor);
+   elm_box_pack_end(bx, o);
+   evas_object_show(o);
+   evas_object_smart_callback_add(o, "delay,changed",
+                                  _cb_hide_cursor_slider_chg, ctx);
+
+   evas_object_size_hint_weight_set(opbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(opbox, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(o);
+
 #undef SEPARATOR
 }

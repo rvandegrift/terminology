@@ -361,7 +361,8 @@ termio_cwd_get(const Evas_Object *obj, char *buf, size_t size)
    ssize_t siz;
 
    snprintf(procpath, sizeof(procpath), "/proc/%ld/cwd", (long) pid);
-   if ((siz = readlink(procpath, buf, size)) < 1)
+   siz = readlink(procpath, buf, size);
+   if ((siz == -1) || (siz >= (ssize_t)size))
      {
         ERR(_("Could not load working directory %s: %s"),
             procpath, strerror(errno));
@@ -423,7 +424,7 @@ termio_config_update(Evas_Object *obj)
    sd->jump_on_change = sd->config->jump_on_change;
    sd->jump_on_keypress = sd->config->jump_on_keypress;
 
-   termpty_backlog_size_set(sd->pty, sd->config->scrollback);
+   termpty_config_update(sd->pty, sd->config);
    sd->scroll = 0;
 
    colors_term_init(sd->grid.obj, sd->theme, sd->config);
@@ -2331,7 +2332,7 @@ _smart_mouseover_apply(Termio *sd)
    config = sd->config;
 
    if ((sd->mouse.cx < 0) || (sd->mouse.cy < 0) ||
-       (sd->link.suspend) || (!evas_object_focus_get(sd->self)))
+       (sd->link.suspend) || (!term_is_focused(sd->term)))
      {
         _remove_links(sd);
         return;
@@ -3010,7 +3011,7 @@ _smart_size(Evas_Object *obj, int w, int h, Eina_Bool force)
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
-   if ((w <= 0) || (h <= 0))
+   if ((w <= 1) || (h <= 1))
      {
         w = 80;
         h = 24;
@@ -3981,9 +3982,8 @@ termio_add(Evas_Object *win, Config *config,
                        _smart_cb_drop, obj);
 
    window_id = elm_win_window_id_get(win);
-   sd->pty = termpty_new(cmd, login_shell, cd, w, h, config->scrollback,
-                         config->xterm_256color, config->erase_is_del, mod,
-                         title, window_id);
+   sd->pty = termpty_new(cmd, login_shell, cd, w, h, config, mod, title,
+                         window_id);
    if (!sd->pty)
      {
         ERR(_("Could not allocate termpty"));
@@ -4011,7 +4011,7 @@ termio_add(Evas_Object *win, Config *config,
 
 void
 termio_key_down(Evas_Object *termio,
-                const Evas_Event_Key_Down *ev,
+                Evas_Event_Key_Down *ev,
                 Eina_Bool action_handled)
 {
    Termio *sd = evas_object_smart_data_get(termio);
@@ -4027,4 +4027,5 @@ termio_key_down(Evas_Object *termio,
      }
    if (sd->config->flicker_on_key)
      edje_object_signal_emit(sd->cursor.obj, "key,down", "terminology");
+   ev->event_flags = EVAS_EVENT_FLAG_ON_HOLD;
 }

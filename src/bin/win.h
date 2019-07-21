@@ -40,7 +40,6 @@ int win_term_set(Win *wn, Term *term);
 Eina_List *
 terms_from_win_object(Evas_Object *win);
 
-Evas_Object *win_base_get(const Win *wn);
 Evas_Object *win_evas_object_get(const Win *win);
 Eina_List * win_terms_get(const Win *wn);
 Config *win_config_get(const Win *wn);
@@ -60,6 +59,7 @@ Term *term_prev_get(const Term *term);
 void term_next(Term *term);
 void term_prev(Term *term);
 Win * term_win_get(const Term *term);
+Evas_Object *term_bg_get(const Term *term);
 
 void term_up(Term *term);
 void term_down(Term *term);
@@ -70,6 +70,7 @@ Ecore_IMF_Context *
 term_imf_context_get(Term *term);
 
 Eina_Bool term_is_visible(Term *term);
+Eina_Bool term_is_focused(Term *term);
 
 void win_font_size_set(Win *wn, int new_size);
 void win_font_update(Term *term);
@@ -87,5 +88,7 @@ for_each_term_do(Win *wn, For_Each_Term cb, void *data);
 void
 term_apply_shine(Term *term, int shine);
 void background_set_shine(Config *config, Evas_Object *bg);
+
+void main_trans_update(const Config *config);
 
 #endif
