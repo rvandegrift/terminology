@@ -2,8 +2,8 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Source: https://download.enlightenment.org/rel/apps/terminology/
 
 Files: *
-Copyright: 2012-2017 Carsten Haitzler <raster@rasterman.com>
-                2012-2017 Boris Faure <billiob@gmail.com>
+Copyright: 2012-2019 Carsten Haitzler <raster@rasterman.com>
+                2012-2019 Boris Faure <billiob@gmail.com>
                 2012-2014 Gustavo Sverzut Barbieri <barbieri@gmail.com>
                 2012-2015 Cedric BAIL <cedric.bail@free.fr>
                 2012-2014 Sebastian Dransfeld <sd@tango.flipp.net>
@@ -18,7 +18,7 @@ Copyright: 2012-2017 Carsten Haitzler <raster@rasterman.com>
                 2012-2016 Stefan Schmidt <stefan@datenfreihafen.org>
                 2012-2015 Tom Hacohen <tom@stosb.com>
                 2012-2014 Alex-P. Natsios <drakevr@2f30.org>
-                2012-2014 Massimo Maiurana <maiurana@gmail.com>
+                2012-2019 Massimo Maiurana <maiurana@gmail.com>
                 2012-2014 Gwang O Lee <pu8046@gmail.com>
                 2012-2015 Jean-Philippe ANDRÉ <jpeg@videolan.org>
                 2012-2014 Jihoon Kim <imfine98@gmail.com>
@@ -32,7 +32,7 @@ Copyright: 2012-2017 Carsten Haitzler <raster@rasterman.com>
                 2012-2014 Leif Middelschulte <leif.middelschulte@gmail.com>
                 2012-2014 Markus Törnqvist <mjt@fadconsulting.com>
                 2012-2014 Lucas De Marchi <lucas.demarchi@profusion.mobi>
-                2012-2016 Marcel Hollerbach <marcel-hollerbach@t-online.de>
+                2012-2019 Marcel Hollerbach <marcel-hollerbach@t-online.de>
                 2012-2014 Anisse Astier <anisse@astier.eu>
                 2012-2014 Doug Newgard <scimmia22@outlook.com>
                 2012-2014 Flavio Vinicius Alvares Ceolin <flavio.ceolin@profusion.mobi>
@@ -51,6 +51,7 @@ Copyright: 2012-2017 Carsten Haitzler <raster@rasterman.com>
                 2012-2014 Vincent Torri <vincent.torri@gmail.com>
                 2015 Daniel Kolesa <d.kolesa@osg.samsung.com>
                 2017 Sanjeev BA <iamsanjeev@gmail.com>
+                2019 Alastair Poole <netstar@gmail.com>
 License: BSD-2
 
 Files: po/ca.po 
@@ -85,7 +86,7 @@ Copyright: 2014 Eliovir
 License: BSD-2
 
 Files: po/it.po
-Copyright: 2014 Massimo Maiurana <maiurana@gmail.com>
+Copyright: 2014-2019 Massimo Maiurana <maiurana@gmail.com>
 		2014 Terminology development team
 License: BSD-2
 
@@ -144,6 +145,21 @@ Copyright: Various - See License
 Files: data/fonts/terminus*
 Copyright: 2011 Dimitar Toshkov Zhekov, with Reserved Font Name "Terminus Font"
 License: SIL-OFL-1.1
+
+Files: src/bin/md5/md5.c
+License: public-domain
+ File explicitly disclaims copyright:
+ .
+ This code implements the MD5 message-digest algorithm.
+ The algorithm is due to Ron Rivest.  This code was
+ written by Colin Plumb in 1993, no copyright is claimed.
+ This code is in the public domain; do with it what you wish.
+ .
+ Equivalent code is available from RSA Data Security, Inc.
+ This code has been tested against that, and is equivalent,
+ except that you don't need to include two pages of legalese
+ with every copy.
+Copyright: none
 
 License: BSD-2
  Redistribution and use in source and binary forms, with or 
