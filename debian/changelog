@@ -1,3 +1,12 @@
+terminology (1.5.0-1~1.gbp1f9ff8) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @1f9ff8f065dfdf7b47f288a850013bbc91540190 **
+
+  * Update d/tests/control to allow stderr
+  * Add test depends on gcc, drop allow-stderr
+
+ -- Ross Vandegrift <rvandegrift@debian.org>  Sun, 21 Jul 2019 09:16:19 -0700
+
 terminology (1.4.1-1) experimental; urgency=medium
 
   * New upstream release. (Closes: #908843)
