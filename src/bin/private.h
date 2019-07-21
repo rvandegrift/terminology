@@ -1,5 +1,3 @@
-#include "coverity.h"
-
 #ifndef _PRIVATE_H__
 #define _PRIVATE_H__ 1
 
@@ -7,7 +5,7 @@
 #include "terminology_config.h"
 #endif
 
-#if HAVE_GETTEXT && ENABLE_NLS
+#if ENABLE_NLS
 #include <libintl.h>
 #define _(string) gettext (string)
 #else

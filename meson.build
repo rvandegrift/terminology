@@ -1,6 +1,6 @@
 project('terminology', 'c',
-        version: '1.4.1',
-        default_options: ['c_std=gnu99'],
+        version: '1.5.0',
+        default_options: ['buildtype=plain', 'c_std=gnu99'],
         license: 'BSD')
 
 cc = meson.get_compiler('c')
@@ -63,7 +63,7 @@ edj_files = []
 
 if get_option('nls') == true
   subdir('po')
-  terminology_dependencies += cc.find_library('intl', required: false)
+   terminology_dependencies += cc.find_library('intl', required: false)
 endif
 
 foreach efl_dep: efl_deps
