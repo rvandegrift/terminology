@@ -1,11 +1,11 @@
 terminology (1.5.0-1) experimental; urgency=medium
 
-  * New upstream release.
+  * New upstream release. (Closes: #912356)
   * d/tests/control: depend on gcc so dpkg-architecture doesn't complain
   * d/patches/*: defuzz, update for new release
   * d/copyright: update
 
- -- Ross Vandegrift <rvandegrift@debian.org>  Sun, 21 Jul 2019 10:18:34 -0700
+ -- Ross Vandegrift <rvandegrift@debian.org>  Sun, 21 Jul 2019 10:38:36 -0700
 
 terminology (1.4.1-1) experimental; urgency=medium
 
