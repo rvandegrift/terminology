@@ -1,13 +1,11 @@
-terminology (1.5.0-1~3.gbp79655b) UNRELEASED; urgency=medium
+terminology (1.5.0-1) experimental; urgency=medium
 
-  ** SNAPSHOT build @79655b98bd8e153c2bc6a940a9c495148b0b58ad **
-
-  * Update d/tests/control to allow stderr
-  * Add test depends on gcc, drop allow-stderr
-  * defuzz/update patches
+  * New upstream release.
+  * d/tests/control: depend on gcc so dpkg-architecture doesn't complain
+  * d/patches/*: defuzz, update for new release
   * d/copyright: update
 
- -- Ross Vandegrift <rvandegrift@debian.org>  Sun, 21 Jul 2019 10:09:30 -0700
+ -- Ross Vandegrift <rvandegrift@debian.org>  Sun, 21 Jul 2019 10:18:34 -0700
 
 terminology (1.4.1-1) experimental; urgency=medium
 
