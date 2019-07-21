@@ -1,7 +1,7 @@
 Added as per Terminology Developers request: erase (backspace) sends DEL on debian by Boris Faure <billiob@gmail.com>
 --- a/src/bin/config.c
 +++ b/src/bin/config.c
-@@ -540,7 +540,7 @@
+@@ -546,7 +546,7 @@
          config->urg_bell = EINA_TRUE;
          config->multi_instance = EINA_FALSE;
          config->xterm_256color = EINA_FALSE;
