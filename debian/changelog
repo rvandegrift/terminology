@@ -1,11 +1,12 @@
-terminology (1.5.0-1~1.gbp1f9ff8) UNRELEASED; urgency=medium
+terminology (1.5.0-1~2.gbpb437de) UNRELEASED; urgency=medium
 
-  ** SNAPSHOT build @1f9ff8f065dfdf7b47f288a850013bbc91540190 **
+  ** SNAPSHOT build @b437de75cf9d3b15ef3f6c7a4ced80ecf6ea234e **
 
   * Update d/tests/control to allow stderr
   * Add test depends on gcc, drop allow-stderr
+  * defuzz/update patches
 
- -- Ross Vandegrift <rvandegrift@debian.org>  Sun, 21 Jul 2019 09:16:19 -0700
+ -- Ross Vandegrift <rvandegrift@debian.org>  Sun, 21 Jul 2019 09:25:10 -0700
 
 terminology (1.4.1-1) experimental; urgency=medium
 
