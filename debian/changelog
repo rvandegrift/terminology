@@ -1,10 +1,9 @@
-terminology (1.5.0-2~1.gbp845099) UNRELEASED; urgency=medium
+terminology (1.5.0-2) experimental; urgency=medium
 
-  ** SNAPSHOT build @845099a2295f8cf06e6f178d563df6ac3a654035 **
+  * d/rules: only install tytest when building arch-dependent binary
+    packages (Closes: #932804)
 
-  * d/rules: only install tytest when building arch-dependent binary packages (Closes: #932804)
-
- -- Ross Vandegrift <rvandegrift@debian.org>  Tue, 30 Jul 2019 14:26:50 -0700
+ -- Ross Vandegrift <rvandegrift@debian.org>  Tue, 30 Jul 2019 17:33:39 -0700
 
 terminology (1.5.0-1) experimental; urgency=medium
 
