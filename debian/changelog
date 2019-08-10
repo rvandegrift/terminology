@@ -1,3 +1,13 @@
+terminology (1.5.0-3~1.gbp7773ff) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @7773ffabd998e63d83be6d065c417a7628608500 **
+
+  * d/control: bump Standards-Version to 4.4.0, no changes needed
+  * Update to debhelper 12, compat level 12
+  * d/control: update Vcs-Git branch location for experimental
+
+ -- Ross Vandegrift <rvandegrift@debian.org>  Sat, 10 Aug 2019 08:53:23 -0700
+
 terminology (1.5.0-2) experimental; urgency=medium
 
   * d/rules: only install tytest when building arch-dependent binary
