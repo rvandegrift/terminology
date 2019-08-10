@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Debian Pkg-e Team <pkg-e-devel@lists.alioth.debian.org>
 Uploaders: Ross Vandegrift <rvandegrift@debian.org>,
            Andreas Metzler <ametzler@debian.org>
-Build-Depends: debhelper (>= 11),
+Build-Depends: debhelper-compat (= 12),
                libefl-all-dev (>= 1.18),
                meson
 Standards-Version: 4.4.0
